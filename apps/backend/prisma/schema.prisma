@@ -25,6 +25,19 @@ enum AddressLabel {
   OTHER
 }
 
+enum SellerStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum SellerDocumentType {
+  ID_PROOF
+  ADDRESS_PROOF
+  SHOP_IMAGE
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String    @unique
@@ -37,6 +50,7 @@ model User {
   updatedAt       DateTime  @updatedAt
 
   profile            Profile?
+  seller             Seller?
   addresses          Address[]
   emailVerifications EmailVerification[]
   passwordResets     PasswordReset[]
@@ -44,6 +58,34 @@ model User {
 
   @@index([email])
   @@index([status])
+}
+
+model Seller {
+  id              String       @id @default(cuid())
+  userId          String       @unique
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio             String?
+  averageRating   Float        @default(0.0)
+  totalReviews    Int          @default(0)
+  status          SellerStatus @default(PENDING)
+  rejectionReason String?
+  approvedAt      DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  documents       SellerDocument[]
+}
+
+model SellerDocument {
+  id        String             @id @default(cuid())
+  sellerId  String
+  seller    Seller             @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  type      SellerDocumentType
+  fileUrl   String
+  publicId  String
+  createdAt DateTime           @default(now())
+
+  @@index([sellerId])
 }
 
 model Profile {
