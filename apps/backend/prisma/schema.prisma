@@ -19,6 +19,12 @@ enum UserStatus {
   SUSPENDED
 }
 
+enum AddressLabel {
+  HOME
+  OFFICE
+  OTHER
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String    @unique
@@ -30,12 +36,48 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  profile            Profile?
+  addresses          Address[]
   emailVerifications EmailVerification[]
   passwordResets     PasswordReset[]
   refreshTokens      RefreshToken[]
 
   @@index([email])
   @@index([status])
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName    String?
+  avatar      String?
+  phone       String?
+  dateOfBirth DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Address {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label        AddressLabel @default(HOME)
+  fullName     String
+  phone        String
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  district     String?
+  state        String
+  postalCode   String
+  latitude     Float?
+  longitude    Float?
+  isDefault    Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([userId])
 }
 
 model EmailVerification {

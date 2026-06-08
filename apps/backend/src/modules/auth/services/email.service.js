@@ -1,7 +1,9 @@
 import { Resend } from "resend";
 
-// Resend client is initialized using the RESEND_API_KEY from environment
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Prevent server crash in local dev if RESEND_API_KEY is not set.
+// A valid key must be added to .env for emails to actually send.
+const resendApiKey = process.env.RESEND_API_KEY || 're_dummy_key_for_dev';
+const resend = new Resend(resendApiKey);
 
 export const emailService = {
   /**
