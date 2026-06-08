@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
 import cookieParser from "cookie-parser";
+import routes from "./routes/v1/index.js";
 
 import { notFound } from "./shared/middleware/notFound.middleware.js";
 import { errorHandler } from "./shared/middleware/error.middleware.js";
@@ -32,6 +33,11 @@ app.get("/health", (req, res) => {
     message: "Cravo API Running",
   });
 });
+
+app.use(
+  "/api/v1",
+  routes
+);
 
 app.use(notFound);
 
