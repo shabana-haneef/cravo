@@ -9,6 +9,9 @@ import shopRoutes from "../../modules/shops/routes/shop.routes.js";
 import categoryRoutes from "../../modules/products/routes/category.routes.js";
 import productRoutes from "../../modules/products/routes/product.routes.js";
 import inventoryRoutes from "../../modules/products/routes/inventory.routes.js";
+import cartRoutes from "../../modules/orders/routes/cart.routes.js";
+import orderRoutes from "../../modules/orders/routes/order.routes.js";
+import paymentRoutes from "../../modules/orders/routes/payment.routes.js";
 
 const router = Router();
 
@@ -21,5 +24,8 @@ router.use("/shops", shopRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/products", productRoutes);
 router.use("/inventory", inventoryRoutes);
+router.use("/cart", cartRoutes);
+router.use("/orders", orderRoutes);
+router.use("/payments", paymentRoutes);
 
 export default router;

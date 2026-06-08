@@ -82,6 +82,25 @@ enum ProductStatus {
   ARCHIVED
 }
 
+enum OrderStatus {
+  PENDING_PAYMENT
+  PLACED
+  CONFIRMED
+  PREPARING
+  READY_FOR_PICKUP
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String    @unique
@@ -99,6 +118,8 @@ model User {
   emailVerifications EmailVerification[]
   passwordResets     PasswordReset[]
   refreshTokens      RefreshToken[]
+  cart               Cart?
+  orders             Order[]
 
   @@index([email])
   @@index([status])
@@ -142,6 +163,8 @@ model Shop {
 
   timings           ShopTiming[]
   products          Product[]
+  carts             Cart[]
+  orders            Order[]
 
   @@index([slug])
   @@index([sellerId])
@@ -202,6 +225,8 @@ model Address {
   isDefault    Boolean      @default(false)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+
+  orders       Order[]
 
   @@index([userId])
 }
@@ -275,6 +300,8 @@ model Product {
 
   images           ProductImage[]
   variants         ProductVariant[]
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
 
   @@index([shopId])
   @@index([categoryId])
@@ -302,6 +329,8 @@ model ProductVariant {
   isActive       Boolean @default(true)
 
   inventory      Inventory?
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
 }
 
 model Inventory {
@@ -331,4 +360,82 @@ model InventoryTransaction {
 
   @@index([inventoryId])
   @@index([createdAt])
+}
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopId    String?
+  shop      Shop?    @relation(fields: [shopId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items     CartItem[]
+}
+
+model CartItem {
+  id               String   @id @default(cuid())
+  cartId           String
+  cart             Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productVariantId String
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+  quantity         Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([cartId, productVariantId])
+}
+
+model Order {
+  id             String   @id @default(cuid())
+  orderNumber    String   @unique
+  customerId     String
+  customer       User     @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  shopId         String
+  shop           Shop     @relation(fields: [shopId], references: [id], onDelete: Restrict)
+  addressId      String
+  address        Address  @relation(fields: [addressId], references: [id], onDelete: Restrict)
+  subtotal       Float
+  deliveryCharge Float
+  discount       Float    @default(0.0)
+  grandTotal     Float
+  status         OrderStatus @default(PENDING_PAYMENT)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  items          OrderItem[]
+  payments       Payment[]
+
+  @@index([customerId])
+  @@index([shopId])
+  @@index([orderNumber])
+  @@index([status])
+}
+
+model OrderItem {
+  id               String   @id @default(cuid())
+  orderId          String
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productVariantId String
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+  quantity         Int
+  unitPrice        Float
+  totalPrice       Float
+}
+
+model Payment {
+  id                String   @id @default(cuid())
+  orderId           String
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  razorpayOrderId   String   @unique
+  razorpayPaymentId String?  @unique
+  razorpaySignature String?
+  amount            Float
+  status            PaymentStatus @default(PENDING)
+  createdAt         DateTime @default(now())
 }
