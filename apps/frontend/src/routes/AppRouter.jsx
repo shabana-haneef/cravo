@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { ProtectedRoute, RoleRoute, PublicRoute } from './guards/AuthGuards.jsx';
 import { LoadingScreen } from '../components/ui/LoadingScreen.jsx';
 import { MainLayout } from '../layouts/MainLayout.jsx';
+import { SellerLayout } from '../layouts/SellerLayout.jsx';
 
 // Lazy load auth pages
 const LoginPage = React.lazy(() => import('../features/auth/pages/LoginPage.jsx').then(m => ({ default: m.LoginPage })));
@@ -33,6 +34,7 @@ const CreateProductPage = React.lazy(() => import('../features/sellers/pages/Cre
 const EditProductPage = React.lazy(() => import('../features/sellers/pages/EditProductPage.jsx').then(m => ({ default: m.EditProductPage })));
 const InventoryDashboardPage = React.lazy(() => import('../features/inventory/pages/InventoryDashboardPage.jsx').then(m => ({ default: m.InventoryDashboardPage })));
 const InventoryHistoryPage = React.lazy(() => import('../features/inventory/pages/InventoryHistoryPage.jsx').then(m => ({ default: m.InventoryHistoryPage })));
+const SellerDashboardPage = React.lazy(() => import('../features/seller/pages/SellerDashboardPage.jsx').then(m => ({ default: m.SellerDashboardPage })));
 
 const S = ({ children }) => <Suspense fallback={<LoadingScreen />}>{children}</Suspense>;
 
@@ -70,25 +72,37 @@ const router = createBrowserRouter([
           { path: '/addresses', element: <S><AddressesPage /></S> },
           { path: '/seller/application', element: <S><SellerApplicationContainer /></S> },
         ]
+      },
+
+      // Protected seller routes (with dedicated SellerLayout)
+      {
+        element: <ProtectedRoute />,
+        children: [
+          {
+            element: <SellerLayout />,
+            children: [
+              {
+                element: <RoleRoute allowedRoles={['SELLER']} />,
+                children: [
+                  { path: '/seller/dashboard', element: <S><SellerDashboardPage /></S> },
+                  { path: '/seller/products', element: <S><ProductsDashboardPage /></S> },
+                  { path: '/seller/products/new', element: <S><CreateProductPage /></S> },
+                  { path: '/seller/products/:id/edit', element: <S><EditProductPage /></S> },
+                  { path: '/seller/inventory', element: <S><InventoryDashboardPage /></S> },
+                  { path: '/seller/inventory/:variantId/history', element: <S><InventoryHistoryPage /></S> },
+                ]
+              }
+            ]
+          }
+        ]
       }
     ]
   },
 
-  // Protected routes without MainLayout (seller/admin dashboards)
+  // Admin routes (no MainLayout)
   {
     element: <ProtectedRoute />,
     children: [
-      {
-        element: <RoleRoute allowedRoles={['SELLER']} />,
-        children: [
-          { path: '/seller/dashboard', element: <div>Seller Dashboard</div> },
-          { path: '/seller/products', element: <S><ProductsDashboardPage /></S> },
-          { path: '/seller/products/new', element: <S><CreateProductPage /></S> },
-          { path: '/seller/products/:id/edit', element: <S><EditProductPage /></S> },
-          { path: '/seller/inventory', element: <S><InventoryDashboardPage /></S> },
-          { path: '/seller/inventory/:variantId/history', element: <S><InventoryHistoryPage /></S> }
-        ]
-      },
       {
         element: <RoleRoute allowedRoles={['ADMIN']} />,
         children: [

@@ -51,7 +51,7 @@ export const InventoryHistoryPage = () => {
   const transactions = historyData?.transactions || [];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-20">
+    <div className="space-y-6 pb-20">
       <div className="flex items-center gap-4 mb-2">
         <Link to="/seller/inventory" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
           <ArrowLeft size={20} className="text-gray-600" />

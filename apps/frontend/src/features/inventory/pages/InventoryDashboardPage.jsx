@@ -96,10 +96,10 @@ export const InventoryDashboardPage = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
+    <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+        <h1 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
           <Box size={24} className="text-[#1E3A2B]" />
           Inventory Management
         </h1>
@@ -120,7 +120,7 @@ export const InventoryDashboardPage = () => {
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-500">{stat.label}</p>
-              <p className={`text-2xl font-extrabold ${stat.textClasses || 'text-gray-900'}`}>{stat.value}</p>
+              <p className={`text-2xl font-bold ${stat.textClasses || 'text-gray-900'}`}>{stat.value}</p>
             </div>
           </div>
         ))}
