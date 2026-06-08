@@ -39,7 +39,7 @@ export const ProductCard = ({ product, variant = 'simple' }) => {
     <motion.div
       whileHover={{ y: -7, boxShadow: '0 20px 44px rgba(0,0,0,0.10)' }}
       transition={{ type: 'spring', stiffness: 320, damping: 22 }}
-      className="card-hover group bg-white rounded-2xl shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 flex flex-col h-full"
+      className="group bg-white rounded-2xl shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 flex flex-col h-full"
     >
       {/* Image Container */}
       <Link to={`/products/${slug}`} className="relative block m-1.5 rounded-xl bg-[#F6F9F6] aspect-[4/3] overflow-hidden p-3">
