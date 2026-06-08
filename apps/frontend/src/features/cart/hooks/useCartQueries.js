@@ -39,7 +39,7 @@ export const useAddToCart = () => {
 
 export const useUpdateCartItem = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ itemId, quantity }) => cartApi.updateItemQuantity(itemId, quantity),
     onSuccess: () => {
@@ -50,7 +50,7 @@ export const useUpdateCartItem = () => {
 
 export const useRemoveCartItem = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: cartApi.removeItem,
     onSuccess: () => {

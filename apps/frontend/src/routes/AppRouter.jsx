@@ -21,6 +21,10 @@ const CartPage = React.lazy(() => import('../features/cart/pages/CartPage.jsx').
 const CheckoutPage = React.lazy(() => import('../features/orders/pages/CheckoutPage.jsx').then(m => ({ default: m.CheckoutPage })));
 const OrderSuccessPage = React.lazy(() => import('../features/orders/pages/OrderSuccessPage.jsx').then(m => ({ default: m.OrderSuccessPage })));
 
+// Lazy load profile/account pages
+const ProfilePage = React.lazy(() => import('../features/users/pages/ProfilePage.jsx').then(m => ({ default: m.ProfilePage })));
+const AddressesPage = React.lazy(() => import('../features/users/pages/AddressesPage.jsx').then(m => ({ default: m.AddressesPage })));
+
 const S = ({ children }) => <Suspense fallback={<LoadingScreen />}>{children}</Suspense>;
 
 const router = createBrowserRouter([
@@ -52,6 +56,8 @@ const router = createBrowserRouter([
           { path: '/cart', element: <S><CartPage /></S> },
           { path: '/checkout', element: <S><CheckoutPage /></S> },
           { path: '/orders/success', element: <S><OrderSuccessPage /></S> },
+          { path: '/profile', element: <S><ProfilePage /></S> },
+          { path: '/addresses', element: <S><AddressesPage /></S> },
         ]
       }
     ]
