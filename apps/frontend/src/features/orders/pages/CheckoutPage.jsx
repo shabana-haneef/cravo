@@ -13,12 +13,12 @@ import { toast } from 'sonner';
 
 const addressSchema = z.object({
   fullName: z.string().min(2, 'Full name required'),
-  phone: z.string().min(10, 'Valid phone required'),
+  phone: z.string().regex(/^[6-9]\d{9}$/, 'Must be a valid 10-digit Indian mobile number'),
   addressLine1: z.string().min(5, 'Address required'),
   addressLine2: z.string().optional(),
   city: z.string().min(2, 'City required'),
   state: z.string().min(2, 'State required'),
-  pincode: z.string().length(6, 'PIN code must be 6 digits'),
+  postalCode: z.string().regex(/^[1-9][0-9]{5}$/, 'Must be a valid 6-digit Indian PIN code'),
   country: z.string().default('India'),
 });
 
@@ -42,7 +42,7 @@ const AddressCard = ({ address, isSelected, onSelect }) => (
           {address.addressLine2 && `, ${address.addressLine2}`}
         </p>
         <p className="text-sm text-gray-600">
-          {address.city}, {address.state} – {address.pincode}
+          {address.city}, {address.state} – {address.postalCode}
         </p>
       </div>
       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-1 ${
@@ -67,7 +67,7 @@ const AddressForm = ({ onSuccess, onCancel }) => {
         toast.success('Address added successfully');
         onSuccess?.();
       },
-      onError: () => toast.error('Failed to save address'),
+      onError: (err) => toast.error(err.response?.data?.message || 'Failed to save address'),
     });
   };
 
@@ -82,7 +82,7 @@ const AddressForm = ({ onSuccess, onCancel }) => {
           { name: 'addressLine2', label: 'Address Line 2 (Optional)', placeholder: 'Landmark', colSpan: true },
           { name: 'city', label: 'City', placeholder: 'Kozhikode' },
           { name: 'state', label: 'State', placeholder: 'Kerala' },
-          { name: 'pincode', label: 'PIN Code', placeholder: '673001' },
+          { name: 'postalCode', label: 'PIN Code', placeholder: '673001' },
           { name: 'country', label: 'Country', placeholder: 'India' },
         ].map(field => (
           <div key={field.name} className={field.colSpan ? 'sm:col-span-2' : ''}>

@@ -47,8 +47,8 @@ export const checkoutService = {
       throw new AppError("Cart is empty", 400);
     }
 
-    const address = await addressRepository.findById(addressId);
-    if (!address || address.userId !== userId) {
+    const address = await addressRepository.findByIdAndUserId(addressId, userId);
+    if (!address) {
       throw new AppError("Invalid delivery address", 400);
     }
 

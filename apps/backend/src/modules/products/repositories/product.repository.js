@@ -22,7 +22,7 @@ export const productRepository = {
       where: { slug },
       include: {
         images: { orderBy: { sortOrder: 'asc' } },
-        variants: { where: { isActive: true } },
+        variants: { where: { isActive: true }, include: { inventory: true } },
         category: true,
         shop: {
           include: {
@@ -101,7 +101,7 @@ export const productRepository = {
         take: limit,
         include: {
           images: { orderBy: { sortOrder: 'asc' }, take: 1 }, 
-          variants: { where: { isActive: true }, orderBy: { price: 'asc' }, take: 1 },
+          variants: { where: { isActive: true }, orderBy: { price: 'asc' }, take: 1, include: { inventory: true } },
           category: true,
           shop: true
         },

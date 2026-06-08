@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Store, ShoppingCart, Star, Heart, Leaf } from 'lucide-react';
+import { useAddToCart } from '../../features/cart/hooks/useCartQueries.js';
+import { toast } from 'sonner';
 
 export const ProductCard = ({ product }) => {
   const { name, slug, shop, variants, images, category } = product;
@@ -10,6 +12,27 @@ export const ProductCard = ({ product }) => {
   // const comparePrice = defaultVariant?.compareAtPrice;
   const isOutOfStock = defaultVariant?.inventory?.availableStock <= 0;
   const variantName = defaultVariant?.name || defaultVariant?.variantName || '1 Kg'; // fallback if no name
+
+  const { mutate: addToCart, isPending: isAdding } = useAddToCart();
+
+  const handleAddToCart = (e) => {
+    e.preventDefault();
+    if (!defaultVariant) return;
+
+    addToCart({ 
+      productId: product.id, 
+      variantId: defaultVariant.id, 
+      quantity: 1 
+    }, {
+      onSuccess: () => {
+        toast.success(`Added 1x ${variantName} to cart`);
+      },
+      onError: (error) => {
+        const msg = error.response?.data?.message || 'Failed to add item to cart';
+        toast.error(msg);
+      }
+    });
+  };
 
   return (
     <div className="group bg-white rounded-2xl shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 border border-gray-100 flex flex-col h-full">
@@ -82,11 +105,8 @@ export const ProductCard = ({ product }) => {
         </div>
         
         <button 
-          disabled={isOutOfStock}
-          onClick={(e) => {
-            e.preventDefault();
-            // Add to cart logic
-          }}
+          disabled={isOutOfStock || isAdding}
+          onClick={handleAddToCart}
           className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center bg-white text-gray-600 hover:border-[#1E3A2B] hover:text-[#1E3A2B] transition-all disabled:opacity-50 relative group shadow-sm"
         >
           <ShoppingCart size={14} className="stroke-[2]" />

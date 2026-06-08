@@ -8,7 +8,7 @@ export const addressController = {
     try {
       const parsed = addressSchema.safeParse(req.body);
       if (!parsed.success) {
-        return errorResponse(res, parsed.error.errors[0].message, 400);
+        return errorResponse(res, parsed.error.errors?.[0]?.message || 'Validation failed', 400);
       }
 
       const address = await addressService.createAddress(req.user.id, parsed.data);
@@ -42,7 +42,7 @@ export const addressController = {
     try {
       const parsed = addressSchema.safeParse(req.body);
       if (!parsed.success) {
-        return errorResponse(res, parsed.error.errors[0].message, 400);
+        return errorResponse(res, parsed.error.errors?.[0]?.message || 'Validation failed', 400);
       }
 
       const address = await addressService.updateAddress(req.user.id, req.params.id, parsed.data);

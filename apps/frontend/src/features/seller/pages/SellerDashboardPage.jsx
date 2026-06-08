@@ -72,7 +72,7 @@ export const SellerDashboardPage = () => {
       {/* Header text */}
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">
-          Welcome back, {user?.profile?.fullName?.split(' ')[0] || user?.email?.split('@')[0] || 'testseller'} 👋
+          Welcome back, {(user?.profile?.fullName?.split(' ') || [])[0] || (user?.email?.split('@') || [])[0] || 'testseller'} 👋
         </h1>
         <p className="text-sm text-gray-500 mt-1">
           Here's a quick overview of your shop operations today.

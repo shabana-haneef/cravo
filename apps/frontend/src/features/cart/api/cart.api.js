@@ -7,8 +7,12 @@ export const cartApi = {
   },
 
   addItem: async (data) => {
-    // data: { productId, variantId, quantity }
-    const response = await api.post('/cart/items', data);
+    // map variantId to productVariantId for backend compatibility
+    const payload = {
+      productVariantId: data.variantId || data.productVariantId,
+      quantity: data.quantity
+    };
+    const response = await api.post('/cart/items', payload);
     return response.data;
   },
 

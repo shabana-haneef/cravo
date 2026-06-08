@@ -99,8 +99,8 @@ export const ProfilePage = () => {
   );
 
   const initials = profile?.fullName
-    ? profile.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-    : user?.email?.[0]?.toUpperCase() || '?';
+    ? (profile.fullName.split(' ') || []).map(n => n[0]).join('').slice(0, 2).toUpperCase()
+    : (user?.email?.split('@') || [])[0]?.toUpperCase() || '?';
 
   return (
     <div className="max-w-3xl mx-auto pb-12">

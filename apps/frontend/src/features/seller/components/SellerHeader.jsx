@@ -30,7 +30,7 @@ export const SellerHeader = () => {
         <div className="flex items-center gap-3 pl-6">
           <div className="text-right hidden md:block">
             <p className="text-sm font-bold text-gray-900 leading-tight">
-              {user?.email?.split('@')[0] || 'testseller'}
+              {(user?.email?.split('@') || [])[0] || 'testseller'}
             </p>
             <p className="text-[10px] font-bold text-orange-500 uppercase tracking-wider">
               SELLER
