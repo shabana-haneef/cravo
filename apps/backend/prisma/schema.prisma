@@ -38,6 +38,41 @@ enum SellerDocumentType {
   SHOP_IMAGE
 }
 
+enum ShopType {
+  HOME_MADE
+  FARMER
+  BAKERY
+  GROCERY
+  FISH_SELLER
+  MEAT_SELLER
+  LOCAL_SHOP
+  OTHER
+}
+
+enum ShopStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum ProductStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String    @unique
@@ -73,7 +108,47 @@ model Seller {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
+  shop            Shop?
   documents       SellerDocument[]
+}
+
+model Shop {
+  id                String       @id @default(cuid())
+  sellerId          String       @unique
+  seller            Seller       @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  name              String
+  slug              String       @unique
+  description       String?
+  logoUrl           String?
+  logoPublicId      String?
+  bannerUrl         String?
+  bannerPublicId    String?
+  shopType          ShopType
+  deliveryRadiusKm  Int          @default(5)
+  isPickupEnabled   Boolean      @default(true)
+  isDeliveryEnabled Boolean      @default(true)
+  status            ShopStatus   @default(ACTIVE)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  timings           ShopTiming[]
+  products          Product[]
+
+  @@index([slug])
+  @@index([sellerId])
+  @@index([status])
+}
+
+model ShopTiming {
+  id        String    @id @default(cuid())
+  shopId    String
+  shop      Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  dayOfWeek DayOfWeek
+  openTime  String?
+  closeTime String?
+  isClosed  Boolean   @default(false)
+
+  @@unique([shopId, dayOfWeek])
 }
 
 model SellerDocument {
@@ -156,4 +231,65 @@ model RefreshToken {
 
   @@index([userId])
   @@index([tokenHash])
+}
+
+model Category {
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  imageUrl      String?
+  imagePublicId String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  products      Product[]
+}
+
+model Product {
+  id               String        @id @default(cuid())
+  shopId           String
+  shop             Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  categoryId       String
+  category         Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  name             String
+  slug             String        @unique
+  shortDescription String?
+  description      String?
+  status           ProductStatus @default(PENDING_APPROVAL)
+  rejectionReason  String?
+  isFeatured       Boolean       @default(false)
+  averageRating    Float         @default(0.0)
+  totalReviews     Int           @default(0)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  images           ProductImage[]
+  variants         ProductVariant[]
+
+  @@index([shopId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([slug])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  imageUrl  String
+  publicId  String
+  sortOrder Int     @default(0)
+}
+
+model ProductVariant {
+  id             String  @id @default(cuid())
+  productId      String
+  product        Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name           String
+  sku            String  @unique
+  price          Float
+  compareAtPrice Float?
+  stock          Int     @default(0)
+  isActive       Boolean @default(true)
 }
