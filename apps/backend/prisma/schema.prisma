@@ -101,6 +101,23 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum DeliveryStatus {
+  PENDING
+  BOOKED
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+  RETURNED
+  CANCELLED
+}
+
+enum CourierPartner {
+  DELHIVERY
+  OTHER
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String    @unique
@@ -408,6 +425,7 @@ model Order {
 
   items          OrderItem[]
   payments       Payment[]
+  delivery       Delivery?
 
   @@index([customerId])
   @@index([shopId])
@@ -438,4 +456,31 @@ model Payment {
   amount            Float
   status            PaymentStatus @default(PENDING)
   createdAt         DateTime @default(now())
+}
+
+model Delivery {
+  id                    String   @id @default(cuid())
+  orderId               String   @unique
+  order                 Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  trackingNumber        String?  @unique
+  delhiveryShipmentId   String?
+  courierPartner        CourierPartner @default(DELHIVERY)
+  status                DeliveryStatus @default(PENDING)
+  estimatedDeliveryDate DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  events                DeliveryTrackingEvent[]
+}
+
+model DeliveryTrackingEvent {
+  id          String   @id @default(cuid())
+  deliveryId  String
+  delivery    Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  status      DeliveryStatus
+  description String?
+  eventTime   DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([deliveryId])
 }

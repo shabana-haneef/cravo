@@ -1,6 +1,7 @@
 import { orderRepository } from '../repositories/order.repository.js';
 import { shopRepository } from '../../shops/repositories/shop.repository.js';
 import { sellerRepository } from '../../sellers/repositories/seller.repository.js';
+import { deliveryService } from '../../logistics/services/delivery.service.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 import prisma from '../../../lib/prisma.js';
 import { logger } from '../../../shared/services/logger.js';
@@ -104,7 +105,7 @@ export const orderService = {
       throw new AppError(`Cannot transition order from ${order.status} to ${status}`, 400);
     }
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       await orderRepository.updateStatus(orderId, status, tx);
 
       // If delivered, deduct stock from reserved (ORDER_COMPLETED)
@@ -138,5 +139,15 @@ export const orderService = {
       logger.info({ userId, orderId, status }, 'Order status updated by seller');
       return { message: "Order status updated" };
     });
+    
+    // Outside transaction, trigger delivery if confirmed
+    if (status === 'CONFIRMED') {
+      // Execute asynchronously, don't wait or block response
+      deliveryService.initiateDelivery(orderId).catch(err => {
+        logger.error({ err: err.message, orderId }, 'Failed to initiate delivery on CONFIRM');
+      });
+    }
+
+    return result;
   }
 };

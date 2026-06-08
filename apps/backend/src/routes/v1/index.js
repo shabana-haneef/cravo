@@ -12,6 +12,7 @@ import inventoryRoutes from "../../modules/products/routes/inventory.routes.js";
 import cartRoutes from "../../modules/orders/routes/cart.routes.js";
 import orderRoutes from "../../modules/orders/routes/order.routes.js";
 import paymentRoutes from "../../modules/orders/routes/payment.routes.js";
+import deliveryRoutes from "../../modules/logistics/routes/delivery.routes.js";
 
 const router = Router();
 
@@ -27,5 +28,6 @@ router.use("/inventory", inventoryRoutes);
 router.use("/cart", cartRoutes);
 router.use("/orders", orderRoutes);
 router.use("/payments", paymentRoutes);
+router.use("/deliveries", deliveryRoutes);
 
 export default router;
