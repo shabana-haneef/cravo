@@ -1,5 +1,6 @@
-import React from 'react';
-import { Outlet, Link, useNavigate, NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Outlet, Link, useNavigate, NavLink, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/auth.store.js';
 import { useCartStore } from '../store/cart.store.js';
 import { useLogout } from '../features/auth/hooks/useAuthQueries.js';
@@ -11,6 +12,14 @@ export const MainLayout = () => {
   const itemCount = useCartStore(state => state.itemCount);
   const { mutate: logout, isPending } = useLogout();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -22,7 +31,7 @@ export const MainLayout = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
+      <header className={`bg-white border-b border-gray-100 sticky top-0 z-50 header-transition ${scrolled ? 'header-scrolled' : ''}`}>
         <div className="max-w-[1536px] w-full px-4 sm:px-6 lg:px-8 mx-auto h-20 flex items-center justify-between gap-4">
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2 text-2xl font-extrabold text-[#00B259] tracking-tight">
@@ -112,9 +121,19 @@ export const MainLayout = () => {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main Content with Framer Motion page transitions */}
       <main className="flex-1 w-full max-w-[1536px] px-4 sm:px-6 lg:px-8 py-8 mx-auto">
-        <Outlet />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Footer */}

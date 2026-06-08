@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Store, ShoppingCart, Star, Heart, Leaf } from 'lucide-react';
 import { useAddToCart } from '../../features/cart/hooks/useCartQueries.js';
 import { toast } from 'sonner';
 
-export const ProductCard = ({ product }) => {
+export const ProductCard = ({ product, variant = 'simple' }) => {
   const { name, slug, shop, variants, images, category } = product;
   const mainImage = images?.[0]?.imageUrl || 'https://via.placeholder.com/400x400?text=No+Image';
   const defaultVariant = variants?.[0];
@@ -35,7 +36,11 @@ export const ProductCard = ({ product }) => {
   };
 
   return (
-    <div className="group bg-white rounded-2xl shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 border border-gray-100 flex flex-col h-full">
+    <motion.div
+      whileHover={{ y: -7, boxShadow: '0 20px 44px rgba(0,0,0,0.10)' }}
+      transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+      className="card-hover group bg-white rounded-2xl shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 flex flex-col h-full"
+    >
       {/* Image Container */}
       <Link to={`/products/${slug}`} className="relative block m-1.5 rounded-xl bg-[#F6F9F6] aspect-[4/3] overflow-hidden p-3">
         <img 
@@ -68,6 +73,12 @@ export const ProductCard = ({ product }) => {
       
       {/* Product Details */}
       <div className="px-3 pt-2 pb-0 flex flex-col flex-1">
+        {variant === 'detailed' && (
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+            {category?.name || 'Category'}
+          </p>
+        )}
+        
         <Link to={`/products/${slug}`} className="text-[13px] font-bold text-[#111827] line-clamp-1 hover:text-[#1E3A2B] transition-colors mb-1.5 leading-snug">
           {name}
         </Link>
@@ -81,6 +92,13 @@ export const ProductCard = ({ product }) => {
           </div>
           <span>4.8 (125)</span>
         </div>
+
+        {variant === 'detailed' && (
+          <div className="flex items-center text-[10px] text-gray-500 font-medium mt-auto mb-2">
+            <Store size={10} className="mr-1 opacity-70" />
+            <span className="truncate">{shop?.name}</span>
+          </div>
+        )}
       </div>
 
       {/* Price & Action */}
@@ -90,14 +108,17 @@ export const ProductCard = ({ product }) => {
           <span className="text-[10px] font-medium text-gray-400">{variantName}</span>
         </div>
         
-        <button 
+        <motion.button
+          whileHover={{ scale: 1.13, borderColor: '#00B259', color: '#00B259' }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 18 }}
           disabled={isOutOfStock || isAdding}
           onClick={handleAddToCart}
-          className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center bg-white text-gray-500 hover:border-[#1E3A2B] hover:text-[#1E3A2B] transition-all disabled:opacity-50 shadow-sm"
+          className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center bg-white text-gray-500 transition-colors disabled:opacity-50 shadow-sm"
         >
           <ShoppingCart size={14} className="stroke-[2.5]" />
-        </button>
+        </motion.button>
       </div>
-    </div>
+    </motion.div>
   );
 };

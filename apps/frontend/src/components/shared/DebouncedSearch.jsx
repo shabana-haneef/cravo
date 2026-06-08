@@ -25,13 +25,13 @@ export const DebouncedSearch = ({ onSearch, placeholder = 'Search...', className
   };
 
   return (
-    <form onSubmit={handleSubmit} className={`relative w-full ${className}`}>
+    <form onSubmit={handleSubmit} className="relative w-full">
       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
         <Search className="h-5 w-5 text-gray-400" />
       </div>
       <input
         type="text"
-        className="block w-full pl-10 pr-3 py-3 border border-transparent rounded-xl leading-5 bg-white shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-shadow"
+        className={`block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white shadow-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#00B259] focus:border-[#00B259] sm:text-sm transition-shadow ${className}`}
         placeholder={placeholder}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
