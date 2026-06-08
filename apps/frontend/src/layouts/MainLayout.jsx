@@ -3,7 +3,7 @@ import { Outlet, Link, useNavigate, NavLink } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store.js';
 import { useCartStore } from '../store/cart.store.js';
 import { useLogout } from '../features/auth/hooks/useAuthQueries.js';
-import { ShoppingCart, User, LogOut, Store, Package, Box, ChevronDown } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Store, Package, Box, ChevronDown, Search } from 'lucide-react';
 import { Button } from '../components/ui/Button.jsx';
 
 export const MainLayout = () => {
@@ -23,21 +23,31 @@ export const MainLayout = () => {
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-[1536px] w-full px-4 sm:px-6 lg:px-8 mx-auto h-16 flex items-center justify-between gap-4">
-          {/* Logo & Primary Nav */}
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-[#00B259] tracking-tight">
+        <div className="max-w-[1536px] w-full px-4 sm:px-6 lg:px-8 mx-auto h-20 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-6">
+            <Link to="/" className="flex items-center gap-2 text-2xl font-extrabold text-[#00B259] tracking-tight">
               <Store size={26} className="stroke-[2.5]" />
               Cravo
             </Link>
             
-            <div className="hidden md:block h-6 w-px bg-gray-200 mx-6"></div>
-            
-            <nav className="hidden md:flex">
-              <NavLink to="/products" className="text-[15px] font-medium text-gray-500 hover:text-gray-900 transition-colors">
+            <nav className="hidden md:flex items-center gap-2 ml-4">
+              <Store size={18} className="text-[#00B259]" />
+              <NavLink to="/products" className="text-[14px] font-bold text-[#111827] hover:text-[#00B259] transition-colors">
                 Browse Market
               </NavLink>
             </nav>
+          </div>
+
+          {/* Central Search Bar */}
+          <div className="hidden lg:flex flex-1 max-w-xl mx-8">
+            <div className="w-full flex items-center bg-[#F8FAF8] border border-gray-100 rounded-lg px-4 py-2.5 transition-colors focus-within:bg-white focus-within:border-[#00B259] focus-within:ring-2 focus-within:ring-[#00B259]/20 shadow-sm">
+              <input 
+                type="text"
+                placeholder="Search for fresh vegetables, homemade cakes..."
+                className="w-full bg-transparent text-[13px] text-gray-800 placeholder-gray-400 outline-none"
+              />
+              <Search size={18} className="text-gray-400 shrink-0 ml-2" />
+            </div>
           </div>
 
           <div className="flex items-center gap-4 sm:gap-6">
@@ -48,7 +58,7 @@ export const MainLayout = () => {
             >
               <ShoppingCart size={22} className="stroke-[2]" />
               {itemCount > 0 && (
-                <span className="absolute top-0 right-0 bg-[#D35400] text-white text-[10px] font-bold rounded-full h-[18px] w-[18px] flex items-center justify-center leading-none shadow-sm border-2 border-white">
+                <span className="absolute top-0 right-0 bg-[#E67E22] text-white text-[10px] font-bold rounded-full h-[18px] w-[18px] flex items-center justify-center leading-none shadow-sm border-2 border-white">
                   {itemCount > 99 ? '99+' : itemCount}
                 </span>
               )}
@@ -69,7 +79,7 @@ export const MainLayout = () => {
                     </NavLink>
                   </>
                 ) : (
-                  <NavLink to="/seller/application" className={`hidden md:flex items-center gap-2 bg-[#FFF4E6] text-[#D35400] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#FFE8CC] transition-colors`}>
+                  <NavLink to="/seller/application" className={`hidden md:flex items-center gap-2 bg-[#FFF9F2] text-[#E67E22] border border-[#FFE8CC] px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-[#FFE8CC] transition-colors shadow-sm`}>
                     <Store size={16} /> Sell on Cravo
                   </NavLink>
                 )}

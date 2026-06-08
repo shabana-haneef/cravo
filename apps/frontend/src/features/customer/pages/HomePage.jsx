@@ -16,16 +16,15 @@ export const HomePage = () => {
   const featuredProducts = prodData?.data?.products || [];
 
   return (
-    <div className="pb-12">
+    <div className="flex flex-col gap-12 w-full">
       {/* Hero Section */}
-      <section className="relative rounded-3xl overflow-hidden mt-2 min-h-[500px] flex items-center justify-center bg-[#1E293B]">
-        <div className="absolute inset-0">
-          <img 
-            src="/hero-bg.png" 
-            alt="Farmers market" 
-            className="w-full h-full object-cover opacity-40 mix-blend-overlay"
-          />
-        </div>
+      <section className="relative w-[100vw] h-[calc(100vh-80px)] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] -mt-8 overflow-hidden flex flex-col items-center justify-center p-8 bg-black">
+        <img 
+          src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=1600&q=80" 
+          alt="Fresh produce" 
+          className="absolute inset-0 w-full h-full object-cover opacity-50"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
         
         <div className="relative px-6 py-12 sm:px-12 z-10 flex flex-col items-center text-center w-full max-w-4xl mx-auto">
           <span className="px-4 py-1.5 rounded-full bg-white text-[#111827] text-xs font-bold mb-5 flex items-center gap-1.5">
@@ -51,12 +50,12 @@ export const HomePage = () => {
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-2.5 text-[12px] text-white">
-            <span className="font-bold mr-1">Popular:</span>
-            <button className="px-3.5 py-1.5 rounded-full border border-white/20 hover:bg-white hover:text-gray-900 transition-colors">Organic Vegetables</button>
-            <button className="px-3.5 py-1.5 rounded-full border border-white/20 hover:bg-white hover:text-gray-900 transition-colors">Fresh Fruits</button>
-            <button className="px-3.5 py-1.5 rounded-full border border-white/20 hover:bg-white hover:text-gray-900 transition-colors">Homemade Bakery</button>
-            <button className="px-3.5 py-1.5 rounded-full border border-white/20 hover:bg-white hover:text-gray-900 transition-colors hidden sm:block">Dairy Products</button>
+          <div className="flex flex-wrap items-center justify-center gap-2.5 text-[12px] text-white/90">
+            <span className="font-semibold mr-1">Popular:</span>
+            <button className="px-4 py-1.5 rounded-full bg-black/40 hover:bg-black/60 transition-colors">Organic Vegetables</button>
+            <button className="px-4 py-1.5 rounded-full bg-black/40 hover:bg-black/60 transition-colors">Fresh Fruits</button>
+            <button className="px-4 py-1.5 rounded-full bg-black/40 hover:bg-black/60 transition-colors">Homemade Cakes</button>
+            <button className="px-4 py-1.5 rounded-full bg-black/40 hover:bg-black/60 transition-colors hidden sm:block">Dairy Products</button>
           </div>
         </div>
       </section>
@@ -81,18 +80,22 @@ export const HomePage = () => {
                 <Link 
                   key={category.id} 
                   to={`/products?category=${category.slug}`}
-                  className="flex flex-col items-center min-w-[140px] sm:min-w-[160px] snap-start group bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-50 p-6 hover:-translate-y-1 transition-all duration-300"
+                  className="flex flex-col items-center min-w-[150px] sm:min-w-[180px] snap-start group bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-50 py-4 px-6 hover:-translate-y-1 transition-all duration-300"
                 >
-                  <div className="w-20 h-20 rounded-full overflow-hidden bg-[#F6F9F6] mb-4 flex items-center justify-center p-2 group-hover:scale-110 transition-transform duration-300">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden bg-[#F8FAF8] mb-3 flex items-center justify-center p-3 group-hover:scale-105 transition-transform duration-300">
                     <img 
                       src={category.imageUrl || 'https://via.placeholder.com/150'} 
                       alt={category.name}
                       className="w-full h-full object-contain mix-blend-multiply"
                     />
                   </div>
-                  <span className="text-[14px] font-bold text-[#111827] text-center leading-tight">
-                    {category.name?.split(' ').map((word, idx) => <React.Fragment key={idx}>{word}<br/></React.Fragment>)}
-                  </span>
+                  <div className="text-center leading-tight">
+                    {category.name?.split(' ').map((word, idx) => (
+                      <span key={idx} className={idx === 0 ? "block text-[14px] font-extrabold text-[#111827]" : "block text-[13px] font-semibold text-gray-500 mt-0.5"}>
+                        {word}
+                      </span>
+                    ))}
+                  </div>
                 </Link>
               ))
             ) : (
@@ -133,73 +136,89 @@ export const HomePage = () => {
       </section>
 
       {/* Support Local Businesses Banner */}
-      <section className="mt-12 bg-[#F0FDF4] rounded-3xl p-8 sm:p-12 border border-[#C8E6C9] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#00B259]/10 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-[#00B259]/10 to-transparent rounded-full blur-3xl translate-y-1/2 -translate-x-1/3"></div>
+      <section className="mt-12 bg-[#F3FAF5] rounded-[24px] p-8 sm:p-12 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
+        {/* Background Gradients */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-[#E8F5E9]/50 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-[#E8F5E9]/50 to-transparent rounded-full blur-3xl translate-y-1/2 -translate-x-1/3"></div>
         
-        <div className="relative z-10 flex items-center gap-10">
-          <div className="hidden md:block w-48 h-48 rounded-full overflow-hidden shrink-0 border-4 border-white shadow-xl">
-            <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80" alt="Basket" className="w-full h-full object-cover" />
+        {/* Floating Blurred Leaves (SVG) */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[24px]">
+          {/* Top small leaf */}
+          <svg viewBox="0 0 100 100" fill="#88C057" className="absolute right-24 top-6 w-6 h-6 -rotate-12 blur-[2px] opacity-80" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 0 100 C 0 0, 100 0, 100 0 C 100 100, 0 100, 0 100 Z" />
+          </svg>
+          {/* Middle small leaf */}
+          <svg viewBox="0 0 100 100" fill="#88C057" className="absolute right-36 top-16 w-5 h-5 rotate-[60deg] blur-[1px] opacity-70" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 0 100 C 0 0, 100 0, 100 0 C 100 100, 0 100, 0 100 Z" />
+          </svg>
+          {/* Right large leaf */}
+          <svg viewBox="0 0 100 100" fill="#88C057" className="absolute -right-4 top-20 w-20 h-20 -rotate-12 blur-[4px] opacity-80" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 0 100 C 0 0, 100 0, 100 0 C 100 100, 0 100, 0 100 Z" />
+          </svg>
+          {/* Bottom large leaf */}
+          <svg viewBox="0 0 100 100" fill="#6B9F36" className="absolute right-12 bottom-6 w-16 h-16 rotate-[25deg] blur-[3px] opacity-90" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 0 100 C 0 0, 100 0, 100 0 C 100 100, 0 100, 0 100 Z" />
+          </svg>
+        </div>
+        
+        <div className="relative z-10 flex flex-col md:flex-row items-center gap-10 w-full md:w-auto">
+          <div className="hidden md:block w-44 h-44 rounded-full overflow-hidden shrink-0 shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/50">
+            <img src="https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=500&q=80" alt="Grocery Shelf" className="w-full h-full object-cover" />
           </div>
-          <div className="text-left">
-            <h2 className="text-3xl font-extrabold text-[#111827] mb-4 font-serif">Support Local Businesses</h2>
-            <p className="text-gray-600 max-w-xl mb-8 leading-relaxed text-[15px]">
+          <div className="text-left max-w-lg">
+            <h2 className="text-[28px] sm:text-[32px] font-extrabold text-[#0B1527] mb-3 font-serif leading-tight">Support Local Businesses</h2>
+            <p className="text-[#5B6B79] mb-6 leading-relaxed text-[14px]">
               Cravo connects you directly with passionate home-chefs, farmers, and boutique stores in your neighborhood.
             </p>
-            <Link to="/seller/application" className="inline-flex items-center px-6 py-3 bg-[#00B259] text-white font-bold rounded-full hover:bg-[#009B4E] transition-colors shadow-lg shadow-[#00B259]/20 text-sm">
-              Join the Community <ArrowRight size={16} className="ml-2" />
+            <Link to="/seller/application" className="inline-flex items-center px-5 py-2.5 bg-[#00B259] text-white font-bold rounded-full hover:bg-[#009B4E] transition-colors shadow-sm text-[13px]">
+              Join the Community <ArrowRight size={16} className="ml-1.5" />
             </Link>
           </div>
         </div>
 
-        <div className="relative z-10 flex flex-col items-center sm:items-end">
-          <div className="flex -space-x-4 mb-3">
-            <img className="w-12 h-12 rounded-full border-2 border-[#F0FDF4] shadow-sm object-cover" src="https://ui-avatars.com/api/?name=S+K&background=00B259&color=fff" alt="" />
-            <img className="w-12 h-12 rounded-full border-2 border-[#F0FDF4] shadow-sm object-cover" src="https://ui-avatars.com/api/?name=A+M&background=E67E22&color=fff" alt="" />
-            <img className="w-12 h-12 rounded-full border-2 border-[#F0FDF4] shadow-sm object-cover" src="https://ui-avatars.com/api/?name=R+P&background=B88645&color=fff" alt="" />
-            <img className="w-12 h-12 rounded-full border-2 border-[#F0FDF4] shadow-sm object-cover" src="https://ui-avatars.com/api/?name=J+D&background=111827&color=fff" alt="" />
+        <div className="relative z-10 flex items-center gap-4 shrink-0 mr-12">
+          <div className="flex -space-x-3">
+            <img className="w-12 h-12 rounded-full border-[3px] border-[#F3FAF5] shadow-sm object-cover relative z-40" src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&q=80" alt="Seller" />
+            <img className="w-12 h-12 rounded-full border-[3px] border-[#F3FAF5] shadow-sm object-cover relative z-30" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80" alt="Seller" />
+            <img className="w-12 h-12 rounded-full border-[3px] border-[#F3FAF5] shadow-sm object-cover relative z-20" src="https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&q=80" alt="Seller" />
+            <img className="w-12 h-12 rounded-full border-[3px] border-[#F3FAF5] shadow-sm object-cover relative z-10" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80" alt="Seller" />
           </div>
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Join 1000+ <br/>local sellers</span>
+          <div className="text-left ml-1">
+            <span className="text-[13px] font-bold text-[#1E293B] block">Join 1000+</span>
+            <span className="text-[13px] font-medium text-[#64748B] block">local sellers</span>
+          </div>
         </div>
       </section>
 
       {/* Bottom Features Bar */}
-      <div className="mt-12 pt-8 border-t border-gray-100/80">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border border-[#00B259]/20 text-[#00B259]">
-              <Leaf size={18} />
-            </div>
+      <div className="mt-12 pt-8 border-t border-gray-100/80 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 px-4">
+          <div className="flex items-center justify-center gap-3">
+            <Leaf size={24} className="text-[#00B259] shrink-0 stroke-[2]" />
             <div>
-              <p className="text-[13px] font-semibold text-[#111827]">100% Organic</p>
-              <p className="text-[10px] text-gray-500 mt-0.5">Certified organic produce</p>
+              <p className="text-[14px] font-extrabold text-[#111827]">100% Organic</p>
+              <p className="text-[11px] font-medium text-gray-500 mt-0.5">Certified organic produce</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border border-[#00B259]/20 text-[#00B259]">
-              <Truck size={18} />
-            </div>
+          <div className="flex items-center justify-center gap-3">
+            <Truck size={24} className="text-[#00B259] shrink-0 stroke-[2]" />
             <div>
-              <p className="text-[13px] font-semibold text-[#111827]">Fast Delivery</p>
-              <p className="text-[10px] text-gray-500 mt-0.5">Quick and safe delivery</p>
+              <p className="text-[14px] font-extrabold text-[#111827]">Fast Delivery</p>
+              <p className="text-[11px] font-medium text-gray-500 mt-0.5">Quick and safe delivery</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border border-[#00B259]/20 text-[#00B259]">
-              <ShieldCheck size={18} />
-            </div>
+          <div className="flex items-center justify-center gap-3">
+            <ShieldCheck size={24} className="text-[#00B259] shrink-0 stroke-[2]" />
             <div>
-              <p className="text-[13px] font-semibold text-[#111827]">Secure Payment</p>
-              <p className="text-[10px] text-gray-500 mt-0.5">100% secure checkout</p>
+              <p className="text-[14px] font-extrabold text-[#111827]">Secure Payment</p>
+              <p className="text-[11px] font-medium text-gray-500 mt-0.5">100% secure checkout</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border border-[#00B259]/20 text-[#00B259]">
-              <RefreshCcw size={18} />
-            </div>
+          <div className="flex items-center justify-center gap-3">
+            <RefreshCcw size={24} className="text-[#00B259] shrink-0 stroke-[2]" />
             <div>
-              <p className="text-[13px] font-semibold text-[#111827]">Easy Returns</p>
-              <p className="text-[10px] text-gray-500 mt-0.5">Hassle free returns</p>
+              <p className="text-[14px] font-extrabold text-[#111827]">Easy Returns</p>
+              <p className="text-[11px] font-medium text-gray-500 mt-0.5">Hassle-free returns</p>
             </div>
           </div>
         </div>

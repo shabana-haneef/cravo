@@ -67,50 +67,35 @@ export const ProductCard = ({ product }) => {
       </Link>
       
       {/* Product Details */}
-      <div className="px-3 pt-1.5 pb-0.5 flex flex-col flex-1">
-        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
-          {category?.name || 'Category'}
-        </p>
-        
-        <Link to={`/products/${slug}`} className="text-sm font-bold text-[#111827] line-clamp-1 hover:text-[#1E3A2B] transition-colors mb-1 leading-snug">
+      <div className="px-3 pt-2 pb-0 flex flex-col flex-1">
+        <Link to={`/products/${slug}`} className="text-[13px] font-bold text-[#111827] line-clamp-1 hover:text-[#1E3A2B] transition-colors mb-1.5 leading-snug">
           {name}
         </Link>
 
         {/* Ratings */}
-        <div className="flex items-center gap-1 mb-1 text-[10px] text-gray-500 font-medium">
-          <div className="flex text-[#FFB800] gap-0">
+        <div className="flex items-center gap-1.5 mb-2 text-[10px] text-gray-500 font-medium">
+          <div className="flex text-[#FFB800] gap-0.5">
             {[1, 2, 3, 4, 5].map(star => (
-              <Star key={star} size={10} fill="currentColor" stroke="currentColor" />
+              <Star key={star} size={11} fill="currentColor" stroke="currentColor" />
             ))}
           </div>
-          <span>(4.8)</span>
-          <span className="text-gray-300">•</span>
-          <span>125 Rev</span>
-        </div>
-        
-        {/* Shop Info */}
-        <div className="flex items-center text-[10px] text-gray-500 font-medium">
-          <Store size={10} className="mr-1 opacity-70" />
-          <span className="truncate">{shop?.name}</span>
+          <span>4.8 (125)</span>
         </div>
       </div>
 
-      <div className="h-px bg-gray-100/80 mx-3 my-1"></div>
-
       {/* Price & Action */}
-      <div className="px-3 pb-2 pt-0.5 flex items-end justify-between mt-auto">
+      <div className="px-3 pb-3 flex items-end justify-between mt-auto">
         <div className="flex flex-col">
-          <span className="text-sm font-bold text-[#B88645] leading-none mb-0.5">₹{price.toFixed(2)}</span>
-          <span className="text-[9px] font-medium text-gray-400">{variantName}</span>
+          <span className="text-[15px] font-bold text-[#B88645] leading-none mb-1">₹{price.toFixed(2)}</span>
+          <span className="text-[10px] font-medium text-gray-400">{variantName}</span>
         </div>
         
         <button 
           disabled={isOutOfStock || isAdding}
           onClick={handleAddToCart}
-          className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center bg-white text-gray-600 hover:border-[#1E3A2B] hover:text-[#1E3A2B] transition-all disabled:opacity-50 relative group shadow-sm"
+          className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center bg-white text-gray-500 hover:border-[#1E3A2B] hover:text-[#1E3A2B] transition-all disabled:opacity-50 shadow-sm"
         >
-          <ShoppingCart size={14} className="stroke-[2]" />
-          <span className="absolute bottom-1 right-1 text-[#E67E22] text-[10px] font-bold leading-none group-hover:text-[#D35400]">+</span>
+          <ShoppingCart size={14} className="stroke-[2.5]" />
         </button>
       </div>
     </div>
