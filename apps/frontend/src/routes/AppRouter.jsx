@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { ProtectedRoute, RoleRoute, PublicRoute } from './guards/AuthGuards.jsx';
 import { LoadingScreen } from '../components/ui/LoadingScreen.jsx';
 import { MainLayout } from '../layouts/MainLayout.jsx';
+import { SellerLayout } from '../layouts/SellerLayout.jsx';
 
 // Lazy load auth pages
 const LoginPage = React.lazy(() => import('../features/auth/pages/LoginPage.jsx').then(m => ({ default: m.LoginPage })));
@@ -24,6 +25,17 @@ const OrderSuccessPage = React.lazy(() => import('../features/orders/pages/Order
 // Lazy load profile/account pages
 const ProfilePage = React.lazy(() => import('../features/users/pages/ProfilePage.jsx').then(m => ({ default: m.ProfilePage })));
 const AddressesPage = React.lazy(() => import('../features/users/pages/AddressesPage.jsx').then(m => ({ default: m.AddressesPage })));
+
+// Lazy load seller pages
+const BecomeSellerPage = React.lazy(() => import('../features/sellers/pages/BecomeSellerPage.jsx').then(m => ({ default: m.BecomeSellerPage })));
+const SellerApplicationContainer = React.lazy(() => import('../features/sellers/pages/SellerApplicationContainer.jsx').then(m => ({ default: m.SellerApplicationContainer })));
+const ProductsDashboardPage = React.lazy(() => import('../features/sellers/pages/ProductsDashboardPage.jsx').then(m => ({ default: m.ProductsDashboardPage })));
+const CreateProductPage = React.lazy(() => import('../features/sellers/pages/CreateProductPage.jsx').then(m => ({ default: m.CreateProductPage })));
+const EditProductPage = React.lazy(() => import('../features/sellers/pages/EditProductPage.jsx').then(m => ({ default: m.EditProductPage })));
+const InventoryDashboardPage = React.lazy(() => import('../features/inventory/pages/InventoryDashboardPage.jsx').then(m => ({ default: m.InventoryDashboardPage })));
+const InventoryHistoryPage = React.lazy(() => import('../features/inventory/pages/InventoryHistoryPage.jsx').then(m => ({ default: m.InventoryHistoryPage })));
+const SellerDashboardPage = React.lazy(() => import('../features/seller/pages/SellerDashboardPage.jsx').then(m => ({ default: m.SellerDashboardPage })));
+const SellerOrdersPage = React.lazy(() => import('../features/orders/pages/SellerOrdersPage.jsx').then(m => ({ default: m.SellerOrdersPage })));
 
 const S = ({ children }) => <Suspense fallback={<LoadingScreen />}>{children}</Suspense>;
 
@@ -48,6 +60,7 @@ const router = createBrowserRouter([
       { path: '/', element: <S><HomePage /></S> },
       { path: '/products', element: <S><ProductListingPage /></S> },
       { path: '/products/:slug', element: <S><ProductDetailsPage /></S> },
+      { path: '/become-seller', element: <S><BecomeSellerPage /></S> },
 
       // Protected customer routes (nested under MainLayout)
       {
@@ -58,21 +71,40 @@ const router = createBrowserRouter([
           { path: '/orders/success', element: <S><OrderSuccessPage /></S> },
           { path: '/profile', element: <S><ProfilePage /></S> },
           { path: '/addresses', element: <S><AddressesPage /></S> },
+          { path: '/seller/application', element: <S><SellerApplicationContainer /></S> },
         ]
       }
     ]
   },
 
-  // Protected routes without MainLayout (seller/admin dashboards)
+  // Protected seller routes (with dedicated SellerLayout, OUTSIDE MainLayout)
   {
     element: <ProtectedRoute />,
     children: [
       {
-        element: <RoleRoute allowedRoles={['SELLER']} />,
+        element: <SellerLayout />,
         children: [
-          { path: '/seller/dashboard', element: <div>Seller Dashboard</div> }
+          {
+            element: <RoleRoute allowedRoles={['SELLER']} />,
+            children: [
+              { path: '/seller/dashboard', element: <S><SellerDashboardPage /></S> },
+              { path: '/seller/products', element: <S><ProductsDashboardPage /></S> },
+              { path: '/seller/products/new', element: <S><CreateProductPage /></S> },
+              { path: '/seller/products/:id/edit', element: <S><EditProductPage /></S> },
+              { path: '/seller/inventory', element: <S><InventoryDashboardPage /></S> },
+              { path: '/seller/inventory/:variantId/history', element: <S><InventoryHistoryPage /></S> },
+              { path: '/seller/orders', element: <S><SellerOrdersPage /></S> },
+            ]
+          }
         ]
-      },
+      }
+    ]
+  },
+
+  // Admin routes (no MainLayout)
+  {
+    element: <ProtectedRoute />,
+    children: [
       {
         element: <RoleRoute allowedRoles={['ADMIN']} />,
         children: [

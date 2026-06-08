@@ -3,7 +3,7 @@ import { Outlet, Link, useNavigate, NavLink } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store.js';
 import { useCartStore } from '../store/cart.store.js';
 import { useLogout } from '../features/auth/hooks/useAuthQueries.js';
-import { ShoppingCart, User, LogOut, Store } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Store, Package, Box, ChevronDown } from 'lucide-react';
 import { Button } from '../components/ui/Button.jsx';
 
 export const MainLayout = () => {
@@ -23,52 +23,72 @@ export const MainLayout = () => {
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Navbar */}
       <header className="bg-white shadow-sm sticky top-0 z-40 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center gap-2 text-2xl font-extrabold text-primary-600 tracking-tight">
-              <Store size={24} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[72px] flex items-center justify-between">
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-[#00B259] tracking-tight">
+              <Store size={26} className="stroke-[2.5]" />
               Cravo
             </Link>
-            <nav className="hidden md:flex gap-6">
-              <NavLink to="/products" className={navLinkClass}>Browse Market</NavLink>
+            
+            <div className="hidden md:block h-6 w-px bg-gray-200 mx-6"></div>
+            
+            <nav className="hidden md:flex">
+              <NavLink to="/products" className="text-[15px] font-medium text-gray-500 hover:text-gray-900 transition-colors">
+                Browse Market
+              </NavLink>
             </nav>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-4 sm:gap-6">
             {/* Cart Icon with Badge */}
             <Link
               to="/cart"
-              className="relative p-2 text-gray-600 hover:bg-primary-50 hover:text-primary-600 rounded-full transition-colors"
+              className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
-              <ShoppingCart size={22} />
+              <ShoppingCart size={22} className="stroke-[2]" />
               {itemCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-primary-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center leading-none">
+                <span className="absolute top-0 right-0 bg-[#D35400] text-white text-[10px] font-bold rounded-full h-[18px] w-[18px] flex items-center justify-center leading-none shadow-sm border-2 border-white">
                   {itemCount > 99 ? '99+' : itemCount}
                 </span>
               )}
             </Link>
 
             {isAuthenticated ? (
-              <div className="flex items-center gap-2">
-                {user?.role === 'SELLER' && (
-                  <NavLink to="/seller/dashboard" className={`hidden md:flex items-center gap-1 text-sm font-medium ${navLinkClass({ isActive: false })}`}>
-                    <Store size={16} /> Shop
+              <div className="flex items-center gap-5">
+                {user?.role === 'SELLER' ? (
+                  <>
+                    <NavLink to="/seller/inventory" className={`hidden md:flex items-center gap-1 text-sm font-medium ${navLinkClass({ isActive: false })}`}>
+                      <Box size={16} /> Inventory
+                    </NavLink>
+                    <NavLink to="/seller/products" className={`hidden md:flex items-center gap-1 text-sm font-medium ${navLinkClass({ isActive: false })}`}>
+                      <Package size={16} /> Products
+                    </NavLink>
+                    <NavLink to="/seller/dashboard" className={`hidden md:flex items-center gap-1 text-sm font-medium ${navLinkClass({ isActive: false })}`}>
+                      <Store size={16} /> My Shop
+                    </NavLink>
+                  </>
+                ) : (
+                  <NavLink to="/seller/application" className={`hidden md:flex items-center gap-2 bg-[#FFF4E6] text-[#D35400] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#FFE8CC] transition-colors`}>
+                    <Store size={16} /> Sell on Cravo
                   </NavLink>
                 )}
+                
                 <Link
                   to="/profile"
-                  className="hidden md:flex items-center gap-1 text-sm text-gray-600 hover:text-primary-600 font-medium transition-colors"
+                  className="hidden md:flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 font-semibold transition-colors"
                 >
-                  <User size={16} />
-                  <span className="max-w-[100px] truncate">{user.email.split('@')[0]}</span>
+                  <User size={18} className="stroke-[2]" />
+                  <span className="max-w-[120px] truncate">{user.email.split('@')[0]}</span>
+                  <ChevronDown size={14} className="text-gray-400" />
                 </Link>
+
                 <button
                   onClick={handleLogout}
                   disabled={isPending}
-                  className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
+                  className="p-2.5 rounded-xl border border-gray-200 bg-gray-50/50 text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors disabled:opacity-50"
                   title="Logout"
                 >
-                  <LogOut size={18} />
+                  <LogOut size={18} className="stroke-[2]" />
                 </button>
               </div>
             ) : (

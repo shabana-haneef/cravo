@@ -24,8 +24,9 @@ export const orderController = {
   async getMyOrders(req, res, next) {
     try {
       const page = parseInt(req.query.page) || 1;
-      const orders = await orderService.getMyOrders(req.user.id, page);
-      return successResponse(res, 'Orders retrieved', { orders });
+      const limit = parseInt(req.query.limit) || 20;
+      const result = await orderService.getMyOrders(req.user.id, page, limit);
+      return successResponse(res, 'Orders retrieved', { orders: result.data, meta: result.meta });
     } catch (error) { next(error); }
   },
 
@@ -39,8 +40,9 @@ export const orderController = {
   async getSellerOrders(req, res, next) {
     try {
       const page = parseInt(req.query.page) || 1;
-      const orders = await orderService.getSellerOrders(req.user.id, page);
-      return successResponse(res, 'Seller orders retrieved', { orders });
+      const limit = parseInt(req.query.limit) || 20;
+      const result = await orderService.getSellerOrders(req.user.id, page, limit);
+      return successResponse(res, 'Seller orders retrieved', { orders: result.data, meta: result.meta });
     } catch (error) { next(error); }
   },
 

@@ -34,16 +34,26 @@ export const productRepository = {
       }
     });
   },
-  async findByShopId(shopId) {
-    return prisma.product.findMany({
-      where: { shopId, status: { not: 'ARCHIVED' } },
-      include: {
-        images: { orderBy: { sortOrder: 'asc' } },
-        variants: true,
-        category: true
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+  async findByShopId(shopId, page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+    const where = { shopId, status: { not: 'ARCHIVED' } };
+
+    const [data, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          images: { orderBy: { sortOrder: 'asc' } },
+          variants: { include: { inventory: true } },
+          category: true
+        },
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.product.count({ where })
+    ]);
+
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   },
   async findPendingApplications() {
     return prisma.product.findMany({
@@ -59,7 +69,8 @@ export const productRepository = {
     const count = await prisma.product.count({ where: { slug } });
     return count > 0;
   },
-  async searchPublicProducts(filters, sort) {
+  async searchPublicProducts(filters, sort, page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
     const where = { status: 'APPROVED' };
 
     if (filters.category) {
@@ -83,15 +94,22 @@ export const productRepository = {
 
     let orderBy = { createdAt: 'desc' };
 
-    return prisma.product.findMany({
-      where,
-      include: {
-        images: { orderBy: { sortOrder: 'asc' }, take: 1 }, 
-        variants: { where: { isActive: true }, orderBy: { price: 'asc' }, take: 1 },
-        category: true,
-        shop: true
-      },
-      orderBy
-    });
+    const [data, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          images: { orderBy: { sortOrder: 'asc' }, take: 1 }, 
+          variants: { where: { isActive: true }, orderBy: { price: 'asc' }, take: 1 },
+          category: true,
+          shop: true
+        },
+        orderBy
+      }),
+      prisma.product.count({ where })
+    ]);
+
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   }
 };

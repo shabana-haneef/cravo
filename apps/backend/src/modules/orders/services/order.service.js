@@ -8,8 +8,7 @@ import { logger } from '../../../shared/services/logger.js';
 
 export const orderService = {
   async getMyOrders(userId, page = 1, limit = 20) {
-    const skip = (page - 1) * limit;
-    return orderRepository.findCustomerOrders(userId, skip, limit);
+    return orderRepository.findCustomerOrders(userId, page, limit);
   },
 
   async getOrderById(userId, orderId) {
@@ -35,8 +34,7 @@ export const orderService = {
     const shop = await shopRepository.findBySellerId(seller.id);
     if (!shop) throw new AppError("Shop not found", 404);
 
-    const skip = (page - 1) * limit;
-    return orderRepository.findSellerOrders(shop.id, skip, limit);
+    return orderRepository.findSellerOrders(shop.id, page, limit);
   },
 
   async cancelOrder(userId, orderId) {

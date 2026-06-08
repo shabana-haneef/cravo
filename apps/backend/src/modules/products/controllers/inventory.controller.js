@@ -31,8 +31,8 @@ export const inventoryController = {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 20;
       
-      const history = await inventoryService.getHistory(req.user.id, req.params.variantId, page, limit);
-      return successResponse(res, 'Inventory history retrieved', { history });
+      const result = await inventoryService.getHistory(req.user.id, req.params.variantId, page, limit);
+      return successResponse(res, 'Inventory history retrieved', { history: result.transactions, meta: result.meta });
     } catch (error) { next(error); }
   }
 };

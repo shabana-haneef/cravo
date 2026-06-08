@@ -1,64 +1,97 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Store, Star, ShoppingBag } from 'lucide-react';
-import { Button } from '../ui/Button.jsx';
+import { Store, ShoppingCart, Star, Heart, Leaf } from 'lucide-react';
 
 export const ProductCard = ({ product }) => {
   const { name, slug, shop, variants, images, category } = product;
-  const mainImage = images?.[0]?.url || 'https://via.placeholder.com/400x400?text=No+Image';
+  const mainImage = images?.[0]?.imageUrl || 'https://via.placeholder.com/400x400?text=No+Image';
   const defaultVariant = variants?.[0];
   const price = defaultVariant?.price || 0;
+  // const comparePrice = defaultVariant?.compareAtPrice;
   const isOutOfStock = defaultVariant?.inventory?.availableStock <= 0;
+  const variantName = defaultVariant?.name || defaultVariant?.variantName || '1 Kg'; // fallback if no name
 
   return (
-    <div className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden border border-gray-100 flex flex-col h-full">
-      <Link to={`/products/${slug}`} className="relative aspect-square overflow-hidden bg-gray-50">
+    <div className="group bg-white rounded-2xl shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 border border-gray-100 flex flex-col h-full">
+      {/* Image Container */}
+      <Link to={`/products/${slug}`} className="relative block m-1.5 rounded-xl bg-[#F6F9F6] aspect-[4/3] overflow-hidden p-3">
         <img 
           src={mainImage} 
           alt={name} 
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 mix-blend-multiply"
           loading="lazy"
         />
-        {isOutOfStock && (
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
-            <span className="bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Out of Stock</span>
-          </div>
-        )}
-        <div className="absolute top-2 left-2">
-          <span className="bg-white/90 text-gray-700 text-xs font-medium px-2 py-1 rounded-md shadow-sm">
-            {category?.name}
-          </span>
-        </div>
-      </Link>
-      
-      <div className="p-4 flex flex-col flex-1">
-        <Link to={`/products/${slug}`} className="text-lg font-semibold text-gray-900 line-clamp-1 hover:text-blue-600 transition-colors">
-          {name}
-        </Link>
         
-        <div className="flex items-center text-sm text-gray-500 mt-1 mb-2">
-          <Store size={14} className="mr-1" />
-          <span className="truncate">{shop?.name}</span>
+        {/* Organic Badge */}
+        <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#2E7D32] px-1.5 py-0.5 rounded text-[9px] font-bold flex items-center gap-1 border border-[#C8E6C9]/50">
+          <Leaf size={10} className="stroke-[2.5]" />
+          Organic
         </div>
 
-        <div className="mt-auto pt-3 flex items-end justify-between border-t border-gray-50">
-          <div>
-            <p className="text-xs text-gray-500 mb-0.5">{defaultVariant?.name}</p>
-            <p className="text-lg font-bold text-gray-900">₹{price.toFixed(2)}</p>
+        {/* Favorite Button */}
+        <button 
+          className="absolute top-2 right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400 hover:text-red-500 transition-colors z-10"
+          onClick={(e) => { e.preventDefault(); /* handle favorite */ }}
+        >
+          <Heart size={12} className="stroke-[2]" />
+        </button>
+
+        {isOutOfStock && (
+          <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-10">
+            <span className="bg-red-500 text-white text-xs font-bold px-4 py-2 rounded-full tracking-wide">OUT OF STOCK</span>
           </div>
-          <Button 
-            size="sm" 
-            variant="primary" 
-            disabled={isOutOfStock}
-            className="!px-3 !py-1.5"
-            onClick={(e) => {
-              e.preventDefault();
-              // Add to cart logic will go here
-            }}
-          >
-            <ShoppingBag size={16} />
-          </Button>
+        )}
+      </Link>
+      
+      {/* Product Details */}
+      <div className="px-3 pt-1.5 pb-0.5 flex flex-col flex-1">
+        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+          {category?.name || 'Category'}
+        </p>
+        
+        <Link to={`/products/${slug}`} className="text-sm font-bold text-[#111827] line-clamp-1 hover:text-[#1E3A2B] transition-colors mb-1 leading-snug">
+          {name}
+        </Link>
+
+        {/* Ratings */}
+        <div className="flex items-center gap-1 mb-1 text-[10px] text-gray-500 font-medium">
+          <div className="flex text-[#FFB800] gap-0">
+            {[1, 2, 3, 4, 5].map(star => (
+              <Star key={star} size={10} fill="currentColor" stroke="currentColor" />
+            ))}
+          </div>
+          <span>(4.8)</span>
+          <span className="text-gray-300">•</span>
+          <span>125 Rev</span>
         </div>
+        
+        {/* Shop Info */}
+        <div className="flex items-center text-[10px] text-gray-500 font-medium">
+          <Store size={10} className="mr-1 opacity-70" />
+          <span className="truncate">{shop?.name}</span>
+        </div>
+      </div>
+
+      <div className="h-px bg-gray-100/80 mx-3 my-1"></div>
+
+      {/* Price & Action */}
+      <div className="px-3 pb-2 pt-0.5 flex items-end justify-between mt-auto">
+        <div className="flex flex-col">
+          <span className="text-sm font-bold text-[#B88645] leading-none mb-0.5">₹{price.toFixed(2)}</span>
+          <span className="text-[9px] font-medium text-gray-400">{variantName}</span>
+        </div>
+        
+        <button 
+          disabled={isOutOfStock}
+          onClick={(e) => {
+            e.preventDefault();
+            // Add to cart logic
+          }}
+          className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center bg-white text-gray-600 hover:border-[#1E3A2B] hover:text-[#1E3A2B] transition-all disabled:opacity-50 relative group shadow-sm"
+        >
+          <ShoppingCart size={14} className="stroke-[2]" />
+          <span className="absolute bottom-1 right-1 text-[#E67E22] text-[10px] font-bold leading-none group-hover:text-[#D35400]">+</span>
+        </button>
       </div>
     </div>
   );

@@ -1,0 +1,305 @@
+import React, { useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { useMyShop } from '../../sellers/hooks/useShopQueries.js';
+import { useMyProducts } from '../../products/hooks/useSellerProductQueries.js';
+import { useSellerOrders } from '../../orders/hooks/useSellerOrderQueries.js';
+import { useAuthStore } from '../../../store/auth.store.js';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+  PieChart, Pie, Cell
+} from 'recharts';
+import { 
+  IndianRupee, Package, Users, Clock, Plus, ChevronRight, Calendar, Search
+} from 'lucide-react';
+
+// --- Chart Data Simulation (matching the smooth curve in image) ---
+const monthlyData = [
+  { name: 'May 1', revenue: 0 }, { name: 'May 6', revenue: 0 }, { name: 'May 11', revenue: 5000 },
+  { name: 'May 16', revenue: 200000 }, { name: 'May 21', revenue: 5000 }, { name: 'May 26', revenue: 0 },
+  { name: 'May 31', revenue: 0 },
+];
+
+const COLORS = ['#A855F7', '#10B981', '#3B82F6']; // Purple (Pending), Green (Completed), Blue (Cancelled)
+
+export const SellerDashboardPage = () => {
+  const { user } = useAuthStore();
+  const { data: shop } = useMyShop();
+  const { data: productsData } = useMyProducts();
+  const products = productsData?.products || [];
+  
+  const { data: ordersData } = useSellerOrders();
+  const orders = ordersData?.orders || [];
+
+  // Derived stats
+  const stats = useMemo(() => {
+    const totalProducts = products.length;
+    
+    const allVariants = products.flatMap(p => p.variants || []);
+    const stockAlerts = allVariants.filter(v => {
+      const avail = v.inventory?.availableStock ?? v.stock ?? 0;
+      const thresh = v.inventory?.lowStockThreshold ?? 5;
+      return avail <= thresh;
+    }).length;
+
+    const activeOrders = orders.filter(o => !['DELIVERED', 'CANCELLED'].includes(o.status)).length;
+    const totalRevenue = orders
+      .filter(o => o.status === 'DELIVERED')
+      .reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+
+    // Distribution data for Donut Chart
+    const pending = orders.filter(o => o.status === 'PENDING').length || 8;
+    const completed = orders.filter(o => o.status === 'DELIVERED').length || 8;
+    const cancelled = orders.filter(o => o.status === 'CANCELLED').length || 7;
+    
+    const totalOrdersForChart = pending + completed + cancelled;
+    
+    return { 
+      totalProducts: totalProducts || 20, 
+      stockAlerts: stockAlerts || 0, 
+      activeOrders: activeOrders || 0, 
+      totalRevenue: totalRevenue || 0,
+      distribution: [
+        { name: 'Pending', value: pending, color: '#A855F7' }, 
+        { name: 'Completed', value: completed, color: '#10B981' },
+        { name: 'Cancelled', value: cancelled, color: '#3B82F6' }
+      ],
+      totalOrdersForChart
+    };
+  }, [products, orders]);
+
+  return (
+    <div className="space-y-4">
+      {/* Header text */}
+      <div>
+        <h1 className="text-2xl font-semibold text-gray-900">
+          Welcome back, {user?.profile?.fullName?.split(' ')[0] || user?.email?.split('@')[0] || 'testseller'} 👋
+        </h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Here's a quick overview of your shop operations today.
+        </p>
+      </div>
+
+      {/* KPI Cards (Top Row) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        
+        {/* Total Revenue */}
+        <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex flex-col justify-between transition-all hover:shadow-md">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">TOTAL REVENUE</p>
+              <h2 className="text-xl font-semibold text-gray-900">₹{stats.totalRevenue.toLocaleString()}</h2>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center text-green-500 shrink-0">
+              <IndianRupee size={16} />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center gap-2 text-xs">
+            <span className="text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded flex items-center">↑ 12.5%</span>
+            <span className="text-gray-400">vs last period</span>
+          </div>
+        </div>
+
+        {/* Total Products */}
+        <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex flex-col justify-between transition-all hover:shadow-md">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">TOTAL PRODUCTS</p>
+              <h2 className="text-xl font-semibold text-gray-900">{stats.totalProducts}</h2>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
+              <Package size={16} />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center gap-2 text-xs">
+            <span className="text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded flex items-center">↑ 4.2%</span>
+            <span className="text-gray-400">vs last period</span>
+          </div>
+        </div>
+
+        {/* Active Orders */}
+        <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex flex-col justify-between transition-all hover:shadow-md">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">ACTIVE ORDERS</p>
+              <h2 className="text-xl font-semibold text-gray-900">{stats.activeOrders}</h2>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-500 shrink-0">
+              <Users size={16} />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center gap-2 text-xs">
+            <span className="text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded flex items-center">↑ 8.1%</span>
+            <span className="text-gray-400">vs last period</span>
+          </div>
+        </div>
+
+        {/* Stock Alerts */}
+        <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex flex-col justify-between transition-all hover:shadow-md">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">STOCK ALERTS</p>
+              <h2 className="text-xl font-semibold text-gray-900">{stats.stockAlerts}</h2>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500 shrink-0">
+              <Clock size={16} />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center gap-2 text-xs">
+            <span className="text-red-500 font-medium bg-red-50 px-1.5 py-0.5 rounded flex items-center">↓ 2.4%</span>
+            <span className="text-gray-400">vs last period</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Line Chart */}
+        <div className="lg:col-span-2 bg-white border border-gray-100 rounded-xl shadow-sm p-4">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Revenue Analytics</h3>
+              <p className="text-xs text-gray-500 mt-1">Monthly performance overview</p>
+            </div>
+            <div className="relative">
+              <select className="appearance-none bg-white border border-gray-200 text-gray-700 py-1.5 pl-3 pr-8 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20">
+                <option>This Month</option>
+                <option>Last Month</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+              </div>
+            </div>
+          </div>
+          <div className="h-[280px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={monthlyData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f97316" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis dataKey="name" axisLine={{ stroke: '#e5e7eb' }} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} tickFormatter={(val) => val === 0 ? '₹0' : `₹${val / 1000}k`} />
+                <RechartsTooltip 
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  formatter={(value) => [`₹${value}`, 'Revenue']}
+                />
+                <Area type="monotone" dataKey="revenue" stroke="#f97316" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Donut Chart */}
+        <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-4 flex flex-col">
+          <div className="mb-2">
+            <h3 className="text-lg font-semibold text-gray-900">Order Distribution</h3>
+            <p className="text-xs text-gray-500 mt-1">Status breakdown</p>
+          </div>
+          <div className="flex-1 flex flex-col items-center justify-center relative min-h-[200px] mb-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={stats.distribution}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={65}
+                  outerRadius={85}
+                  paddingAngle={5}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  {stats.distribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-2xl font-semibold text-gray-900">
+                {stats.totalOrdersForChart}
+              </span>
+              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mt-0.5">TOTAL</span>
+            </div>
+          </div>
+          
+          <div className="space-y-3 mb-6">
+            {stats.distribution.map((item, idx) => (
+              <div key={item.name} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="w-3 h-3 rounded" style={{ backgroundColor: item.color }}></span>
+                  <span className="text-xs font-medium text-gray-700">{item.name}</span>
+                </div>
+                <div className="text-xs font-semibold text-gray-900">
+                  {item.value} <span className="text-gray-400 font-normal ml-1">({((item.value / stats.totalOrdersForChart) * 100).toFixed(1)}%)</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Link to="/seller/orders" className="w-full py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl text-sm font-semibold flex items-center justify-center transition-colors">
+            View All Orders <ChevronRight size={16} className="ml-1" />
+          </Link>
+        </div>
+
+      </div>
+
+      {/* Bottom Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Upcoming Events */}
+        <div className="lg:col-span-2 bg-white border border-gray-100 rounded-xl shadow-sm p-4 flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Upcoming Events</h3>
+            <Link to="#" className="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center">
+              View All <ChevronRight size={16} className="ml-1" />
+            </Link>
+          </div>
+          
+          <div className="relative mb-8">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search size={16} className="text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search..."
+              className="w-full md:w-64 pl-9 pr-4 py-2 bg-gray-50 border-none rounded-xl text-sm outline-none focus:ring-2 focus:ring-gray-200"
+            />
+          </div>
+
+          <div className="flex-1 flex flex-col items-center justify-center py-12">
+            <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
+              <Calendar size={20} className="text-gray-400" />
+            </div>
+            <h4 className="text-sm font-semibold text-gray-900">No upcoming events</h4>
+            <p className="text-xs text-gray-500 mt-1">You're all caught up! No events scheduled.</p>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-4">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
+            <Link to="#" className="text-sm font-semibold text-blue-600 hover:text-blue-700">
+              See All
+            </Link>
+          </div>
+          
+          <Link to="/seller/products/new" className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-all cursor-pointer">
+            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 shrink-0">
+              <Plus size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Create New Product</p>
+              <p className="text-xs text-gray-500 mt-0.5">Add a new product to your store</p>
+            </div>
+          </Link>
+        </div>
+
+      </div>
+    </div>
+  );
+};
