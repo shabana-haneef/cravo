@@ -39,7 +39,7 @@ export const productRepository = {
       where: { shopId, status: { not: 'ARCHIVED' } },
       include: {
         images: { orderBy: { sortOrder: 'asc' } },
-        variants: true,
+        variants: { include: { inventory: true } },
         category: true
       },
       orderBy: { createdAt: 'desc' }

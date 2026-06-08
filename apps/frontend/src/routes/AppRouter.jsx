@@ -31,6 +31,8 @@ const SellerApplicationContainer = React.lazy(() => import('../features/sellers/
 const ProductsDashboardPage = React.lazy(() => import('../features/sellers/pages/ProductsDashboardPage.jsx').then(m => ({ default: m.ProductsDashboardPage })));
 const CreateProductPage = React.lazy(() => import('../features/sellers/pages/CreateProductPage.jsx').then(m => ({ default: m.CreateProductPage })));
 const EditProductPage = React.lazy(() => import('../features/sellers/pages/EditProductPage.jsx').then(m => ({ default: m.EditProductPage })));
+const InventoryDashboardPage = React.lazy(() => import('../features/inventory/pages/InventoryDashboardPage.jsx').then(m => ({ default: m.InventoryDashboardPage })));
+const InventoryHistoryPage = React.lazy(() => import('../features/inventory/pages/InventoryHistoryPage.jsx').then(m => ({ default: m.InventoryHistoryPage })));
 
 const S = ({ children }) => <Suspense fallback={<LoadingScreen />}>{children}</Suspense>;
 
@@ -82,7 +84,9 @@ const router = createBrowserRouter([
           { path: '/seller/dashboard', element: <div>Seller Dashboard</div> },
           { path: '/seller/products', element: <S><ProductsDashboardPage /></S> },
           { path: '/seller/products/new', element: <S><CreateProductPage /></S> },
-          { path: '/seller/products/:id/edit', element: <S><EditProductPage /></S> }
+          { path: '/seller/products/:id/edit', element: <S><EditProductPage /></S> },
+          { path: '/seller/inventory', element: <S><InventoryDashboardPage /></S> },
+          { path: '/seller/inventory/:variantId/history', element: <S><InventoryHistoryPage /></S> }
         ]
       },
       {

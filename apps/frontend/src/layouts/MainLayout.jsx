@@ -3,7 +3,7 @@ import { Outlet, Link, useNavigate, NavLink } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store.js';
 import { useCartStore } from '../store/cart.store.js';
 import { useLogout } from '../features/auth/hooks/useAuthQueries.js';
-import { ShoppingCart, User, LogOut, Store, Package } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Store, Package, Box } from 'lucide-react';
 import { Button } from '../components/ui/Button.jsx';
 
 export const MainLayout = () => {
@@ -52,6 +52,9 @@ export const MainLayout = () => {
               <div className="flex items-center gap-2">
                 {user?.role === 'SELLER' ? (
                   <>
+                    <NavLink to="/seller/inventory" className={`hidden md:flex items-center gap-1 text-sm font-medium ${navLinkClass({ isActive: false })}`}>
+                      <Box size={16} /> Inventory
+                    </NavLink>
                     <NavLink to="/seller/products" className={`hidden md:flex items-center gap-1 text-sm font-medium ${navLinkClass({ isActive: false })}`}>
                       <Package size={16} /> Products
                     </NavLink>
