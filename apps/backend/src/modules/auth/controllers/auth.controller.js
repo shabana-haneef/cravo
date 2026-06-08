@@ -1,21 +1,25 @@
 import { authService } from '../services/auth.service.js';
-import { registerSchema, verifyEmailSchema, resendOtpSchema, loginSchema, refreshTokenSchema } from '../validators/auth.validation.js';
+import { 
+  registerSchema, 
+  verifyEmailSchema, 
+  resendOtpSchema, 
+  loginSchema, 
+  refreshTokenSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema
+} from '../validators/auth.validation.js';
 import { successResponse, errorResponse } from '../../../shared/responses/apiResponse.js';
 import { logger } from '../../../shared/services/logger.js';
 
-// Centralized Cookie Strategy for Refresh Tokens
 const cookieOptions = {
-  httpOnly: true, // Prevents XSS from reading the cookie
-  secure: process.env.NODE_ENV === 'production', // Requires HTTPS in production
-  sameSite: 'strict', // Prevents CSRF attacks
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days matching JWT expiry
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  maxAge: 7 * 24 * 60 * 60 * 1000, 
 };
 
 export const authController = {
-  // ==========================================
-  // Registration Flow
-  // ==========================================
-
+  // ... Registration Flow ...
   async register(req, res, next) {
     try {
       const parsed = registerSchema.safeParse(req.body);
@@ -71,6 +75,69 @@ export const authController = {
   },
 
   // ==========================================
+  // Password Recovery Flow
+  // ==========================================
+
+  async forgotPassword(req, res, next) {
+    try {
+      const parsed = forgotPasswordSchema.safeParse(req.body);
+      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
+
+      const { email } = parsed.data;
+      logger.info({ email }, 'Password reset requested');
+
+      await authService.forgotPassword(email);
+
+      // We log completion without knowing if it actually succeeded inside to prevent enumeration
+      logger.info({ email }, 'Password reset flow processed (if user existed)');
+      
+      // Generic zero-knowledge response
+      return successResponse(res, 'If an account exists, a reset code has been sent.');
+    } catch (error) {
+      logger.error({ email: req.body?.email, error: error.message }, 'Password reset request failed');
+      next(error);
+    }
+  },
+
+  async resetPassword(req, res, next) {
+    try {
+      const parsed = resetPasswordSchema.safeParse(req.body);
+      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
+
+      const { email, otp, newPassword } = parsed.data;
+      logger.info({ email }, 'Password reset attempt started');
+
+      await authService.resetPassword(email, otp, newPassword);
+
+      logger.info({ email }, 'Password reset completed successfully');
+      
+      return successResponse(res, 'Your password has been successfully reset. All active sessions have been logged out.');
+    } catch (error) {
+      logger.error({ email: req.body?.email, error: error.message }, 'Invalid reset attempt');
+      next(error);
+    }
+  },
+
+  async resendResetOtp(req, res, next) {
+    try {
+      const parsed = forgotPasswordSchema.safeParse(req.body);
+      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
+
+      const { email } = parsed.data;
+      logger.info({ email }, 'Resend password reset OTP requested');
+
+      await authService.resendResetOtp(email);
+
+      logger.info({ email }, 'Resend password reset OTP processed');
+      
+      return successResponse(res, 'If an account exists, a new reset code has been sent.');
+    } catch (error) {
+      logger.error({ email: req.body?.email, error: error.message }, 'Resend reset OTP failed');
+      next(error);
+    }
+  },
+
+  // ==========================================
   // Session Management Flow
   // ==========================================
 
@@ -80,14 +147,11 @@ export const authController = {
       if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
 
       const { email, password } = parsed.data;
-      
       const { user, accessToken, refreshToken } = await authService.login(email, password);
 
       logger.info({ userId: user.id }, 'User logged in successfully');
 
-      // Attach RT to cookies to decouple frontend storage from JS memory
       res.cookie('refreshToken', refreshToken, cookieOptions);
-
       return successResponse(res, 'Login successful', { user, accessToken });
     } catch (error) {
       logger.error({ email: req.body?.email, error: error.message }, 'Login failed');
@@ -97,23 +161,15 @@ export const authController = {
 
   async refreshToken(req, res, next) {
     try {
-      // Prioritize cookies, fallback to body
       let token = req.cookies?.refreshToken || req.body?.refreshToken;
-      
-      if (!token) {
-        return errorResponse(res, "Refresh token is required", 401);
-      }
+      if (!token) return errorResponse(res, "Refresh token is required", 401);
 
       const { accessToken, refreshToken } = await authService.refreshToken(token);
 
       logger.info('Token refreshed successfully');
-
-      // Rotate cookie
       res.cookie('refreshToken', refreshToken, cookieOptions);
-
       return successResponse(res, 'Token refreshed successfully', { accessToken });
     } catch (error) {
-      // Nuke the cookie if token is rejected to force re-login
       res.clearCookie('refreshToken');
       logger.error({ error: error.message }, 'Token refresh failed');
       next(error);
@@ -123,7 +179,6 @@ export const authController = {
   async logout(req, res, next) {
     try {
       let token = req.cookies?.refreshToken || req.body?.refreshToken;
-      
       await authService.logout(token);
       res.clearCookie('refreshToken');
       

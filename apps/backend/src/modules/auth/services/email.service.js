@@ -6,8 +6,6 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export const emailService = {
   /**
    * Sends a verification email containing the OTP
-   * @param {string} to - Recipient email address
-   * @param {string} otp - The 6-digit OTP
    */
   async sendVerificationEmail(to, otp) {
     try {
@@ -27,9 +25,33 @@ export const emailService = {
         `,
       });
     } catch (error) {
-      // We don't throw the error upwards to prevent leaking Resend implementation details
-      // Logging should be handled by the caller or global error handler
-      console.error("Failed to send email via Resend:", error.message);
+      console.error("Failed to send verification email via Resend:", error.message);
+    }
+  },
+
+  /**
+   * Sends a password reset email containing the OTP
+   */
+  async sendPasswordResetEmail(to, otp) {
+    try {
+      await resend.emails.send({
+        from: "Cravo Security <security@cravo.example.com>", // Replace with your verified domain
+        to,
+        subject: "Reset your Cravo password",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Password Reset Request</h2>
+            <p>We received a request to reset your password. Use the following code to reset it. This code is valid for 10 minutes.</p>
+            <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
+              ${otp}
+            </div>
+            <p>If you did not request a password reset, please safely ignore this email. Your password will remain unchanged.</p>
+          </div>
+        `,
+      });
+    } catch (error) {
+      // Do not throw the error to prevent leaking implementation details to client
+      console.error("Failed to send password reset email via Resend:", error.message);
     }
   }
 };

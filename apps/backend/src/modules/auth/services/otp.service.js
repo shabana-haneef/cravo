@@ -2,8 +2,10 @@ import crypto from "crypto";
 import { redis } from "../../../config/redis.js";
 import { hashPassword, comparePassword } from "../../../shared/utils/password.js";
 
-const OTP_EXPIRY_SECONDS = 600; // 10 minutes
-
+/**
+ * Reusable OTP utility for any domain-specific OTP flows 
+ * (email verification, password reset, 2FA, etc.)
+ */
 export const otpService = {
   /**
    * Generates a random 6-digit OTP securely
@@ -14,46 +16,43 @@ export const otpService = {
   },
 
   /**
-   * Generates, hashes, and stores the OTP in Redis for the user
-   * @param {string} userId - The unique identifier of the user
-   * @returns {Promise<string>} The plain-text OTP (to be sent via email only)
+   * Hashes the plain OTP securely for DB/Redis storage
    */
-  async createAndStoreOtp(userId) {
-    const plainOtp = this.generateOtp();
-    const hashedOtp = await hashPassword(plainOtp);
+  async hashOtp(plainOtp) {
+    return hashPassword(plainOtp);
+  },
 
-    const redisKey = `email-verification:${userId}`;
-    
-    // Store in Redis with EX (expiration) set to 10 minutes
-    await redis.set(redisKey, hashedOtp, { EX: OTP_EXPIRY_SECONDS });
-    
-    return plainOtp;
+  /**
+   * Stores the hashed OTP in Redis under a specific key
+   * @param {string} key - Redis key (e.g., 'password-reset:USER_ID')
+   * @param {string} hashedOtp - The encrypted OTP
+   * @param {number} ttlSeconds - Time-To-Live in seconds (Default 10 mins)
+   */
+  async saveOtp(key, hashedOtp, ttlSeconds = 600) {
+    await redis.set(key, hashedOtp, { EX: ttlSeconds });
   },
 
   /**
    * Validates the provided plain-text OTP against the stored hash in Redis
-   * @param {string} userId - The user's ID
+   * @param {string} key - Redis key where the hash is stored
    * @param {string} plainOtp - The OTP provided by the user
    * @returns {Promise<boolean>} True if valid, false otherwise
    */
-  async validateOtp(userId, plainOtp) {
-    const redisKey = `email-verification:${userId}`;
-    const storedHash = await redis.get(redisKey);
+  async verifyOtp(key, plainOtp) {
+    const storedHash = await redis.get(key);
 
     if (!storedHash) {
       return false; // Expired or doesn't exist
     }
 
-    const isValid = await comparePassword(plainOtp, storedHash);
-    return isValid;
+    return comparePassword(plainOtp, storedHash);
   },
 
   /**
-   * Deletes the OTP from Redis (used after successful verification)
-   * @param {string} userId 
+   * Deletes the OTP from Redis
+   * @param {string} key 
    */
-  async deleteOtp(userId) {
-    const redisKey = `email-verification:${userId}`;
-    await redis.del(redisKey);
+  async deleteOtp(key) {
+    await redis.del(key);
   }
 };

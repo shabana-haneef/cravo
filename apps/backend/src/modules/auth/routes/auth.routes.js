@@ -22,10 +22,14 @@ router.post('/verify-email', authLimiter, authController.verifyEmail);
 router.post('/resend-otp', authLimiter, authController.resendOtp);
 
 router.post('/login', authLimiter, authController.login);
+router.post('/refresh-token', authController.refreshToken); 
 
-// Refresh Token usually happens implicitly in the background for active users, 
-// so applying the strict 10/15min rate limit could inadvertently block normal app usage.
-router.post('/refresh-token', authController.refreshToken);
+// ==========================================
+// Password Recovery Endpoints
+// ==========================================
+router.post('/forgot-password', authLimiter, authController.forgotPassword);
+router.post('/reset-password', authLimiter, authController.resetPassword);
+router.post('/resend-reset-otp', authLimiter, authController.resendResetOtp);
 
 // ==========================================
 // Protected Auth Endpoints

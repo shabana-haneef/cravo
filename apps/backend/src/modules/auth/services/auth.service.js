@@ -15,7 +15,7 @@ const hashRefreshToken = (token) => {
 
 export const authService = {
   // ==========================================
-  // Registration Flow
+  // Registration & Verification Flow
   // ==========================================
   
   async register(email, password) {
@@ -34,13 +34,13 @@ export const authService = {
       isEmailVerified: false
     });
 
-    const plainOtp = await otpService.createAndStoreOtp(user.id);
+    const plainOtp = otpService.generateOtp();
+    const hashedOtp = await otpService.hashOtp(plainOtp);
+    await otpService.saveOtp(`email-verification:${user.id}`, hashedOtp);
+    
     await emailService.sendVerificationEmail(user.email, plainOtp);
     
-    return {
-      userId: user.id,
-      email: user.email
-    };
+    return { userId: user.id, email: user.email };
   },
 
   async verifyEmail(email, otp) {
@@ -48,19 +48,77 @@ export const authService = {
     if (!user) throw new AppError("Invalid or expired OTP", 400); 
     if (user.isEmailVerified) throw new AppError("Email is already verified", 400);
 
-    const isValid = await otpService.validateOtp(user.id, otp);
+    const isValid = await otpService.verifyOtp(`email-verification:${user.id}`, otp);
     if (!isValid) throw new AppError("Invalid or expired OTP", 400);
 
     await userRepository.update(user.id, { isEmailVerified: true });
-    await otpService.deleteOtp(user.id);
+    await otpService.deleteOtp(`email-verification:${user.id}`);
+    
     return true;
   },
 
   async resendOtp(email) {
     const user = await userRepository.findByEmail(email);
     if (!user || user.isEmailVerified) return; 
-    const plainOtp = await otpService.createAndStoreOtp(user.id);
+
+    const plainOtp = otpService.generateOtp();
+    const hashedOtp = await otpService.hashOtp(plainOtp);
+    await otpService.saveOtp(`email-verification:${user.id}`, hashedOtp);
+
     await emailService.sendVerificationEmail(user.email, plainOtp);
+  },
+
+  // ==========================================
+  // Password Recovery Flow
+  // ==========================================
+
+  async forgotPassword(email) {
+    const user = await userRepository.findByEmail(email);
+    
+    // Fails silently to prevent user enumeration
+    if (!user) return; 
+
+    const plainOtp = otpService.generateOtp();
+    const hashedOtp = await otpService.hashOtp(plainOtp);
+    
+    // Store with 10-minute expiry
+    await otpService.saveOtp(`password-reset:${user.id}`, hashedOtp);
+
+    await emailService.sendPasswordResetEmail(user.email, plainOtp);
+  },
+
+  async resetPassword(email, otp, newPassword) {
+    const user = await userRepository.findByEmail(email);
+    
+    if (!user) {
+      throw new AppError("Invalid or expired reset code", 400);
+    }
+
+    const isValid = await otpService.verifyOtp(`password-reset:${user.id}`, otp);
+    
+    if (!isValid) {
+      throw new AppError("Invalid or expired reset code", 400);
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+    
+    await userRepository.update(user.id, { passwordHash: hashedPassword });
+    await otpService.deleteOtp(`password-reset:${user.id}`);
+
+    // Critical Security: Invalidate all active sessions globally to kick out any compromised devices
+    await refreshTokenRepository.deleteByUser(user.id);
+  },
+
+  async resendResetOtp(email) {
+    const user = await userRepository.findByEmail(email);
+    
+    if (!user) return; // Fails silently
+
+    const plainOtp = otpService.generateOtp();
+    const hashedOtp = await otpService.hashOtp(plainOtp);
+    await otpService.saveOtp(`password-reset:${user.id}`, hashedOtp);
+
+    await emailService.sendPasswordResetEmail(user.email, plainOtp);
   },
 
   // ==========================================
@@ -69,41 +127,24 @@ export const authService = {
 
   async login(email, password) {
     const user = await userRepository.findByEmail(email);
-    
-    if (!user) {
-      throw new AppError("Invalid credentials", 401);
-    }
+    if (!user) throw new AppError("Invalid credentials", 401);
 
     const isMatch = await comparePassword(password, user.passwordHash);
-    if (!isMatch) {
-      throw new AppError("Invalid credentials", 401);
-    }
+    if (!isMatch) throw new AppError("Invalid credentials", 401);
 
-    // Security Checks
-    if (user.status === 'SUSPENDED') {
-      throw new AppError("Your account has been suspended", 403);
-    }
+    if (user.status === 'SUSPENDED') throw new AppError("Your account has been suspended", 403);
+    if (user.status === 'INACTIVE') throw new AppError("Your account is inactive", 403);
+    if (!user.isEmailVerified) throw new AppError("Please verify your email address to continue", 403);
 
-    if (user.status === 'INACTIVE') {
-      throw new AppError("Your account is inactive", 403);
-    }
-
-    if (!user.isEmailVerified) {
-      throw new AppError("Please verify your email address to continue", 403);
-    }
-
-    // Update login timestamp
     await userRepository.update(user.id, { lastLoginAt: new Date() });
 
-    // Issue Tokens
     const payload = { id: user.id, role: user.role };
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
-    // Persist refresh token securely
     const tokenHash = hashRefreshToken(refreshToken);
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    expiresAt.setDate(expiresAt.getDate() + 7);
 
     await refreshTokenRepository.create({
       userId: user.id,
@@ -125,9 +166,7 @@ export const authService = {
   },
 
   async refreshToken(rawRefreshToken) {
-    if (!rawRefreshToken) {
-      throw new AppError("Refresh token is required", 401);
-    }
+    if (!rawRefreshToken) throw new AppError("Refresh token is required", 401);
 
     let decoded;
     try {
@@ -140,8 +179,6 @@ export const authService = {
     const existingToken = await refreshTokenRepository.findByTokenHash(tokenHash);
 
     if (!existingToken) {
-      // Automatic Reuse Detection: Someone tried to use a revoked token
-      // We nuke all sessions for this user to protect them
       await refreshTokenRepository.deleteByUser(decoded.id);
       throw new AppError("Invalid token family. All sessions revoked for security.", 401);
     }
@@ -151,7 +188,6 @@ export const authService = {
       throw new AppError("User account is no longer active", 403);
     }
 
-    // Token Rotation (Invalidate old, issue new)
     await refreshTokenRepository.deleteByTokenHash(tokenHash);
 
     const payload = { id: user.id, role: user.role };
@@ -168,10 +204,7 @@ export const authService = {
       expiresAt
     });
 
-    return {
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken
-    };
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   },
 
   async logout(rawRefreshToken) {
