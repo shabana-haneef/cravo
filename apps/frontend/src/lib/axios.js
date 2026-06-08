@@ -80,7 +80,6 @@ api.interceptors.response.use(
       } catch (err) {
         processQueue(err, null);
         useAuthStore.getState().clearAuth(); // Force logout
-        window.location.href = '/login'; // Or use router redirect
         return Promise.reject(err);
       } finally {
         isRefreshing = false;

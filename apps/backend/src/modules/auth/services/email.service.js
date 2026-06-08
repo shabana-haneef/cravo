@@ -11,6 +11,7 @@ export const emailService = {
    */
   async sendVerificationEmail(to, otp) {
     try {
+      console.log(`\n=========================================\n[DEV MODE] OTP for ${to}: ${otp}\n=========================================\n`);
       await resend.emails.send({
         from: "Cravo Security <security@cravo.example.com>", // Replace with your verified domain
         to,
@@ -36,6 +37,7 @@ export const emailService = {
    */
   async sendPasswordResetEmail(to, otp) {
     try {
+      console.log(`\n=========================================\n[DEV MODE] Password Reset OTP for ${to}: ${otp}\n=========================================\n`);
       await resend.emails.send({
         from: "Cravo Security <security@cravo.example.com>", // Replace with your verified domain
         to,
