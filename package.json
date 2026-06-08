@@ -1,0 +1,8 @@
+{
+  "name": "cravo",
+  "private": true,
+  "scripts": {
+    "frontend": "cd apps/frontend && npm run dev",
+    "backend": "cd apps/backend && npm run dev"
+  }
+}
