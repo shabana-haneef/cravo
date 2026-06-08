@@ -3,7 +3,7 @@ import { Outlet, Link, useNavigate, NavLink } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store.js';
 import { useCartStore } from '../store/cart.store.js';
 import { useLogout } from '../features/auth/hooks/useAuthQueries.js';
-import { ShoppingCart, User, LogOut, Store } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Store, Package } from 'lucide-react';
 import { Button } from '../components/ui/Button.jsx';
 
 export const MainLayout = () => {
@@ -50,9 +50,18 @@ export const MainLayout = () => {
 
             {isAuthenticated ? (
               <div className="flex items-center gap-2">
-                {user?.role === 'SELLER' && (
-                  <NavLink to="/seller/dashboard" className={`hidden md:flex items-center gap-1 text-sm font-medium ${navLinkClass({ isActive: false })}`}>
-                    <Store size={16} /> Shop
+                {user?.role === 'SELLER' ? (
+                  <>
+                    <NavLink to="/seller/products" className={`hidden md:flex items-center gap-1 text-sm font-medium ${navLinkClass({ isActive: false })}`}>
+                      <Package size={16} /> Products
+                    </NavLink>
+                    <NavLink to="/seller/dashboard" className={`hidden md:flex items-center gap-1 text-sm font-medium ${navLinkClass({ isActive: false })}`}>
+                      <Store size={16} /> My Shop
+                    </NavLink>
+                  </>
+                ) : (
+                  <NavLink to="/seller/application" className={`hidden md:flex items-center gap-1 text-sm font-medium text-[#B88645] hover:text-[#a0743a] transition-colors`}>
+                    <Store size={16} /> Sell on Cravo
                   </NavLink>
                 )}
                 <Link

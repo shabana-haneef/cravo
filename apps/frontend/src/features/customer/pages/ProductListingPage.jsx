@@ -7,7 +7,7 @@ import { DebouncedSearch } from '../../../components/shared/DebouncedSearch.jsx'
 import { ProductSkeleton } from '../../../components/shared/Skeletons.jsx';
 import { EmptyState } from '../../../components/shared/EmptyState.jsx';
 import { ErrorState } from '../../../components/shared/ErrorState.jsx';
-import { Filter, Store } from 'lucide-react';
+import { Filter, Store, ChevronDown } from 'lucide-react';
 
 export const ProductListingPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -62,137 +62,179 @@ export const ProductListingPage = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row gap-8">
-      {/* Sidebar Filters */}
-      <aside className="w-full md:w-64 flex-shrink-0 space-y-8">
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-          <div className="flex items-center gap-2 mb-4 text-lg font-bold text-gray-900">
-            <Filter size={20} />
-            <h2>Filters</h2>
-          </div>
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* Page Header */}
+      <div className="mb-10 text-center">
+        <h1 className="text-4xl font-extrabold text-[#1E3A2B] mb-3">Shop Our Collection</h1>
+        <p className="text-gray-500 max-w-2xl mx-auto">Discover our range of premium, organic, and handcrafted products directly from trusted local sellers.</p>
+      </div>
 
-          <div className="space-y-6">
-            {/* Categories */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wider">Categories</h3>
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="category" 
-                    className="text-blue-600 focus:ring-blue-500" 
-                    checked={category === ''}
-                    onChange={() => { setCategory(''); setPage(1); }}
-                  />
-                  <span className="text-sm text-gray-700">All Categories</span>
-                </label>
-                {categories.map(cat => (
-                  <label key={cat.id} className="flex items-center gap-2 cursor-pointer">
+      <div className="flex flex-col lg:flex-row gap-10">
+        {/* Sidebar Filters */}
+        <aside className="w-full lg:w-72 flex-shrink-0 space-y-8">
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm sticky top-24">
+            <div className="flex items-center gap-2 mb-6 border-b border-gray-100 pb-4">
+              <Filter size={18} className="text-[#1E3A2B]" />
+              <h2 className="text-lg font-bold text-gray-900 tracking-wide">Filters</h2>
+            </div>
+
+            <div className="space-y-8">
+              {/* Categories */}
+              <div>
+                <h3 className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Categories</h3>
+                <div className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${category === '' ? 'border-[#1E3A2B] bg-[#1E3A2B]' : 'border-gray-300 group-hover:border-[#1E3A2B]'}`}>
+                      {category === '' && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                    </div>
+                    <span className={`text-sm transition-colors ${category === '' ? 'text-gray-900 font-semibold' : 'text-gray-600 group-hover:text-gray-900'}`}>All Categories</span>
                     <input 
                       type="radio" 
                       name="category" 
-                      className="text-blue-600 focus:ring-blue-500"
-                      checked={category === cat.slug}
-                      onChange={() => { setCategory(cat.slug); setPage(1); }}
+                      className="hidden" 
+                      checked={category === ''}
+                      onChange={() => { setCategory(''); setPage(1); }}
                     />
-                    <span className="text-sm text-gray-700">{cat.name}</span>
                   </label>
+                  {categories.map(cat => (
+                    <label key={cat.id} className="flex items-center gap-3 cursor-pointer group">
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${category === cat.slug ? 'border-[#1E3A2B] bg-[#1E3A2B]' : 'border-gray-300 group-hover:border-[#1E3A2B]'}`}>
+                        {category === cat.slug && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                      </div>
+                      <span className={`text-sm transition-colors ${category === cat.slug ? 'text-gray-900 font-semibold' : 'text-gray-600 group-hover:text-gray-900'}`}>{cat.name}</span>
+                      <input 
+                        type="radio" 
+                        name="category" 
+                        className="hidden"
+                        checked={category === cat.slug}
+                        onChange={() => { setCategory(cat.slug); setPage(1); }}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Price Range */}
+              <div>
+                <h3 className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Price Range (₹)</h3>
+                <div className="flex items-center gap-3">
+                  <div className="relative w-full">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
+                    <input 
+                      type="number" 
+                      placeholder="Min" 
+                      className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-[#1E3A2B] focus:border-[#1E3A2B] transition-colors outline-none bg-gray-50 focus:bg-white"
+                      value={minPrice}
+                      onChange={(e) => { setMinPrice(e.target.value); setPage(1); }}
+                    />
+                  </div>
+                  <span className="text-gray-300">-</span>
+                  <div className="relative w-full">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
+                    <input 
+                      type="number" 
+                      placeholder="Max" 
+                      className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-[#1E3A2B] focus:border-[#1E3A2B] transition-colors outline-none bg-gray-50 focus:bg-white"
+                      value={maxPrice}
+                      onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <div className="flex-1 min-w-0">
+          {/* Top Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div className="w-full sm:max-w-md">
+              <div className="relative">
+                <DebouncedSearch onSearch={handleSearch} placeholder="Search anything..." />
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3 shrink-0 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
+              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Sort by:</label>
+              <div className="relative">
+                <select 
+                  className="appearance-none pl-1 pr-6 py-1 text-sm font-semibold text-[#1E3A2B] bg-transparent outline-none cursor-pointer"
+                  value={sort}
+                  onChange={(e) => { setSort(e.target.value); setPage(1); }}
+                >
+                  <option value="latest">Latest Arrivals</option>
+                  <option value="price_asc">Price: Low to High</option>
+                  <option value="price_desc">Price: High to Low</option>
+                </select>
+                <ChevronDown size={14} className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Product Grid */}
+          {isError ? (
+            <ErrorState title="Failed to load products" message="There was a problem communicating with the server." onRetry={refetch} />
+          ) : (isLoading && products.length === 0) ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {Array(9).fill(0).map((_, i) => <ProductSkeleton key={i} />)}
+            </div>
+          ) : products.length > 0 ? (
+            <>
+              <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 transition-opacity duration-300 ${isFetching ? 'opacity-50' : 'opacity-100'}`}>
+                {products.map(product => (
+                  <ProductCard key={product.id} product={product} />
                 ))}
               </div>
-            </div>
 
-            {/* Price Range */}
-            <div className="border-t border-gray-100 pt-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wider">Price Range (₹)</h3>
-              <div className="flex items-center gap-2">
-                <input 
-                  type="number" 
-                  placeholder="Min" 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
-                  value={minPrice}
-                  onChange={(e) => { setMinPrice(e.target.value); setPage(1); }}
-                />
-                <span className="text-gray-400">-</span>
-                <input 
-                  type="number" 
-                  placeholder="Max" 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
-                  value={maxPrice}
-                  onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
-                />
-              </div>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-12 flex justify-center items-center gap-3">
+                  <button 
+                    onClick={() => handlePageChange(page - 1)}
+                    disabled={page === 1}
+                    className="h-10 px-4 rounded-full border border-gray-200 text-sm font-medium text-gray-600 hover:border-[#1E3A2B] hover:text-[#1E3A2B] disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                  >
+                    Previous
+                  </button>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handlePageChange(i + 1)}
+                        className={`w-10 h-10 rounded-full text-sm font-semibold transition-colors ${
+                          page === i + 1 
+                            ? 'bg-[#1E3A2B] text-white' 
+                            : 'text-gray-500 hover:bg-gray-100'
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button 
+                    onClick={() => handlePageChange(page + 1)}
+                    disabled={page === totalPages}
+                    className="h-10 px-4 rounded-full border border-gray-200 text-sm font-medium text-gray-600 hover:border-[#1E3A2B] hover:text-[#1E3A2B] disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="bg-gray-50 rounded-2xl p-12 flex items-center justify-center border border-dashed border-gray-200">
+              <EmptyState 
+                icon={Store}
+                title="No products found" 
+                description="Try adjusting your filters or search terms to find what you're looking for."
+                action={<button onClick={() => { setSearch(''); setCategory(''); setMinPrice(''); setMaxPrice(''); }} className="mt-4 px-6 py-2 bg-[#1E3A2B] text-white rounded-full text-sm font-medium hover:bg-[#162A1F] transition-colors">Clear all filters</button>}
+              />
             </div>
-          </div>
+          )}
         </div>
-      </aside>
-
-      {/* Main Content */}
-      <div className="flex-1">
-        {/* Top Bar */}
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div className="w-full sm:max-w-md">
-            <DebouncedSearch onSearch={handleSearch} placeholder="Search products..." />
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <label className="text-sm text-gray-600">Sort by:</label>
-            <select 
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
-              value={sort}
-              onChange={(e) => { setSort(e.target.value); setPage(1); }}
-            >
-              <option value="latest">Latest Arrivals</option>
-              <option value="price_asc">Price: Low to High</option>
-              <option value="price_desc">Price: High to Low</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Product Grid */}
-        {isError ? (
-          <ErrorState title="Failed to load products" message="There was a problem communicating with the server." onRetry={refetch} />
-        ) : (isLoading && products.length === 0) ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {Array(12).fill(0).map((_, i) => <ProductSkeleton key={i} />)}
-          </div>
-        ) : products.length > 0 ? (
-          <>
-            <div className={`grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 transition-opacity duration-200 ${isFetching ? 'opacity-60' : 'opacity-100'}`}>
-              {products.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="mt-10 flex justify-center items-center gap-2">
-                <button 
-                  onClick={() => handlePageChange(page - 1)}
-                  disabled={page === 1}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                <span className="text-sm text-gray-600 font-medium px-4">
-                  Page {page} of {totalPages}
-                </span>
-                <button 
-                  onClick={() => handlePageChange(page + 1)}
-                  disabled={page === totalPages}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </>
-        ) : (
-          <EmptyState 
-            icon={Store}
-            title="No products found" 
-            description="Try adjusting your filters or search terms to find what you're looking for."
-            action={<button onClick={() => { setSearch(''); setCategory(''); setMinPrice(''); setMaxPrice(''); }} className="text-blue-600 hover:underline font-medium text-sm">Clear all filters</button>}
-          />
-        )}
       </div>
     </div>
   );
