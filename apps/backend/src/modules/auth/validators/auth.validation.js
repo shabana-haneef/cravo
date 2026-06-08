@@ -19,3 +19,12 @@ export const verifyEmailSchema = z.object({
 export const resendOtpSchema = z.object({
   email: z.string().email("Invalid email format"),
 });
+
+export const loginSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export const refreshTokenSchema = z.object({
+  refreshToken: z.string().optional(), // Can come from body or cookies
+});
