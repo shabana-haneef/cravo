@@ -2,6 +2,7 @@ import { productVariantRepository } from '../repositories/productVariant.reposit
 import { productService } from './product.service.js';
 import { slugService } from '../../shops/services/slug.service.js';
 import { AppError } from '../../../shared/errors/AppError.js';
+import prisma from '../../../lib/prisma.js';
 
 export const productVariantService = {
   async addVariant(userId, productId, data) {
@@ -15,10 +16,35 @@ export const productVariantService = {
       vCount++;
     }
 
-    return productVariantRepository.create({
-      ...data,
-      productId: product.id,
-      sku: variantSku
+    return prisma.$transaction(async (tx) => {
+      const variant = await productVariantRepository.create({
+        name: data.name,
+        price: data.price,
+        compareAtPrice: data.compareAtPrice,
+        isActive: data.isActive,
+        productId: product.id,
+        sku: variantSku
+      }, tx);
+
+      // Create Initial Inventory
+      await tx.inventory.create({
+        data: {
+          productVariantId: variant.id,
+          availableStock: data.initialStock || 0,
+          transactions: {
+            create: {
+              type: 'STOCK_IN',
+              quantity: data.initialStock || 0,
+              previousStock: 0,
+              newStock: data.initialStock || 0,
+              reason: 'Initial stock on variant creation',
+              createdBy: userId
+            }
+          }
+        }
+      });
+
+      return variant;
     });
   },
 

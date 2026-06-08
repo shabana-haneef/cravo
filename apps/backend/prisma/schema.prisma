@@ -65,6 +65,15 @@ enum DayOfWeek {
   SUNDAY
 }
 
+enum TransactionType {
+  STOCK_IN
+  STOCK_OUT
+  ORDER_RESERVED
+  ORDER_RELEASED
+  ORDER_COMPLETED
+  MANUAL_ADJUSTMENT
+}
+
 enum ProductStatus {
   DRAFT
   PENDING_APPROVAL
@@ -290,6 +299,36 @@ model ProductVariant {
   sku            String  @unique
   price          Float
   compareAtPrice Float?
-  stock          Int     @default(0)
   isActive       Boolean @default(true)
+
+  inventory      Inventory?
+}
+
+model Inventory {
+  id                String   @id @default(cuid())
+  productVariantId  String   @unique
+  productVariant    ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+  availableStock    Int      @default(0)
+  reservedStock     Int      @default(0)
+  lowStockThreshold Int      @default(5)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  transactions      InventoryTransaction[]
+}
+
+model InventoryTransaction {
+  id            String   @id @default(cuid())
+  inventoryId   String
+  inventory     Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  type          TransactionType
+  quantity      Int
+  previousStock Int
+  newStock      Int
+  reason        String?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+
+  @@index([inventoryId])
+  @@index([createdAt])
 }

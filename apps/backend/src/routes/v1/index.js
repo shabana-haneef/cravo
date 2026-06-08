@@ -8,6 +8,7 @@ import adminRoutes from "../../modules/admin/routes/admin.routes.js";
 import shopRoutes from "../../modules/shops/routes/shop.routes.js";
 import categoryRoutes from "../../modules/products/routes/category.routes.js";
 import productRoutes from "../../modules/products/routes/product.routes.js";
+import inventoryRoutes from "../../modules/products/routes/inventory.routes.js";
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use("/admin", adminRoutes);
 router.use("/shops", shopRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/products", productRoutes);
+router.use("/inventory", inventoryRoutes);
 
 export default router;

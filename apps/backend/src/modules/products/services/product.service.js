@@ -70,14 +70,31 @@ export const productService = {
         vCount++;
       }
 
-      await productVariantRepository.create({
+      const variant = await productVariantRepository.create({
         productId: product.id,
         name: data.variantName,
         sku: variantSku,
         price: data.price,
-        compareAtPrice: data.compareAtPrice,
-        stock: data.stock
+        compareAtPrice: data.compareAtPrice
       }, tx);
+
+      // Create Initial Inventory
+      await tx.inventory.create({
+        data: {
+          productVariantId: variant.id,
+          availableStock: data.initialStock || 0,
+          transactions: {
+            create: {
+              type: 'STOCK_IN',
+              quantity: data.initialStock || 0,
+              previousStock: 0,
+              newStock: data.initialStock || 0,
+              reason: 'Initial stock on product creation',
+              createdBy: userId
+            }
+          }
+        }
+      });
 
       return product;
     });

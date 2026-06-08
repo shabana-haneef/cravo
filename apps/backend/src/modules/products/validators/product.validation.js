@@ -10,7 +10,7 @@ export const productSchema = z.object({
   variantName: z.string().min(1, "Variant name is required"),
   price: z.coerce.number().positive("Price must be positive"),
   compareAtPrice: z.coerce.number().positive().optional().nullable(),
-  stock: z.coerce.number().int().nonnegative().default(0)
+  initialStock: z.coerce.number().int().nonnegative().default(0)
 });
 
 export const updateProductSchema = z.object({
