@@ -1,8 +1,8 @@
 import { api } from '../../../lib/axios.js';
 
 export const sellerOrderApi = {
-  getSellerOrders: async () => {
-    const response = await api.get('/orders/seller/orders');
+  getSellerOrders: async (page = 1, limit = 20) => {
+    const response = await api.get('/orders/seller/orders', { params: { page, limit } });
     return response.data;
   },
 

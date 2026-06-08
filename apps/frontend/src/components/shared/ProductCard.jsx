@@ -1,83 +1,97 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Store, ShoppingCart, Star } from 'lucide-react';
+import { Store, ShoppingCart, Star, Heart, Leaf } from 'lucide-react';
 
 export const ProductCard = ({ product }) => {
   const { name, slug, shop, variants, images, category } = product;
   const mainImage = images?.[0]?.imageUrl || 'https://via.placeholder.com/400x400?text=No+Image';
   const defaultVariant = variants?.[0];
   const price = defaultVariant?.price || 0;
-  const comparePrice = defaultVariant?.compareAtPrice;
+  // const comparePrice = defaultVariant?.compareAtPrice;
   const isOutOfStock = defaultVariant?.inventory?.availableStock <= 0;
+  const variantName = defaultVariant?.name || defaultVariant?.variantName || '1 Kg'; // fallback if no name
 
   return (
-    <div className="group bg-white rounded-2xl shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col h-full">
-      <Link to={`/products/${slug}`} className="relative aspect-square overflow-hidden bg-gray-50 flex items-center justify-center p-6">
+    <div className="group bg-white rounded-2xl shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 border border-gray-100 flex flex-col h-full">
+      {/* Image Container */}
+      <Link to={`/products/${slug}`} className="relative block m-1.5 rounded-xl bg-[#F6F9F6] aspect-[4/3] overflow-hidden p-3">
         <img 
           src={mainImage} 
           alt={name} 
-          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 mix-blend-multiply"
           loading="lazy"
         />
+        
+        {/* Organic Badge */}
+        <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#2E7D32] px-1.5 py-0.5 rounded text-[9px] font-bold flex items-center gap-1 border border-[#C8E6C9]/50">
+          <Leaf size={10} className="stroke-[2.5]" />
+          Organic
+        </div>
+
+        {/* Favorite Button */}
+        <button 
+          className="absolute top-2 right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400 hover:text-red-500 transition-colors z-10"
+          onClick={(e) => { e.preventDefault(); /* handle favorite */ }}
+        >
+          <Heart size={12} className="stroke-[2]" />
+        </button>
+
         {isOutOfStock && (
           <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-10">
             <span className="bg-red-500 text-white text-xs font-bold px-4 py-2 rounded-full tracking-wide">OUT OF STOCK</span>
           </div>
         )}
-        {comparePrice && !isOutOfStock && (
-          <div className="absolute top-3 left-3 z-10">
-            <span className="bg-[#B88645] text-white text-[10px] font-bold px-2 py-1 rounded">
-              SALE
-            </span>
-          </div>
-        )}
       </Link>
       
-      <div className="p-6 flex flex-col flex-1 bg-white">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+      {/* Product Details */}
+      <div className="px-3 pt-1.5 pb-0.5 flex flex-col flex-1">
+        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
           {category?.name || 'Category'}
         </p>
         
-        <Link to={`/products/${slug}`} className="text-lg font-bold text-gray-900 line-clamp-2 hover:text-[#1E3A2B] transition-colors mb-2 leading-snug">
+        <Link to={`/products/${slug}`} className="text-sm font-bold text-[#111827] line-clamp-1 hover:text-[#1E3A2B] transition-colors mb-1 leading-snug">
           {name}
         </Link>
 
-        {/* Ratings placeholder */}
-        <div className="flex items-center gap-1 mb-4">
-          <div className="flex text-yellow-400">
+        {/* Ratings */}
+        <div className="flex items-center gap-1 mb-1 text-[10px] text-gray-500 font-medium">
+          <div className="flex text-[#FFB800] gap-0">
             {[1, 2, 3, 4, 5].map(star => (
-              <Star key={star} size={14} fill="currentColor" />
+              <Star key={star} size={10} fill="currentColor" stroke="currentColor" />
             ))}
           </div>
-          <span className="text-gray-400 text-xs ml-1">(4.8)</span>
+          <span>(4.8)</span>
+          <span className="text-gray-300">•</span>
+          <span>125 Rev</span>
         </div>
         
-        <div className="flex items-center text-sm text-gray-500 mb-5 border-b border-gray-50 pb-5">
-          <Store size={16} className="mr-2 opacity-70" />
+        {/* Shop Info */}
+        <div className="flex items-center text-[10px] text-gray-500 font-medium">
+          <Store size={10} className="mr-1 opacity-70" />
           <span className="truncate">{shop?.name}</span>
         </div>
+      </div>
 
-        <div className="mt-auto flex items-center justify-between">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-baseline gap-2">
-              <span className="text-xl font-bold text-[#B88645]">₹{price.toFixed(2)}</span>
-              {comparePrice && (
-                <span className="text-sm font-medium text-gray-400 line-through">₹{comparePrice.toFixed(2)}</span>
-              )}
-            </div>
-            <span className="text-xs text-gray-400">{defaultVariant?.name}</span>
-          </div>
-          <button 
-            disabled={isOutOfStock}
-            onClick={(e) => {
-              e.preventDefault();
-              // Add to cart logic will go here
-            }}
-            className="w-12 h-12 rounded-full bg-gray-50 text-gray-700 flex items-center justify-center hover:bg-[#1E3A2B] hover:text-white transition-colors disabled:opacity-50 disabled:hover:bg-gray-50 disabled:hover:text-gray-700 border border-gray-100 hover:border-transparent shrink-0 shadow-sm"
-          >
-            <ShoppingCart size={20} />
-          </button>
+      <div className="h-px bg-gray-100/80 mx-3 my-1"></div>
+
+      {/* Price & Action */}
+      <div className="px-3 pb-2 pt-0.5 flex items-end justify-between mt-auto">
+        <div className="flex flex-col">
+          <span className="text-sm font-bold text-[#B88645] leading-none mb-0.5">₹{price.toFixed(2)}</span>
+          <span className="text-[9px] font-medium text-gray-400">{variantName}</span>
         </div>
+        
+        <button 
+          disabled={isOutOfStock}
+          onClick={(e) => {
+            e.preventDefault();
+            // Add to cart logic
+          }}
+          className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center bg-white text-gray-600 hover:border-[#1E3A2B] hover:text-[#1E3A2B] transition-all disabled:opacity-50 relative group shadow-sm"
+        >
+          <ShoppingCart size={14} className="stroke-[2]" />
+          <span className="absolute bottom-1 right-1 text-[#E67E22] text-[10px] font-bold leading-none group-hover:text-[#D35400]">+</span>
+        </button>
       </div>
     </div>
   );

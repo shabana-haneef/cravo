@@ -7,6 +7,7 @@ import { DebouncedSearch } from '../../../components/shared/DebouncedSearch.jsx'
 import { ProductSkeleton } from '../../../components/shared/Skeletons.jsx';
 import { EmptyState } from '../../../components/shared/EmptyState.jsx';
 import { ErrorState } from '../../../components/shared/ErrorState.jsx';
+import { Pagination } from '../../../components/ui/Pagination.jsx';
 import { Filter, Store, ChevronDown } from 'lucide-react';
 
 export const ProductListingPage = () => {
@@ -189,38 +190,12 @@ export const ProductListingPage = () => {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="mt-12 flex justify-center items-center gap-3">
-                  <button 
-                    onClick={() => handlePageChange(page - 1)}
-                    disabled={page === 1}
-                    className="h-10 px-4 rounded-full border border-gray-200 text-sm font-medium text-gray-600 hover:border-[#1E3A2B] hover:text-[#1E3A2B] disabled:opacity-50 disabled:pointer-events-none transition-colors"
-                  >
-                    Previous
-                  </button>
-                  
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }).map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handlePageChange(i + 1)}
-                        className={`w-10 h-10 rounded-full text-sm font-semibold transition-colors ${
-                          page === i + 1 
-                            ? 'bg-[#1E3A2B] text-white' 
-                            : 'text-gray-500 hover:bg-gray-100'
-                        }`}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
-                  </div>
-
-                  <button 
-                    onClick={() => handlePageChange(page + 1)}
-                    disabled={page === totalPages}
-                    className="h-10 px-4 rounded-full border border-gray-200 text-sm font-medium text-gray-600 hover:border-[#1E3A2B] hover:text-[#1E3A2B] disabled:opacity-50 disabled:pointer-events-none transition-colors"
-                  >
-                    Next
-                  </button>
+                <div className="mt-8">
+                  <Pagination 
+                    currentPage={page} 
+                    totalPages={totalPages} 
+                    onPageChange={handlePageChange} 
+                  />
                 </div>
               )}
             </>

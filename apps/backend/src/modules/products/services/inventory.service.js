@@ -65,8 +65,7 @@ export const inventoryService = {
 
   async getHistory(userId, variantId, page = 1, limit = 20) {
     await this.getInventory(userId, variantId); // Auth check
-    const skip = (page - 1) * limit;
-    return inventoryTransactionRepository.findHistoryByVariantId(variantId, skip, limit);
+    return inventoryTransactionRepository.findHistoryByVariantId(variantId, page, limit);
   },
 
   // Reusable system methods (not exposed to sellers via direct HTTP)

@@ -3,13 +3,17 @@ import { useMyProducts } from '../../products/hooks/useSellerProductQueries.js';
 import { useCategories } from '../../categories/hooks/useCategoryQueries.js';
 import { StockAdjustmentModal } from '../components/StockAdjustmentModal.jsx';
 import { Link } from 'react-router-dom';
+import { Pagination } from '../../../components/ui/Pagination.jsx';
 import { 
   Package, Search, Filter, AlertTriangle, Box, 
   History, Settings2, CheckCircle2, AlertCircle, Loader2
 } from 'lucide-react';
 
 export const InventoryDashboardPage = () => {
-  const { data: products = [], isLoading, isError } = useMyProducts();
+  const [page, setPage] = useState(1);
+  const { data: productsData, isLoading, isError } = useMyProducts(page, 10);
+  const products = productsData?.products || [];
+  const meta = productsData?.meta;
   const { data: categoryData } = useCategories();
   const categories = categoryData?.data?.categories || [];
 
@@ -247,6 +251,14 @@ export const InventoryDashboardPage = () => {
           </div>
         )}
       </div>
+
+      {meta && meta.totalPages > 1 && (
+        <Pagination 
+          currentPage={page} 
+          totalPages={meta.totalPages} 
+          onPageChange={setPage} 
+        />
+      )}
 
       <StockAdjustmentModal 
         isOpen={!!selectedVariant} 

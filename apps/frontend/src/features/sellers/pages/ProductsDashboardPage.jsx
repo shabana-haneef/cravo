@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Pagination } from '../../../components/ui/Pagination.jsx';
 import { useMyProducts, useDeleteProduct } from '../../products/hooks/useSellerProductQueries.js';
 import { useCategories } from '../../categories/hooks/useCategoryQueries.js';
 import { toast } from 'sonner';
@@ -10,7 +11,11 @@ import {
 } from 'lucide-react';
 
 export const ProductsDashboardPage = () => {
-  const { data: products = [], isLoading, isError } = useMyProducts();
+  const [page, setPage] = useState(1);
+  const { data, isLoading, isError } = useMyProducts(page, 10);
+  const products = data?.products || [];
+  const meta = data?.meta;
+
   const { data: categoryData } = useCategories();
   const categories = categoryData?.data?.categories || [];
   
@@ -20,8 +25,8 @@ export const ProductsDashboardPage = () => {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterCategory, setFilterCategory] = useState('ALL');
 
-  // Stats
-  const total = products.length;
+  // Stats (Note: Total stats might require a separate unpaginated endpoint for accuracy, but using meta.total for now)
+  const total = meta?.total || products.length;
   const approved = products.filter(p => p.status === 'APPROVED').length;
   const pending = products.filter(p => p.status === 'PENDING').length;
   const rejected = products.filter(p => p.status === 'REJECTED').length;
@@ -242,6 +247,14 @@ export const ProductsDashboardPage = () => {
           </div>
         )}
       </div>
+
+      {meta && meta.totalPages > 1 && (
+        <Pagination 
+          currentPage={page} 
+          totalPages={meta.totalPages} 
+          onPageChange={setPage} 
+        />
+      )}
     </div>
   );
 };

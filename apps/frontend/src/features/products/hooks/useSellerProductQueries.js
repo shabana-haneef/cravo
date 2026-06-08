@@ -4,13 +4,14 @@ import * as api from '../api/seller-product.api.js';
 export const SELLER_PRODUCTS_KEY = ['seller', 'products'];
 export const SELLER_PRODUCT_DETAIL_KEY = (id) => ['seller', 'product', id];
 
-export const useMyProducts = () => {
+export const useMyProducts = (page = 1, limit = 10) => {
   return useQuery({
-    queryKey: SELLER_PRODUCTS_KEY,
+    queryKey: [...SELLER_PRODUCTS_KEY, page, limit],
     queryFn: async () => {
-      const response = await api.getMyProducts();
-      return response.data.products;
+      const response = await api.getMyProducts(page, limit);
+      return response.data;
     },
+    keepPreviousData: true,
   });
 };
 

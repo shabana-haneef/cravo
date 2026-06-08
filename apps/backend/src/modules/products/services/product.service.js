@@ -100,14 +100,14 @@ export const productService = {
     });
   },
 
-  async getMyProducts(userId) {
+  async getMyProducts(userId, page = 1, limit = 10) {
     const seller = await sellerRepository.findByUserId(userId);
     if (!seller) throw new AppError("Seller not found", 404);
 
     const shop = await shopRepository.findBySellerId(seller.id);
     if (!shop) throw new AppError("Shop not found", 404);
 
-    return productRepository.findByShopId(shop.id);
+    return productRepository.findByShopId(shop.id, page, limit);
   },
 
   async getMyProductById(userId, productId) {
@@ -181,8 +181,8 @@ export const productService = {
     return productRepository.update(productId, { status: 'REJECTED', rejectionReason: reason });
   },
 
-  async getPublicProducts(filters, sort) {
-    return productRepository.searchPublicProducts(filters, sort);
+  async getPublicProducts(filters, sort, page = 1, limit = 10) {
+    return productRepository.searchPublicProducts(filters, sort, page, limit);
   },
 
   async getPublicProduct(slug) {

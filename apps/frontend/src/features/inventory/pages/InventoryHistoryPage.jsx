@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useInventoryHistory, useInventoryItem } from '../hooks/useInventoryQueries.js';
+import { Pagination } from '../../../components/ui/Pagination.jsx';
 import { 
   ArrowLeft, History, Loader2, AlertCircle, 
   TrendingUp, TrendingDown, RefreshCcw, Hand,
@@ -9,8 +10,9 @@ import {
 
 export const InventoryHistoryPage = () => {
   const { variantId } = useParams();
+  const [page, setPage] = useState(1);
   
-  const { data: historyData, isLoading: isHistoryLoading, isError: isHistoryError } = useInventoryHistory(variantId);
+  const { data: historyData, isLoading: isHistoryLoading, isError: isHistoryError } = useInventoryHistory(variantId, page, 20);
   const { data: itemData, isLoading: isItemLoading } = useInventoryItem(variantId);
 
   const getTransactionIcon = (type, quantity) => {
@@ -48,7 +50,8 @@ export const InventoryHistoryPage = () => {
     );
   }
 
-  const transactions = historyData?.transactions || [];
+  const transactions = historyData?.history || [];
+  const meta = historyData?.meta;
 
   return (
     <div className="space-y-6 pb-20">
@@ -125,6 +128,14 @@ export const InventoryHistoryPage = () => {
           </div>
         )}
       </div>
+
+      {meta && meta.totalPages > 1 && (
+        <Pagination 
+          currentPage={page} 
+          totalPages={meta.totalPages} 
+          onPageChange={setPage} 
+        />
+      )}
     </div>
   );
 };

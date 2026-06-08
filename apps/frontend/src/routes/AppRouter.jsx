@@ -35,6 +35,7 @@ const EditProductPage = React.lazy(() => import('../features/sellers/pages/EditP
 const InventoryDashboardPage = React.lazy(() => import('../features/inventory/pages/InventoryDashboardPage.jsx').then(m => ({ default: m.InventoryDashboardPage })));
 const InventoryHistoryPage = React.lazy(() => import('../features/inventory/pages/InventoryHistoryPage.jsx').then(m => ({ default: m.InventoryHistoryPage })));
 const SellerDashboardPage = React.lazy(() => import('../features/seller/pages/SellerDashboardPage.jsx').then(m => ({ default: m.SellerDashboardPage })));
+const SellerOrdersPage = React.lazy(() => import('../features/orders/pages/SellerOrdersPage.jsx').then(m => ({ default: m.SellerOrdersPage })));
 
 const S = ({ children }) => <Suspense fallback={<LoadingScreen />}>{children}</Suspense>;
 
@@ -72,26 +73,27 @@ const router = createBrowserRouter([
           { path: '/addresses', element: <S><AddressesPage /></S> },
           { path: '/seller/application', element: <S><SellerApplicationContainer /></S> },
         ]
-      },
+      }
+    ]
+  },
 
-      // Protected seller routes (with dedicated SellerLayout)
+  // Protected seller routes (with dedicated SellerLayout, OUTSIDE MainLayout)
+  {
+    element: <ProtectedRoute />,
+    children: [
       {
-        element: <ProtectedRoute />,
+        element: <SellerLayout />,
         children: [
           {
-            element: <SellerLayout />,
+            element: <RoleRoute allowedRoles={['SELLER']} />,
             children: [
-              {
-                element: <RoleRoute allowedRoles={['SELLER']} />,
-                children: [
-                  { path: '/seller/dashboard', element: <S><SellerDashboardPage /></S> },
-                  { path: '/seller/products', element: <S><ProductsDashboardPage /></S> },
-                  { path: '/seller/products/new', element: <S><CreateProductPage /></S> },
-                  { path: '/seller/products/:id/edit', element: <S><EditProductPage /></S> },
-                  { path: '/seller/inventory', element: <S><InventoryDashboardPage /></S> },
-                  { path: '/seller/inventory/:variantId/history', element: <S><InventoryHistoryPage /></S> },
-                ]
-              }
+              { path: '/seller/dashboard', element: <S><SellerDashboardPage /></S> },
+              { path: '/seller/products', element: <S><ProductsDashboardPage /></S> },
+              { path: '/seller/products/new', element: <S><CreateProductPage /></S> },
+              { path: '/seller/products/:id/edit', element: <S><EditProductPage /></S> },
+              { path: '/seller/inventory', element: <S><InventoryDashboardPage /></S> },
+              { path: '/seller/inventory/:variantId/history', element: <S><InventoryHistoryPage /></S> },
+              { path: '/seller/orders', element: <S><SellerOrdersPage /></S> },
             ]
           }
         ]
