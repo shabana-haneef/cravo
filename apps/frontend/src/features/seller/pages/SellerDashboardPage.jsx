@@ -120,7 +120,7 @@ export const SellerDashboardPage = () => {
               <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">TOTAL PRODUCTS</p>
               <h2 className="text-xl font-semibold text-gray-900">{stats.totalProducts}</h2>
             </div>
-            <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center text-green-600 shrink-0">
               <Package size={16} />
             </div>
           </div>
@@ -176,7 +176,7 @@ export const SellerDashboardPage = () => {
               <p className="text-xs text-gray-500 mt-1">Monthly performance overview</p>
             </div>
             <div className="relative">
-              <select className="appearance-none bg-white border border-gray-200 text-gray-700 py-1.5 pl-3 pr-8 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20">
+              <select className="appearance-none bg-white border border-gray-200 text-gray-700 py-1.5 pl-3 pr-8 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-green-600/20">
                 <option>This Month</option>
                 <option>Last Month</option>
               </select>
@@ -299,7 +299,7 @@ export const SellerDashboardPage = () => {
                     className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
+                      <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center text-green-600 shrink-0">
                         <ShoppingBag size={16} />
                       </div>
                       <div>
@@ -355,7 +355,7 @@ export const SellerDashboardPage = () => {
             </Link>
 
             <Link to="/seller/products" className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-all cursor-pointer">
-              <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
+              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600 shrink-0">
                 <Package size={20} />
               </div>
               <div>

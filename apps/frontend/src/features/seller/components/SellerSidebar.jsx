@@ -56,7 +56,7 @@ export const SellerSidebar = () => {
     <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0 transition-all duration-300 z-20`}>
       <div className={`p-6 flex items-center justify-center border-b border-gray-100/50 h-20`}>
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white font-bold shrink-0 shadow-sm">
+          <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold shrink-0 shadow-sm">
             C
           </div>
           {!isCollapsed && <span className="font-bold text-gray-900 text-lg tracking-tight whitespace-nowrap">Cravo Seller</span>}
@@ -84,14 +84,14 @@ export const SellerSidebar = () => {
                     className={({ isActive }) =>
                       `flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2.5 rounded-xl text-sm font-medium transition-all ${
                         isActive
-                          ? 'bg-orange-50 text-orange-600 shadow-sm shadow-orange-100/50'
+                          ? 'bg-green-50 text-green-600 shadow-sm shadow-green-100/50'
                           : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                       }`
                     }
                   >
                     {({ isActive }) => (
                       <>
-                        <span className={`${isActive ? 'text-orange-500' : 'text-gray-400'}`}>
+                        <span className={`${isActive ? 'text-green-600' : 'text-gray-400'}`}>
                           {item.icon}
                         </span>
                         {!isCollapsed && <span className="whitespace-nowrap">{item.name}</span>}

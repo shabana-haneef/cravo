@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Users, Store, IndianRupee, TrendingUp, UserCheck, UserX } from 'lucide-react';
 import { adminService } from '../services/admin.service.js';
 import { toast } from 'sonner';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export const AdminDashboardPage = () => {
   const [stats, setStats] = useState(null);
@@ -56,6 +57,27 @@ export const AdminDashboardPage = () => {
           </div>
         ))}
       </div>
+
+      {stats.revenueChartData && (
+        <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
+          <h3 className="text-lg font-bold text-gray-900 mb-6">Revenue Overview</h3>
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats.revenueChartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dx={-10} tickFormatter={(value) => `₹${value}`} />
+                <Tooltip 
+                  cursor={{fill: '#f8fafc'}}
+                  contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                  formatter={(value) => [`₹${value}`, 'Revenue']}
+                />
+                <Bar dataKey="revenue" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
@@ -124,3 +146,4 @@ export const AdminDashboardPage = () => {
     </div>
   );
 };
+

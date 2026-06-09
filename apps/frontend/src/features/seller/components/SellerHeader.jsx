@@ -32,12 +32,12 @@ export const SellerHeader = () => {
             <p className="text-sm font-bold text-gray-900 leading-tight">
               {(user?.email?.split('@') || [])[0] || 'testseller'}
             </p>
-            <p className="text-[10px] font-bold text-orange-500 uppercase tracking-wider">
+            <p className="text-[10px] font-bold text-green-600 uppercase tracking-wider">
               SELLER
             </p>
           </div>
           <div className="flex items-center gap-2 cursor-pointer group">
-            <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-600 group-hover:bg-orange-100 transition-colors">
+            <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600 group-hover:bg-green-100 transition-colors">
               <User size={18} />
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 group-hover:text-gray-600"><path d="m6 9 6 6 6-6"/></svg>

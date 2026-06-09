@@ -81,7 +81,7 @@ export const cartService = {
 
     // 4. Upsert Item
     // Check if item already exists to validate total quantity vs stock
-    const existingItem = cart.items.find(i => i.productVariantId === variantId);
+    const existingItem = (cart.items || []).find(i => i.productVariantId === variantId);
     const newTotalQuantity = existingItem ? existingItem.quantity + quantity : quantity;
 
     if (inventory.availableStock < newTotalQuantity) {

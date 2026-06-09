@@ -82,7 +82,7 @@ export const SellerAdsPage = () => {
           }
         },
         theme: {
-          color: "#4f46e5",
+          color: "#16a34a",
         },
       };
 
@@ -98,7 +98,7 @@ export const SellerAdsPage = () => {
     }
   };
 
-  if (loading) return <div className="flex justify-center p-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div></div>;
+  if (loading) return <div className="flex justify-center p-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div></div>;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -108,7 +108,7 @@ export const SellerAdsPage = () => {
           <p className="text-sm text-gray-500 mt-1">Boost your products visibility to get more sales.</p>
         </div>
         {!showCreate && (
-          <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-[#ff6b00] text-white font-medium rounded-xl shadow-sm hover:bg-orange-600 transition-colors">
+          <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-medium rounded-xl shadow-sm hover:bg-green-700 transition-colors">
             <Plus size={18} />
             Create Ad Campaign
           </button>
@@ -130,10 +130,10 @@ export const SellerAdsPage = () => {
                   <div 
                     key={pkg.id} 
                     onClick={() => setSelectedPackage(pkg)}
-                    className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${selectedPackage?.id === pkg.id ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-orange-300'}`}
+                    className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${selectedPackage?.id === pkg.id ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:border-green-300'}`}
                   >
                     <h3 className="font-medium text-gray-900">{pkg.name}</h3>
-                    <p className="text-2xl font-bold text-[#ff6b00] mt-2">₹{pkg.price}</p>
+                    <p className="text-2xl font-bold text-green-600 mt-2">₹{pkg.price}</p>
                     <p className="text-sm text-gray-500 mt-1">{pkg.durationDays} Days Duration</p>
                     {pkg.features && pkg.features.length > 0 && (
                       <ul className="mt-4 space-y-1">
@@ -171,7 +171,7 @@ export const SellerAdsPage = () => {
               </div>
             </div>
 
-            <button type="submit" disabled={isProcessing || !selectedPackage} className="px-6 py-2.5 bg-[#ff6b00] text-white font-medium rounded-xl hover:bg-orange-600 disabled:opacity-50">
+            <button type="submit" disabled={isProcessing || !selectedPackage} className="px-6 py-2.5 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 disabled:opacity-50">
               {isProcessing ? 'Processing...' : 'Pay & Submit for Approval'}
             </button>
           </form>
@@ -191,17 +191,17 @@ export const SellerAdsPage = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {packages.map((pkg, idx) => (
-                  <div key={pkg.id} className={`border rounded-xl p-5 ${idx === 0 ? 'border-orange-200 bg-orange-50/30' : 'border-gray-200'}`}>
+                  <div key={pkg.id} className={`border rounded-xl p-5 ${idx === 0 ? 'border-green-200 bg-green-50/30' : 'border-gray-200'}`}>
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-2">
-                        {idx === 0 && <Crown size={18} className="text-[#ff6b00]" />}
+                        {idx === 0 && <Crown size={18} className="text-green-600" />}
                         <h3 className="font-medium text-gray-900">{pkg.name}</h3>
                       </div>
                       {idx === 0 && (
-                        <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">Most Popular</span>
+                        <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Most Popular</span>
                       )}
                     </div>
-                    <p className="text-2xl font-bold text-[#ff6b00] mb-4">₹{pkg.price}</p>
+                    <p className="text-2xl font-bold text-green-600 mb-4">₹{pkg.price}</p>
                     
                     <ul className="space-y-2 mb-6">
                       <li className="text-sm text-gray-600 flex items-center gap-2">
@@ -220,7 +220,7 @@ export const SellerAdsPage = () => {
                         setSelectedPackage(pkg);
                         setShowCreate(true);
                       }}
-                      className="w-full py-2 px-4 rounded-lg border border-orange-200 text-orange-600 font-medium hover:bg-orange-50 transition-colors"
+                      className="w-full py-2 px-4 rounded-lg border border-green-200 text-green-600 font-medium hover:bg-green-50 transition-colors"
                     >
                       Use This Package
                     </button>
@@ -253,7 +253,7 @@ export const SellerAdsPage = () => {
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No active campaigns yet</h3>
                 <p className="text-gray-500 max-w-md mb-6">Create your first advertising campaign to showcase your products and reach thousands of potential buyers.</p>
-                <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-5 py-2.5 bg-[#0f9d58] text-white font-medium rounded-xl hover:bg-green-700 transition-colors">
+                <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition-colors">
                   <Plus size={18} />
                   Create Your First Campaign
                 </button>
@@ -290,7 +290,7 @@ export const SellerAdsPage = () => {
                         </div>
                         <div>
                           <p className="text-xs text-gray-500">Clicks</p>
-                          <p className="font-medium text-[#ff6b00]">{ad.clicks}</p>
+                          <p className="font-medium text-green-600">{ad.clicks}</p>
                         </div>
                       </div>
                     </div>
@@ -345,4 +345,5 @@ export const SellerAdsPage = () => {
     </div>
   );
 };
+
 

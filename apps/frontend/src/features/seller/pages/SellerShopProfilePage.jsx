@@ -31,11 +31,11 @@ export const SellerShopProfilePage = () => {
           <div className="pt-10 space-y-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Shop Name</label>
-              <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30 outline-none" placeholder="Your Shop Name" defaultValue="Cravo Seller" />
+              <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-green-600 focus:ring-1 focus:ring-green-600/30 outline-none" placeholder="Your Shop Name" defaultValue="Cravo Seller" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Shop Description</label>
-              <textarea rows={4} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30 outline-none resize-y" placeholder="Tell customers what your shop is about..."></textarea>
+              <textarea rows={4} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-green-600 focus:ring-1 focus:ring-green-600/30 outline-none resize-y" placeholder="Tell customers what your shop is about..."></textarea>
             </div>
           </div>
 

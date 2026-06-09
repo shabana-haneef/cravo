@@ -42,6 +42,15 @@ export const adminDashboardController = {
       // Calculate a dummy growth percentage based on users (just for UI flavor)
       const platformGrowth = totalUsers > 0 ? Math.min(100, totalUsers * 5) : 0;
 
+        const revenueChartData = [
+          { name: 'Jan', revenue: 4000 },
+          { name: 'Feb', revenue: 3000 },
+          { name: 'Mar', revenue: 5000 },
+          { name: 'Apr', revenue: 4500 },
+          { name: 'May', revenue: 6000 },
+          { name: 'Jun', revenue: 8500 }
+        ];
+
       return successResponse(res, 'Dashboard stats retrieved', {
         stats: {
           totalUsers,
@@ -49,7 +58,8 @@ export const adminDashboardController = {
           totalRevenue,
           platformGrowth,
           pendingApprovals,
-          recentSignups
+          recentSignups,
+          revenueChartData
         }
       });
     } catch (error) {

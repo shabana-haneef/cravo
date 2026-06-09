@@ -11,7 +11,7 @@ export const SellerSettingsPage = () => {
 
       <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
         <div className="flex border-b border-gray-100">
-          <button className="flex-1 py-4 font-semibold text-orange-600 border-b-2 border-orange-500 bg-orange-50/30">General</button>
+          <button className="flex-1 py-4 font-semibold text-green-600 border-b-2 border-green-600 bg-green-50/30">General</button>
           <button className="flex-1 py-4 font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors border-b-2 border-transparent">Notifications</button>
           <button className="flex-1 py-4 font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors border-b-2 border-transparent">Payouts</button>
         </div>
@@ -22,13 +22,13 @@ export const SellerSettingsPage = () => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Timezone</label>
-              <select className="w-full max-w-md px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30 outline-none bg-white">
+              <select className="w-full max-w-md px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-green-600 focus:ring-1 focus:ring-green-600/30 outline-none bg-white">
                 <option>Asia/Kolkata (IST)</option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Language</label>
-              <select className="w-full max-w-md px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30 outline-none bg-white">
+              <select className="w-full max-w-md px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-green-600 focus:ring-1 focus:ring-green-600/30 outline-none bg-white">
                 <option>English</option>
                 <option>Malayalam</option>
               </select>
