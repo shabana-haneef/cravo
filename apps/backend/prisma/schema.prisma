@@ -157,6 +157,7 @@ model Seller {
 
   shop            Shop?
   documents       SellerDocument[]
+  advertisements  Advertisement[]
 }
 
 model Shop {
@@ -486,4 +487,62 @@ model DeliveryTrackingEvent {
   createdAt   DateTime @default(now())
 
   @@index([deliveryId])
+}
+
+enum AdStatus {
+  PENDING_PAYMENT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  ACTIVE
+  EXPIRED
+}
+
+model AdPackage {
+  id           String   @id @default(cuid())
+  name         String
+  price        Float
+  durationDays Int
+  features     String[] @default([])
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  advertisements Advertisement[]
+}
+
+model Advertisement {
+  id          String   @id @default(cuid())
+  title       String
+  imageUrl    String
+  targetUrl   String
+  sellerId    String?
+  seller      Seller?  @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  packageId   String?
+  package     AdPackage? @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  status      AdStatus @default(PENDING_APPROVAL)
+  rejectionReason String?
+  startDate   DateTime?
+  endDate     DateTime?
+  views       Int      @default(0)
+  clicks      Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  payment     AdPayment?
+
+  @@index([status])
+  @@index([sellerId])
+}
+
+model AdPayment {
+  id                String   @id @default(cuid())
+  advertisementId   String   @unique
+  advertisement     Advertisement @relation(fields: [advertisementId], references: [id], onDelete: Cascade)
+  razorpayOrderId   String   @unique
+  razorpayPaymentId String?  @unique
+  razorpaySignature String?
+  amount            Float
+  status            PaymentStatus @default(PENDING)
+  createdAt         DateTime @default(now())
 }

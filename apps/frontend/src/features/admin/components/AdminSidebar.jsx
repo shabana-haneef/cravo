@@ -4,6 +4,7 @@ import {
   LayoutDashboard, 
   Users, 
   Store,
+  Megaphone,
   Settings,
   ChevronRight,
   ChevronLeft,
@@ -24,6 +25,7 @@ const navGroups = [
     items: [
       { name: 'Users', path: '/admin/users', icon: <Users size={18} /> },
       { name: 'Sellers', path: '/admin/sellers', icon: <Store size={18} /> },
+      { name: 'Ads', path: '/admin/ads', icon: <Megaphone size={18} /> },
     ]
   },
   {

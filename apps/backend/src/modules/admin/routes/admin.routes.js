@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { adminSellerController } from '../controllers/admin.seller.controller.js';
+import { adminUserController } from '../controllers/admin.user.controller.js';
+import { adminDashboardController } from '../controllers/admin.dashboard.controller.js';
 import { categoryController } from '../../products/controllers/category.controller.js';
 import { adminProductController } from '../controllers/admin.product.controller.js';
 import { protect } from '../../../shared/middleware/auth.middleware.js';
@@ -10,6 +12,17 @@ const router = Router();
 // Protect all admin routes
 router.use(protect);
 router.use(allowRoles('ADMIN'));
+
+// Dashboard & Settings
+router.get('/dashboard/stats', adminDashboardController.getStats);
+router.get('/settings', adminDashboardController.getSettings);
+router.put('/settings', adminDashboardController.updateSettings);
+
+// User Management
+router.get('/users', adminUserController.listUsers);
+router.patch('/users/:id/role', adminUserController.updateUserRole);
+router.patch('/users/:id/status', adminUserController.updateUserStatus);
+
 
 // Seller Applications
 router.get('/seller-applications', adminSellerController.listApplications);

@@ -44,8 +44,12 @@ export const sellerRepository = {
     return prisma.seller.findMany({
       where,
       include: {
+        documents: true,
         user: {
-          select: { email: true }
+          select: { 
+            email: true,
+            profile: true
+          }
         }
       },
       orderBy: { createdAt: 'desc' }
