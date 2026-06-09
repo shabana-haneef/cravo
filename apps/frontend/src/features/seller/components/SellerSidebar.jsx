@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useMyShop } from '../../sellers/hooks/useShopQueries.js';
 import { 
   LayoutDashboard, 
   Package, 
@@ -52,6 +53,9 @@ const navGroups = [
 export const SellerSidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
+  const { data: shop, isLoading, isError } = useMyShop();
+
+  const isShopMissing = !isLoading && (!shop || isError);
 
   return (
     <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0 transition-all duration-300 z-20`}>
@@ -80,22 +84,36 @@ export const SellerSidebar = () => {
                     key={item.name}
                     to={item.path}
                     title={isCollapsed ? item.name : undefined}
-                    className={({ isActive }) =>
-                      `flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2.5 rounded-xl text-sm font-medium transition-all ${
-                        isActive
-                          ? 'bg-green-50 text-green-600 shadow-sm shadow-green-100/50'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      }`
-                    }
+                    className={({ isActive }) => {
+                      const isShopProfile = item.path === '/seller/shop-profile';
+                      const shouldBlink = isShopProfile && isShopMissing;
+                      
+                      return `flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2.5 rounded-xl text-sm font-medium transition-all ${
+                        shouldBlink
+                          ? 'bg-rose-50 text-rose-600 border border-rose-100 shadow-sm shadow-rose-100/50'
+                          : isActive
+                            ? 'bg-green-50 text-green-600 shadow-sm shadow-green-100/50'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }`;
+                    }}
                   >
-                    {({ isActive }) => (
-                      <>
-                        <span className={`${isActive ? 'text-green-600' : 'text-gray-400'}`}>
-                          {item.icon}
-                        </span>
-                        {!isCollapsed && <span className="whitespace-nowrap">{item.name}</span>}
-                      </>
-                    )}
+                    {({ isActive }) => {
+                      const isShopProfile = item.path === '/seller/shop-profile';
+                      const shouldBlink = isShopProfile && isShopMissing;
+
+                      return (
+                        <>
+                          <span className={`${isActive ? 'text-green-600' : shouldBlink ? 'text-rose-500' : 'text-gray-400'}`}>
+                            {item.icon}
+                          </span>
+                          {!isCollapsed && (
+                            <span className={`whitespace-nowrap ${shouldBlink ? 'animate-pulse' : ''}`}>
+                              {item.name}
+                            </span>
+                          )}
+                        </>
+                      );
+                    }}
                   </NavLink>
                 ))}
               </div>

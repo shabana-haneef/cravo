@@ -11,6 +11,7 @@ const MotionLink = motion(Link);
 export const SellerLayout = () => {
   const { data: shop, isLoading, isError } = useMyShop();
   const [showBanner, setShowBanner] = useState(false);
+  const [snoozedUntil, setSnoozedUntil] = useState(0);
 
   // Determine if shop is missing
   const isShopMissing = !isLoading && (!shop || isError);
@@ -23,14 +24,27 @@ export const SellerLayout = () => {
 
     // Toggle widget visibility every 12 seconds (visible for 8s, hidden for 4s)
     const interval = setInterval(() => {
-      setShowBanner(prev => !prev);
+      if (Date.now() > snoozedUntil) {
+        setShowBanner(prev => !prev);
+      } else {
+        setShowBanner(false);
+      }
     }, 12000);
 
     // Initial show
-    setShowBanner(true);
+    if (Date.now() > snoozedUntil) {
+      setShowBanner(true);
+    } else {
+      setShowBanner(false);
+    }
 
     return () => clearInterval(interval);
-  }, [isShopMissing]);
+  }, [isShopMissing, snoozedUntil]);
+
+  const handleSnooze = () => {
+    setSnoozedUntil(Date.now() + 60000); // 1 minute
+    setShowBanner(false);
+  };
 
   return (
     <div className="flex min-h-screen bg-[#f8f9fc] font-sans antialiased text-gray-800 relative">
@@ -57,40 +71,48 @@ export const SellerLayout = () => {
                   </div>
                 </div>
 
-                <div>
-                  <h4 className="font-extrabold text-[#111827] text-lg animate-pulse">Shop Profile Incomplete</h4>
+                 <div>
+                  <h4 className="font-medium text-[#111827] text-lg animate-pulse">Shop Profile Incomplete</h4>
                   <p className="text-sm text-gray-500 leading-relaxed mt-2 max-w-sm">
                     Customers cannot view your shop or purchase your products until you complete your shop profile setup. Let's get your store ready!
                   </p>
                 </div>
 
-                <div className="flex w-full gap-3 mt-2">
+                <div className="flex flex-col w-full items-center gap-3">
+                  <div className="flex w-full gap-3 mt-2">
+                    <button
+                      onClick={() => setShowBanner(false)}
+                      className="flex-1 py-2.5 text-xs font-normal text-gray-500 hover:text-gray-700 transition-colors border border-gray-200 hover:bg-gray-50 rounded-xl cursor-pointer"
+                    >
+                      Later
+                    </button>
+                    <MotionLink
+                      to="/seller/shop-profile"
+                      onClick={() => setShowBanner(false)}
+                      animate={{
+                        scale: [1, 1.04, 1],
+                        boxShadow: [
+                          "0px 4px 10px rgba(245, 158, 11, 0.2)",
+                          "0px 4px 22px rgba(245, 158, 11, 0.5)",
+                          "0px 4px 10px rgba(245, 158, 11, 0.2)"
+                        ]
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                      className="flex-1 py-2.5 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white text-center rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      Set Up Now <ArrowRight size={14} />
+                    </MotionLink>
+                  </div>
                   <button
-                    onClick={() => setShowBanner(false)}
-                    className="flex-1 py-2.5 text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors border border-gray-200 hover:bg-gray-50 rounded-xl cursor-pointer"
+                    onClick={handleSnooze}
+                    className="text-xs text-gray-400 hover:text-gray-600 transition-colors font-normal hover:underline cursor-pointer mt-1"
                   >
-                    Later
+                    Don't show for 1 minute
                   </button>
-                  <MotionLink
-                    to="/seller/shop-profile"
-                    onClick={() => setShowBanner(false)}
-                    animate={{
-                      scale: [1, 1.04, 1],
-                      boxShadow: [
-                        "0px 4px 10px rgba(245, 158, 11, 0.2)",
-                        "0px 4px 22px rgba(245, 158, 11, 0.5)",
-                        "0px 4px 10px rgba(245, 158, 11, 0.2)"
-                      ]
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: "easeInOut"
-                    }}
-                    className="flex-1 py-2.5 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white text-center rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
-                  >
-                    Set Up Now <ArrowRight size={14} />
-                  </MotionLink>
                 </div>
               </motion.div>
             </div>
