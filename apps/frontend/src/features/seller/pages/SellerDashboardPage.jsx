@@ -13,13 +13,6 @@ import {
   ShoppingBag, BarChart2, Settings
 } from 'lucide-react';
 
-// --- Chart Data Simulation (matching the smooth curve in image) ---
-const monthlyData = [
-  { name: 'May 1', revenue: 0 }, { name: 'May 6', revenue: 0 }, { name: 'May 11', revenue: 5000 },
-  { name: 'May 16', revenue: 200000 }, { name: 'May 21', revenue: 5000 }, { name: 'May 26', revenue: 0 },
-  { name: 'May 31', revenue: 0 },
-];
-
 const COLORS = ['#A855F7', '#10B981', '#3B82F6']; // Purple (Pending), Green (Completed), Blue (Cancelled)
 
 export const SellerDashboardPage = () => {
@@ -42,25 +35,45 @@ export const SellerDashboardPage = () => {
       return avail <= thresh;
     }).length;
 
-    const activeOrders = orders.filter(o => !['DELIVERED', 'CANCELLED'].includes(o.status)).length;
+    const activeOrders = orders.filter(o => !['DELIVERED', 'CANCELLED', 'REFUNDED'].includes(o.status)).length;
     const totalRevenue = orders
       .filter(o => o.status === 'DELIVERED')
-      .reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+      .reduce((acc, o) => acc + (o.grandTotal || o.totalAmount || 0), 0);
 
     // Distribution data for Donut Chart
-    const pending = orders.filter(o => o.status === 'PENDING').length || 8;
-    const completed = orders.filter(o => o.status === 'DELIVERED').length || 8;
-    const cancelled = orders.filter(o => o.status === 'CANCELLED').length || 7;
+    const pending = orders.filter(o => !['DELIVERED', 'CANCELLED', 'REFUNDED'].includes(o.status)).length;
+    const completed = orders.filter(o => o.status === 'DELIVERED').length;
+    const cancelled = orders.filter(o => ['CANCELLED', 'REFUNDED'].includes(o.status)).length;
     
     const totalOrdersForChart = pending + completed + cancelled;
     
+    // Generate chart data for the last 7 days
+    const chartData = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      
+      const dayRevenue = orders
+        .filter(o => o.status === 'DELIVERED')
+        .filter(o => {
+          const orderDate = new Date(o.createdAt);
+          return orderDate.getDate() === d.getDate() && orderDate.getMonth() === d.getMonth() && orderDate.getFullYear() === d.getFullYear();
+        })
+        .reduce((sum, o) => sum + (o.grandTotal || o.totalAmount || 0), 0);
+        
+      chartData.push({ name: dateStr, revenue: dayRevenue });
+    }
+    
     return { 
-      totalProducts: totalProducts || 20, 
-      stockAlerts: stockAlerts || 0, 
-      activeOrders: activeOrders || 0, 
-      totalRevenue: totalRevenue || 0,
+      totalProducts, 
+      stockAlerts, 
+      activeOrders, 
+      totalRevenue,
+      chartData,
       distribution: [
-        { name: 'Pending', value: pending, color: '#A855F7' }, 
+        { name: 'Active', value: pending, color: '#A855F7' }, 
         { name: 'Completed', value: completed, color: '#10B981' },
         { name: 'Cancelled', value: cancelled, color: '#3B82F6' }
       ],
@@ -174,7 +187,7 @@ export const SellerDashboardPage = () => {
           </div>
           <div className="h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+              <AreaChart data={stats.chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#f97316" stopOpacity={0.3}/>
