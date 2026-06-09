@@ -13,14 +13,24 @@ import cartRoutes from "../../modules/orders/routes/cart.routes.js";
 import orderRoutes from "../../modules/orders/routes/order.routes.js";
 import paymentRoutes from "../../modules/orders/routes/payment.routes.js";
 import deliveryRoutes from "../../modules/logistics/routes/delivery.routes.js";
-import { adminAdRoutes, sellerAdRoutes } from "../../modules/advertisements/routes/ad.routes.js";
+import { adminAdRoutes, sellerAdRoutes, publicAdRoutes } from "../../modules/advertisements/routes/ad.routes.js";
 
 const router = Router();
 
+// -------------------------------------------------------------
+// USER / PUBLIC ROUTES
+// -------------------------------------------------------------
 router.use("/auth", authRoutes);
 router.use("/users/addresses", addressRoutes);
 router.use("/users", userRoutes);
 router.use("/sellers", sellerRoutes);
+
+// Public Ads
+router.use("/ads", publicAdRoutes);
+
+// -------------------------------------------------------------
+// ADMIN ROUTES
+// -------------------------------------------------------------
 router.use("/admin", adminRoutes);
 router.use("/shops", shopRoutes);
 router.use("/categories", categoryRoutes);

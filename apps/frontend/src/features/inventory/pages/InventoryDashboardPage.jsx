@@ -65,8 +65,9 @@ export const InventoryDashboardPage = () => {
 
   // Filters
   const filteredItems = inventoryItems.filter(item => {
-    const matchesSearch = item.productName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase()));
+    const productNameMatch = item.productName ? item.productName.toLowerCase().includes(searchTerm.toLowerCase()) : false;
+    const skuMatch = item.sku ? item.sku.toLowerCase().includes(searchTerm.toLowerCase()) : false;
+    const matchesSearch = productNameMatch || skuMatch;
     const matchesStatus = filterStatus === 'ALL' || item.status === filterStatus;
     const matchesCategory = filterCategory === 'ALL' || item.categoryId === filterCategory;
     return matchesSearch && matchesStatus && matchesCategory;

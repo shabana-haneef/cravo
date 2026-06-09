@@ -6,6 +6,7 @@ import { useCartStore } from '../store/cart.store.js';
 import { useLogout } from '../features/auth/hooks/useAuthQueries.js';
 import { ShoppingCart, User, LogOut, Store, Package, Box, ChevronDown, Search } from 'lucide-react';
 import { Button } from '../components/ui/Button.jsx';
+import { GlobalAdPopup } from '../components/shared/GlobalAdPopup.jsx';
 
 export const MainLayout = () => {
   const { isAuthenticated, user } = useAuthStore();
@@ -196,7 +197,6 @@ export const MainLayout = () => {
             </div>
           </div>
         </div>
-        
         <div className="max-w-[1536px] w-full px-4 sm:px-6 lg:px-8 mx-auto flex flex-col md:flex-row justify-between items-center text-[11px] text-gray-400 border-t border-gray-100 pt-8 font-medium">
           <p>© 2026 Cravo Marketplace. All rights reserved.</p>
           <div className="flex gap-8 mt-4 md:mt-0">
@@ -206,6 +206,10 @@ export const MainLayout = () => {
           </div>
         </div>
       </footer>
+      
+      {/* Global Ad Popup */}
+      <GlobalAdPopup />
     </div>
   );
 };
+

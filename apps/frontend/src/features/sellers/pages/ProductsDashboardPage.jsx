@@ -35,7 +35,7 @@ export const ProductsDashboardPage = () => {
 
   // Filter products
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = p.name ? p.name.toLowerCase().includes(searchTerm.toLowerCase()) : false;
     const matchesStatus = filterStatus === 'ALL' || p.status === filterStatus;
     const matchesCategory = filterCategory === 'ALL' || p.categoryId === filterCategory;
     return matchesSearch && matchesStatus && matchesCategory;

@@ -105,10 +105,10 @@ export const productService = {
 
   async getMyProducts(userId, page = 1, limit = 10) {
     const seller = await sellerRepository.findByUserId(userId);
-    if (!seller) throw new AppError("Seller not found", 404);
+    if (!seller) return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
 
     const shop = await shopRepository.findBySellerId(seller.id);
-    if (!shop) throw new AppError("Shop not found", 404);
+    if (!shop) return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
 
     return productRepository.findByShopId(shop.id, page, limit);
   },

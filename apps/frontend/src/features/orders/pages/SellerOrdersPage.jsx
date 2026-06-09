@@ -11,10 +11,11 @@ export const SellerOrdersPage = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredOrders = orders.filter(o => 
-    o.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    o.customer?.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredOrders = orders.filter(o => {
+    const idMatch = o.id ? o.id.toLowerCase().includes(searchTerm.toLowerCase()) : false;
+    const emailMatch = o.customer?.email ? o.customer.email.toLowerCase().includes(searchTerm.toLowerCase()) : false;
+    return idMatch || emailMatch;
+  });
 
   if (isLoading) {
     return (

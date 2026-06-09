@@ -5,8 +5,15 @@ import { protect } from '../../../shared/middleware/auth.middleware.js';
 import { allowRoles } from '../../../shared/middleware/role.middleware.js';
 import { upload } from '../../../shared/middleware/upload.middleware.js';
 
+import { adPublicController } from '../controllers/ad.public.controller.js';
+
 export const adminAdRoutes = Router();
 export const sellerAdRoutes = Router();
+export const publicAdRoutes = Router();
+
+// --- Public Ad Routes ---
+publicAdRoutes.get('/active', adPublicController.getActiveAds);
+publicAdRoutes.post('/:id/click', adPublicController.clickAd);
 
 // --- Admin Ad Routes ---
 adminAdRoutes.use(protect);
