@@ -7,6 +7,7 @@ import { useLogout } from '../features/auth/hooks/useAuthQueries.js';
 import { ShoppingCart, User, LogOut, Store, Package, Box, ChevronDown, Search, Heart } from 'lucide-react';
 import { Button } from '../components/ui/Button.jsx';
 import { GlobalAdPopup } from '../components/shared/GlobalAdPopup.jsx';
+import { useWishlist } from '../features/wishlist/hooks/useWishlistQueries.js';
 
 export const MainLayout = () => {
   const { isAuthenticated, user } = useAuthStore();
@@ -15,6 +16,10 @@ export const MainLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
+
+  const isCustomer = isAuthenticated && user?.role === 'CUSTOMER';
+  const { data: wishlist = [] } = useWishlist(isCustomer);
+  const wishlistCount = wishlist.length;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -64,10 +69,15 @@ export const MainLayout = () => {
             {(!isAuthenticated || user?.role === 'CUSTOMER') && (
               <Link
                 to="/wishlist"
-                className="p-2 text-gray-600 hover:text-rose-500 transition-colors"
+                className="relative p-2 text-gray-600 hover:text-rose-500 transition-colors"
                 title="My Wishlist"
               >
                 <Heart size={22} className="stroke-[2]" />
+                {wishlistCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-rose-500 text-white text-[10px] font-bold rounded-full h-[18px] w-[18px] flex items-center justify-center leading-none shadow-sm border-2 border-white">
+                    {wishlistCount > 99 ? '99+' : wishlistCount}
+                  </span>
+                )}
               </Link>
             )}
 
