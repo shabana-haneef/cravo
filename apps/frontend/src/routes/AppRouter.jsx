@@ -26,7 +26,6 @@ const OrderSuccessPage = React.lazy(() => import('../features/orders/pages/Order
 const ProfilePage = React.lazy(() => import('../features/users/pages/ProfilePage.jsx').then(m => ({ default: m.ProfilePage })));
 const AddressesPage = React.lazy(() => import('../features/users/pages/AddressesPage.jsx').then(m => ({ default: m.AddressesPage })));
 
-// Lazy load seller pages
 const BecomeSellerPage = React.lazy(() => import('../features/sellers/pages/BecomeSellerPage.jsx').then(m => ({ default: m.BecomeSellerPage })));
 const SellerApplicationContainer = React.lazy(() => import('../features/sellers/pages/SellerApplicationContainer.jsx').then(m => ({ default: m.SellerApplicationContainer })));
 const ProductsDashboardPage = React.lazy(() => import('../features/sellers/pages/ProductsDashboardPage.jsx').then(m => ({ default: m.ProductsDashboardPage })));
@@ -36,6 +35,13 @@ const InventoryDashboardPage = React.lazy(() => import('../features/inventory/pa
 const InventoryHistoryPage = React.lazy(() => import('../features/inventory/pages/InventoryHistoryPage.jsx').then(m => ({ default: m.InventoryHistoryPage })));
 const SellerDashboardPage = React.lazy(() => import('../features/seller/pages/SellerDashboardPage.jsx').then(m => ({ default: m.SellerDashboardPage })));
 const SellerOrdersPage = React.lazy(() => import('../features/orders/pages/SellerOrdersPage.jsx').then(m => ({ default: m.SellerOrdersPage })));
+
+// New Seller Pages
+const SellerAdsPage = React.lazy(() => import('../features/seller/pages/SellerAdsPage.jsx').then(m => ({ default: m.SellerAdsPage })));
+const SellerAnalyticsPage = React.lazy(() => import('../features/seller/pages/SellerAnalyticsPage.jsx').then(m => ({ default: m.SellerAnalyticsPage })));
+const SellerReviewsPage = React.lazy(() => import('../features/seller/pages/SellerReviewsPage.jsx').then(m => ({ default: m.SellerReviewsPage })));
+const SellerSettingsPage = React.lazy(() => import('../features/seller/pages/SellerSettingsPage.jsx').then(m => ({ default: m.SellerSettingsPage })));
+const SellerShopProfilePage = React.lazy(() => import('../features/seller/pages/SellerShopProfilePage.jsx').then(m => ({ default: m.SellerShopProfilePage })));
 
 const S = ({ children }) => <Suspense fallback={<LoadingScreen />}>{children}</Suspense>;
 
@@ -94,6 +100,11 @@ const router = createBrowserRouter([
               { path: '/seller/inventory', element: <S><InventoryDashboardPage /></S> },
               { path: '/seller/inventory/:variantId/history', element: <S><InventoryHistoryPage /></S> },
               { path: '/seller/orders', element: <S><SellerOrdersPage /></S> },
+              { path: '/seller/shop-profile', element: <S><SellerShopProfilePage /></S> },
+              { path: '/seller/ads', element: <S><SellerAdsPage /></S> },
+              { path: '/seller/analytics', element: <S><SellerAnalyticsPage /></S> },
+              { path: '/seller/reviews', element: <S><SellerReviewsPage /></S> },
+              { path: '/seller/settings', element: <S><SellerSettingsPage /></S> },
             ]
           }
         ]

@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import { Pagination } from '../../../components/ui/Pagination.jsx';
 import { useMyProducts, useDeleteProduct } from '../../products/hooks/useSellerProductQueries.js';
 import { useCategories } from '../../categories/hooks/useCategoryQueries.js';
+import { ProductForm } from '../components/ProductForm.jsx';
 import { toast } from 'sonner';
 import { 
-  Package, Search, Plus, Filter, Edit2, 
+  Package, Search, Plus, Filter, Edit2, X,
   Trash2, Eye, MoreVertical, Loader2, AlertCircle,
   CheckCircle2, XCircle, Clock
 } from 'lucide-react';
@@ -24,6 +25,7 @@ export const ProductsDashboardPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterCategory, setFilterCategory] = useState('ALL');
+  const [showAddModal, setShowAddModal] = useState(false);
 
   // Stats (Note: Total stats might require a separate unpaginated endpoint for accuracy, but using meta.total for now)
   const total = meta?.total || products.length;
@@ -79,6 +81,7 @@ export const ProductsDashboardPage = () => {
   }
 
   return (
+    <>
     <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -89,12 +92,12 @@ export const ProductsDashboardPage = () => {
           </h1>
           <p className="text-sm text-gray-500 mt-1">Manage your catalog, variants, and stock.</p>
         </div>
-        <Link
-          to="/seller/products/new"
+        <button
+          onClick={() => setShowAddModal(true)}
           className="inline-flex items-center gap-2 bg-[#1E3A2B] text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-[#162A1F] transition-colors shadow-sm"
         >
           <Plus size={18} /> Add Product
-        </Link>
+        </button>
       </div>
 
       {/* Summary Cards */}
@@ -183,8 +186,8 @@ export const ProductsDashboardPage = () => {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredProducts.map(product => {
-                  const coverImage = product.images?.[0]?.url || 'https://via.placeholder.com/150';
-                  const totalStock = product.variants?.reduce((acc, v) => acc + (v.stock || 0), 0) || 0;
+                  const coverImage = product.images?.[0]?.imageUrl || 'https://via.placeholder.com/150';
+                  const totalStock = product.variants?.reduce((acc, v) => acc + (v.inventory?.availableStock || 0), 0) || 0;
                   
                   return (
                     <tr key={product.id} className="hover:bg-gray-50 transition-colors">
@@ -256,5 +259,38 @@ export const ProductsDashboardPage = () => {
         />
       )}
     </div>
+
+      {/* Add Product Modal */}
+      {showAddModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-8 px-4"
+          style={{ backdropFilter: 'blur(6px)', backgroundColor: 'rgba(0,0,0,0.45)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}
+        >
+          <div
+            className="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl"
+            style={{ animation: 'modalSlideIn 0.25s ease' }}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setShowAddModal(false)}
+              className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+            >
+              <X size={16} />
+            </button>
+            <div className="p-6 overflow-y-auto max-h-[85vh]">
+              <ProductForm isEditing={false} onClose={() => setShowAddModal(false)} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes modalSlideIn {
+          from { opacity: 0; transform: translateY(-16px) scale(0.98); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
+    </>
   );
 };

@@ -9,7 +9,7 @@ export const productController = {
       const parsed = productSchema.safeParse(req.body);
       if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
 
-      const product = await productService.createProduct(req.user.id, parsed.data, req.files?.images);
+      const product = await productService.createProduct(req.user.id, parsed.data, req.files);
       logger.info({ userId: req.user.id, productId: product.id }, 'Product created');
       return successResponse(res, 'Product created successfully', { product }, 201);
     } catch (error) { next(error); }
@@ -36,7 +36,7 @@ export const productController = {
       const parsed = updateProductSchema.safeParse(req.body);
       if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
 
-      const product = await productService.updateProduct(req.user.id, req.params.id, parsed.data, req.files?.images);
+      const product = await productService.updateProduct(req.user.id, req.params.id, parsed.data, req.files);
       logger.info({ userId: req.user.id, productId: product.id }, 'Product updated');
       return successResponse(res, 'Product updated successfully', { product });
     } catch (error) { next(error); }

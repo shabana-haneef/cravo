@@ -307,6 +307,9 @@ model Product {
   slug             String        @unique
   shortDescription String?
   description      String?
+  features         String[]      @default([])
+  tags             String[]      @default([])
+  additionalInformation String?
   status           ProductStatus @default(PENDING_APPROVAL)
   rejectionReason  String?
   isFeatured       Boolean       @default(false)

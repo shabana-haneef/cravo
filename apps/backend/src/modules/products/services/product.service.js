@@ -49,8 +49,11 @@ export const productService = {
         slug,
         shortDescription: data.shortDescription,
         description: data.description,
+        features: data.features || [],
+        tags: data.tags || [],
+        additionalInformation: data.additionalInformation,
         isFeatured: data.isFeatured,
-        status: 'PENDING_APPROVAL'
+        status: 'APPROVED'
       }, tx);
 
       // Create Images

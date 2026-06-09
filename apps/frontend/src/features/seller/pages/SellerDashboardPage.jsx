@@ -9,7 +9,8 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import { 
-  IndianRupee, Package, Users, Clock, Plus, ChevronRight, Calendar, Search
+  IndianRupee, Package, Users, Clock, Plus, ChevronRight, Calendar, Search,
+  ShoppingBag, BarChart2, Settings
 } from 'lucide-react';
 
 // --- Chart Data Simulation (matching the smooth curve in image) ---
@@ -250,33 +251,64 @@ export const SellerDashboardPage = () => {
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Upcoming Events */}
+        {/* Latest Orders */}
         <div className="lg:col-span-2 bg-white border border-gray-100 rounded-xl shadow-sm p-4 flex flex-col">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Upcoming Events</h3>
-            <Link to="#" className="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center">
+            <h3 className="text-lg font-semibold text-gray-900">Latest Orders</h3>
+            <Link to="/seller/orders" className="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center">
               View All <ChevronRight size={16} className="ml-1" />
             </Link>
           </div>
-          
-          <div className="relative mb-8">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={16} className="text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full md:w-64 pl-9 pr-4 py-2 bg-gray-50 border-none rounded-xl text-sm outline-none focus:ring-2 focus:ring-gray-200"
-            />
-          </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center py-12">
-            <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
-              <Calendar size={20} className="text-gray-400" />
+          {orders.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center py-12">
+              <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
+                <ShoppingBag size={20} className="text-gray-400" />
+              </div>
+              <h4 className="text-sm font-semibold text-gray-900">No orders yet</h4>
+              <p className="text-xs text-gray-500 mt-1">Your latest orders will appear here.</p>
             </div>
-            <h4 className="text-sm font-semibold text-gray-900">No upcoming events</h4>
-            <p className="text-xs text-gray-500 mt-1">You're all caught up! No events scheduled.</p>
-          </div>
+          ) : (
+            <div className="space-y-2 flex-1 overflow-y-auto">
+              {orders.slice(0, 6).map((order) => {
+                const statusColors = {
+                  PENDING: { bg: 'bg-yellow-50', text: 'text-yellow-600' },
+                  PROCESSING: { bg: 'bg-blue-50', text: 'text-blue-600' },
+                  SHIPPED: { bg: 'bg-purple-50', text: 'text-purple-600' },
+                  DELIVERED: { bg: 'bg-green-50', text: 'text-green-600' },
+                  CANCELLED: { bg: 'bg-red-50', text: 'text-red-600' },
+                };
+                const sc = statusColors[order.status] || { bg: 'bg-gray-50', text: 'text-gray-600' };
+                return (
+                  <Link
+                    key={order.id || order._id}
+                    to={`/seller/orders/${order.id || order._id}`}
+                    className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
+                        <ShoppingBag size={16} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          #{String(order.id || order._id).slice(-6).toUpperCase()}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {order.items?.length || 0} item{order.items?.length !== 1 ? 's' : ''} &middot; ₹{(order.totalAmount || 0).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${sc.bg} ${sc.text}`}>
+                        {order.status}
+                      </span>
+                      <ChevronRight size={14} className="text-gray-300" />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Quick Actions */}
@@ -288,15 +320,47 @@ export const SellerDashboardPage = () => {
             </Link>
           </div>
           
-          <Link to="/seller/products/new" className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-all cursor-pointer">
-            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 shrink-0">
-              <Plus size={20} />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-900">Create New Product</p>
-              <p className="text-xs text-gray-500 mt-0.5">Add a new product to your store</p>
-            </div>
-          </Link>
+          <div className="space-y-2">
+            <Link to="/seller/products/new" className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-all cursor-pointer">
+              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 shrink-0">
+                <Plus size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Create New Product</p>
+                <p className="text-xs text-gray-500 mt-0.5">Add a new product to your store</p>
+              </div>
+            </Link>
+
+            <Link to="/seller/orders" className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-all cursor-pointer">
+              <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-500 shrink-0">
+                <ShoppingBag size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">View Orders</p>
+                <p className="text-xs text-gray-500 mt-0.5">Manage and track your orders</p>
+              </div>
+            </Link>
+
+            <Link to="/seller/products" className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-all cursor-pointer">
+              <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
+                <Package size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Manage Products</p>
+                <p className="text-xs text-gray-500 mt-0.5">Edit, update or remove products</p>
+              </div>
+            </Link>
+
+            <Link to="/seller/analytics" className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-all cursor-pointer">
+              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-500 shrink-0">
+                <BarChart2 size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">View Analytics</p>
+                <p className="text-xs text-gray-500 mt-0.5">Track your store performance</p>
+              </div>
+            </Link>
+          </div>
         </div>
 
       </div>

@@ -8,8 +8,11 @@ import {
   Store,
   ChevronRight,
   ChevronLeft,
-  Menu,
-  LogOut
+  LogOut,
+  BarChart3,
+  Megaphone,
+  Star,
+  Settings
 } from 'lucide-react';
 import { useLogout } from '../../auth/hooks/useAuthQueries.js';
 
@@ -18,6 +21,7 @@ const navGroups = [
     label: 'OVERVIEW',
     items: [
       { name: 'Dashboard', path: '/seller/dashboard', icon: <LayoutDashboard size={18} /> },
+      { name: 'Analytics', path: '/seller/analytics', icon: <BarChart3 size={18} /> },
     ]
   },
   {
@@ -26,12 +30,20 @@ const navGroups = [
       { name: 'Products', path: '/seller/products', icon: <Package size={18} /> },
       { name: 'Inventory', path: '/seller/inventory', icon: <Box size={18} /> },
       { name: 'Orders', path: '/seller/orders', icon: <ShoppingCart size={18} /> },
+      { name: 'Reviews', path: '/seller/reviews', icon: <Star size={18} /> },
+    ]
+  },
+  {
+    label: 'MARKETING',
+    items: [
+      { name: 'Ads & Promotions', path: '/seller/ads', icon: <Megaphone size={18} /> },
     ]
   },
   {
     label: 'SHOP',
     items: [
       { name: 'Shop Profile', path: '/seller/shop-profile', icon: <Store size={18} /> },
+      { name: 'Settings', path: '/seller/settings', icon: <Settings size={18} /> },
     ]
   }
 ];

@@ -5,6 +5,19 @@ export const productSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100),
   shortDescription: z.string().max(200).optional().nullable(),
   description: z.string().max(2000).optional().nullable(),
+  features: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      try { return JSON.parse(val); } catch { return []; }
+    }
+    return val || [];
+  }, z.array(z.string()).optional()),
+  tags: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      try { return JSON.parse(val); } catch { return []; }
+    }
+    return val || [];
+  }, z.array(z.string()).optional()),
+  additionalInformation: z.string().optional().nullable(),
   isFeatured: z.coerce.boolean().default(false),
   // Initial variant data
   variantName: z.string().min(1, "Variant name is required"),
@@ -18,5 +31,18 @@ export const updateProductSchema = z.object({
   name: z.string().min(2).max(100).optional(),
   shortDescription: z.string().max(200).optional().nullable(),
   description: z.string().max(2000).optional().nullable(),
+  features: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      try { return JSON.parse(val); } catch { return []; }
+    }
+    return val || [];
+  }, z.array(z.string()).optional()),
+  tags: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      try { return JSON.parse(val); } catch { return []; }
+    }
+    return val || [];
+  }, z.array(z.string()).optional()),
+  additionalInformation: z.string().optional().nullable(),
   isFeatured: z.coerce.boolean().optional()
 });

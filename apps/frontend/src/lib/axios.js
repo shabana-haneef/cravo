@@ -5,9 +5,6 @@ import { useAuthStore } from '../store/auth.store.js';
 export const api = axios.create({
   baseURL: '/api/v1',
   withCredentials: true, // For httpOnly cookies like refreshToken
-  headers: {
-    'Content-Type': 'application/json'
-  }
 });
 
 let isRefreshing = false;
