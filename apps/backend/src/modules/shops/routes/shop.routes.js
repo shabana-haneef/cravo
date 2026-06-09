@@ -6,25 +6,22 @@ import { upload } from '../../../shared/middleware/upload.middleware.js';
 
 const router = Router();
 
-// Public Routes
-router.get('/:slug', shopController.getPublicShop);
+// Protected Routes (Sellers Only - Specific Routes First)
+router.get('/me', protect, allowRoles('SELLER'), shopController.getMyShop);
 
-// Protected Routes (Sellers Only)
-router.use(protect);
-router.use(allowRoles('SELLER'));
-
-router.post('/', upload.fields([
+router.post('/', protect, allowRoles('SELLER'), upload.fields([
   { name: 'logo', maxCount: 1 },
   { name: 'banner', maxCount: 1 }
 ]), shopController.createShop);
 
-router.get('/me', shopController.getMyShop);
-
-router.put('/me', upload.fields([
+router.put('/me', protect, allowRoles('SELLER'), upload.fields([
   { name: 'logo', maxCount: 1 },
   { name: 'banner', maxCount: 1 }
 ]), shopController.updateShop);
 
-router.put('/me/timings', shopController.updateTimings);
+router.put('/me/timings', protect, allowRoles('SELLER'), shopController.updateTimings);
+
+// Public Routes (Wildcard Routes Last)
+router.get('/:slug', shopController.getPublicShop);
 
 export default router;
