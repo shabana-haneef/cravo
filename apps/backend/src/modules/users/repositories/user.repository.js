@@ -34,13 +34,17 @@ export const userRepository = {
     });
   },
 
-  /**
-   * Update an existing user
-   */
   async update(id, data) {
     return prisma.user.update({
       where: { id },
       data,
     });
+  },
+
+  /**
+   * Count the total number of users in the database
+   */
+  async count() {
+    return prisma.user.count();
   }
 };

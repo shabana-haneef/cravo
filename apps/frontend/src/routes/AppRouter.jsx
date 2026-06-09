@@ -5,12 +5,20 @@ import { LoadingScreen } from '../components/ui/LoadingScreen.jsx';
 import { MainLayout } from '../layouts/MainLayout.jsx';
 import { SellerLayout } from '../layouts/SellerLayout.jsx';
 
+import { AdminLayout } from '../layouts/AdminLayout.jsx';
+
 // Lazy load auth pages
 const LoginPage = React.lazy(() => import('../features/auth/pages/LoginPage.jsx').then(m => ({ default: m.LoginPage })));
 const RegisterPage = React.lazy(() => import('../features/auth/pages/RegisterPage.jsx').then(m => ({ default: m.RegisterPage })));
 const VerifyEmailPage = React.lazy(() => import('../features/auth/pages/VerifyEmailPage.jsx').then(m => ({ default: m.VerifyEmailPage })));
 const ForgotPasswordPage = React.lazy(() => import('../features/auth/pages/ForgotPasswordPage.jsx').then(m => ({ default: m.ForgotPasswordPage })));
 const ResetPasswordPage = React.lazy(() => import('../features/auth/pages/ResetPasswordPage.jsx').then(m => ({ default: m.ResetPasswordPage })));
+
+// Lazy load admin pages
+const AdminDashboardPage = React.lazy(() => import('../features/admin/pages/AdminDashboardPage.jsx').then(m => ({ default: m.AdminDashboardPage })));
+const AdminUsersPage = React.lazy(() => import('../features/admin/pages/AdminUsersPage.jsx').then(m => ({ default: m.AdminUsersPage })));
+const AdminSellersPage = React.lazy(() => import('../features/admin/pages/AdminSellersPage.jsx').then(m => ({ default: m.AdminSellersPage })));
+const AdminSettingsPage = React.lazy(() => import('../features/admin/pages/AdminSettingsPage.jsx').then(m => ({ default: m.AdminSettingsPage })));
 
 // Lazy load marketplace pages
 const HomePage = React.lazy(() => import('../features/customer/pages/HomePage.jsx').then(m => ({ default: m.HomePage })));
@@ -112,14 +120,22 @@ const router = createBrowserRouter([
     ]
   },
 
-  // Admin routes (no MainLayout)
+  // Admin routes (with dedicated AdminLayout, OUTSIDE MainLayout)
   {
     element: <ProtectedRoute />,
     children: [
       {
-        element: <RoleRoute allowedRoles={['ADMIN']} />,
+        element: <AdminLayout />,
         children: [
-          { path: '/admin/dashboard', element: <div>Admin Dashboard</div> }
+          {
+            element: <RoleRoute allowedRoles={['ADMIN']} />,
+            children: [
+              { path: '/admin/dashboard', element: <S><AdminDashboardPage /></S> },
+              { path: '/admin/users', element: <S><AdminUsersPage /></S> },
+              { path: '/admin/sellers', element: <S><AdminSellersPage /></S> },
+              { path: '/admin/settings', element: <S><AdminSettingsPage /></S> }
+            ]
+          }
         ]
       }
     ]

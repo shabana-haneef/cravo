@@ -26,10 +26,13 @@ export const authService = {
 
     const hashedPassword = await hashPassword(password);
     
+    const userCount = await userRepository.count();
+    const assignedRole = userCount === 0 ? 'ADMIN' : 'CUSTOMER';
+
     const user = await userRepository.create({
       email,
       passwordHash: hashedPassword,
-      role: 'CUSTOMER',
+      role: assignedRole,
       status: 'ACTIVE',
       isEmailVerified: false
     });
