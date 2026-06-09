@@ -174,9 +174,9 @@ export const CheckoutPage = () => {
             order_id: razorpayOrder.razorpayOrderId,
             handler: (paymentResponse) => {
               verifyPayment({
-                razorpay_order_id: paymentResponse.razorpay_order_id,
-                razorpay_payment_id: paymentResponse.razorpay_payment_id,
-                razorpay_signature: paymentResponse.razorpay_signature,
+                razorpayOrderId: paymentResponse.razorpay_order_id,
+                razorpayPaymentId: paymentResponse.razorpay_payment_id,
+                razorpaySignature: paymentResponse.razorpay_signature,
               }, {
                 onSuccess: () => {
                   clearCartCount();
