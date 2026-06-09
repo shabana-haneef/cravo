@@ -71,7 +71,12 @@ export const productRepository = {
   },
   async searchPublicProducts(filters, sort, page = 1, limit = 10) {
     const skip = (page - 1) * limit;
-    const where = { status: 'APPROVED' };
+    const where = { 
+      status: 'APPROVED',
+      shop: {
+        status: 'ACTIVE'
+      }
+    };
 
     if (filters.category) {
       where.category = { slug: filters.category };

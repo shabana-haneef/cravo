@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/auth.store.js';
 import { useCartStore } from '../store/cart.store.js';
 import { useLogout } from '../features/auth/hooks/useAuthQueries.js';
-import { ShoppingCart, User, LogOut, Store, Package, Box, ChevronDown, Search } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Store, Package, Box, ChevronDown, Search, Heart } from 'lucide-react';
 import { Button } from '../components/ui/Button.jsx';
 import { GlobalAdPopup } from '../components/shared/GlobalAdPopup.jsx';
 
@@ -60,6 +60,17 @@ export const MainLayout = () => {
           </div>
 
           <div className="flex items-center gap-4 sm:gap-6">
+            {/* Wishlist Link */}
+            {(!isAuthenticated || user?.role === 'CUSTOMER') && (
+              <Link
+                to="/wishlist"
+                className="p-2 text-gray-600 hover:text-rose-500 transition-colors"
+                title="My Wishlist"
+              >
+                <Heart size={22} className="stroke-[2]" />
+              </Link>
+            )}
+
             {/* Cart Icon with Badge */}
             <Link
               to="/cart"

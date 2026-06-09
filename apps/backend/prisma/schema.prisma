@@ -137,6 +137,7 @@ model User {
   refreshTokens      RefreshToken[]
   cart               Cart?
   orders             Order[]
+  wishlist           WishlistItem[]
 
   @@index([email])
   @@index([status])
@@ -323,6 +324,7 @@ model Product {
   variants         ProductVariant[]
   cartItems        CartItem[]
   orderItems       OrderItem[]
+  wishlistedBy     WishlistItem[]
 
   @@index([shopId])
   @@index([categoryId])
@@ -545,4 +547,17 @@ model AdPayment {
   amount            Float
   status            PaymentStatus @default(PENDING)
   createdAt         DateTime @default(now())
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
 }

@@ -1,11 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { Users, Shield, ShieldAlert, CheckCircle, XCircle, MoreVertical } from 'lucide-react';
+import { Users, Shield, ShieldAlert, CheckCircle, XCircle, MoreVertical, AlertTriangle } from 'lucide-react';
 import { adminService } from '../services/admin.service.js';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const AdminUsersPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Custom Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    type: '', // 'role' or 'status'
+    userId: null,
+    userName: '',
+    targetValue: '',
+    currentValue: ''
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -40,6 +51,28 @@ export const AdminUsersPage = () => {
       fetchUsers();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update status');
+    }
+  };
+
+  const triggerConfirmation = (type, user, targetValue, currentValue) => {
+    setConfirmModal({
+      isOpen: true,
+      type,
+      userId: user.id,
+      userName: user.profile?.fullName || user.email,
+      targetValue,
+      currentValue
+    });
+  };
+
+  const executeConfirmedAction = async () => {
+    const { type, userId, targetValue } = confirmModal;
+    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    
+    if (type === 'role') {
+      await handleRoleChange(userId, targetValue);
+    } else if (type === 'status') {
+      await handleStatusChange(userId, targetValue);
     }
   };
 
@@ -98,8 +131,8 @@ export const AdminUsersPage = () => {
                     <td className="p-4">
                       <select
                         value={user.role}
-                        onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                        className="bg-gray-50 border border-gray-200 text-sm rounded-lg focus:ring-[#1E3A2B] focus:border-[#1E3A2B] block w-full p-2 text-gray-700"
+                        onChange={(e) => triggerConfirmation('role', user, e.target.value, user.role)}
+                        className="bg-gray-50 border border-gray-200 text-sm rounded-lg focus:ring-[#1E3A2B] focus:border-[#1E3A2B] block w-full p-2 text-gray-700 cursor-pointer"
                       >
                         <option value="CUSTOMER">Customer</option>
                         <option value="SELLER">Seller</option>
@@ -109,8 +142,8 @@ export const AdminUsersPage = () => {
                     <td className="p-4">
                       <select
                         value={user.status}
-                        onChange={(e) => handleStatusChange(user.id, e.target.value)}
-                        className={`text-sm rounded-lg border block w-full p-2 font-medium ${
+                        onChange={(e) => triggerConfirmation('status', user, e.target.value, user.status)}
+                        className={`text-sm rounded-lg border block w-full p-2 font-medium cursor-pointer ${
                           user.status === 'ACTIVE' 
                             ? 'bg-green-50 border-green-200 text-green-700' 
                             : 'bg-red-50 border-red-200 text-red-700'
@@ -137,6 +170,55 @@ export const AdminUsersPage = () => {
           </div>
         </div>
       )}
+
+      {/* Customized Confirmation Modal */}
+      <AnimatePresence>
+        {confirmModal.isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl border border-gray-100 flex flex-col items-center text-center"
+            >
+              <div className="w-14 h-14 bg-amber-50 border border-amber-200 rounded-full flex items-center justify-center text-amber-500 mb-4">
+                <AlertTriangle size={28} />
+              </div>
+              
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                Confirm {confirmModal.type === 'role' ? 'Role' : 'Status'} Change
+              </h3>
+              
+              <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+                Are you sure you want to change the {confirmModal.type} of{' '}
+                <span className="font-bold text-gray-800">{confirmModal.userName}</span> from{' '}
+                <span className="font-bold text-red-500">{confirmModal.currentValue}</span> to{' '}
+                <span className="font-bold text-green-600">{confirmModal.targetValue}</span>?
+                {confirmModal.type === 'status' && (
+                  <span className="block mt-2 font-medium text-amber-600 bg-amber-50/50 p-2 rounded-lg text-xs border border-amber-100/50">
+                    Note: Changing seller status will automatically synchronize their seller verification status and active shop products.
+                  </span>
+                )}
+              </p>
+
+              <div className="flex w-full gap-3 mt-2">
+                <button
+                  onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                  className="flex-1 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeConfirmedAction}
+                  className="flex-1 py-2.5 bg-[#1E3A2B] hover:bg-[#2a4f3c] text-white font-bold rounded-xl transition-all shadow-md cursor-pointer"
+                >
+                  Confirm Change
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

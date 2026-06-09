@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Store, ShoppingCart, Star, Heart, Leaf } from 'lucide-react';
+import { Store, ShoppingCart, Star, Leaf } from 'lucide-react';
 import { useAddToCart } from '../../features/cart/hooks/useCartQueries.js';
 import { toast } from 'sonner';
+import { WishlistButton } from '../../features/wishlist/components/WishlistButton.jsx';
 
 export const ProductCard = ({ product, variant = 'simple' }) => {
   const { name, slug, shop, variants, images, category } = product;
@@ -57,12 +58,10 @@ export const ProductCard = ({ product, variant = 'simple' }) => {
         </div>
 
         {/* Favorite Button */}
-        <button 
-          className="absolute top-2 right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400 hover:text-red-500 transition-colors z-10"
-          onClick={(e) => { e.preventDefault(); /* handle favorite */ }}
-        >
-          <Heart size={16} className="stroke-[2]" />
-        </button>
+        <WishlistButton 
+          productId={product.id} 
+          className="absolute top-2 right-2 w-8 h-8 p-0 z-10 shadow-sm"
+        />
 
         {isOutOfStock && (
           <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-10">

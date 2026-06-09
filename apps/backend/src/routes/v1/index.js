@@ -13,6 +13,7 @@ import cartRoutes from "../../modules/orders/routes/cart.routes.js";
 import orderRoutes from "../../modules/orders/routes/order.routes.js";
 import paymentRoutes from "../../modules/orders/routes/payment.routes.js";
 import deliveryRoutes from "../../modules/logistics/routes/delivery.routes.js";
+import wishlistRoutes from "../../modules/wishlist/routes/wishlist.routes.js";
 import { adminAdRoutes, sellerAdRoutes, publicAdRoutes } from "../../modules/advertisements/routes/ad.routes.js";
 
 const router = Router();
@@ -24,6 +25,7 @@ router.use("/auth", authRoutes);
 router.use("/users/addresses", addressRoutes);
 router.use("/users", userRoutes);
 router.use("/sellers", sellerRoutes);
+router.use("/wishlist", wishlistRoutes);
 
 // Public Ads
 router.use("/ads", publicAdRoutes);

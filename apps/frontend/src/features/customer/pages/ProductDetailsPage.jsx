@@ -9,6 +9,8 @@ import { Button } from '../../../components/ui/Button.jsx';
 import { ChevronLeft, ChevronRight, Star, Heart, Minus, Plus, AlertCircle, Leaf, CheckCircle2, Truck, ShieldCheck, RefreshCcw, ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { WishlistButton } from '../../wishlist/components/WishlistButton.jsx';
+
 export const ProductDetailsPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -244,9 +246,10 @@ export const ProductDetailsPage = () => {
               Buy Now
             </button>
             
-            <button className="h-10 w-10 flex items-center justify-center border border-gray-200 rounded-full text-gray-400 hover:text-red-500 hover:border-red-500 hover:bg-red-50 transition-all shrink-0">
-              <Heart size={18} />
-            </button>
+            <WishlistButton 
+              productId={product.id}
+              className="h-11 w-11 p-0 border border-gray-200 shadow-sm"
+            />
           </div>
 
           {/* Meta Details */}

@@ -31,6 +31,7 @@ const PrivacyPolicyPage = React.lazy(() => import('../features/customer/pages/Pr
 const TermsPage = React.lazy(() => import('../features/customer/pages/TermsPage.jsx').then(m => ({ default: m.TermsPage })));
 const FaqPage = React.lazy(() => import('../features/customer/pages/FaqPage.jsx').then(m => ({ default: m.FaqPage })));
 const CookiePolicyPage = React.lazy(() => import('../features/customer/pages/CookiePolicyPage.jsx').then(m => ({ default: m.CookiePolicyPage })));
+const WishlistPage = React.lazy(() => import('../features/wishlist/pages/WishlistPage.jsx').then(m => ({ default: m.WishlistPage })));
 
 // Lazy load cart, checkout, and order pages
 const CartPage = React.lazy(() => import('../features/cart/pages/CartPage.jsx').then(m => ({ default: m.CartPage })));
@@ -99,6 +100,7 @@ const router = createBrowserRouter([
           { path: '/profile', element: <S><ProfilePage /></S> },
           { path: '/addresses', element: <S><AddressesPage /></S> },
           { path: '/seller/application', element: <S><SellerApplicationContainer /></S> },
+          { path: '/wishlist', element: <S><WishlistPage /></S> },
         ]
       }
     ]
