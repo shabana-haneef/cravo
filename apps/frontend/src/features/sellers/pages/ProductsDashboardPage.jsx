@@ -11,6 +11,8 @@ import {
   CheckCircle2, XCircle, Clock
 } from 'lucide-react';
 
+import { ManageCategoriesModal } from '../../categories/components/ManageCategoriesModal.jsx';
+
 export const ProductsDashboardPage = () => {
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useMyProducts(page, 10);
@@ -26,6 +28,7 @@ export const ProductsDashboardPage = () => {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterCategory, setFilterCategory] = useState('ALL');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showManageCategoriesModal, setShowManageCategoriesModal] = useState(false);
 
   // Stats (Note: Total stats might require a separate unpaginated endpoint for accuracy, but using meta.total for now)
   const total = meta?.total || products.length;
@@ -92,12 +95,20 @@ export const ProductsDashboardPage = () => {
           </h1>
           <p className="text-sm text-gray-500 mt-1">Manage your catalog, variants, and stock.</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="inline-flex items-center gap-2 bg-[#1E3A2B] text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-[#162A1F] transition-colors shadow-sm"
-        >
-          <Plus size={18} /> Add Product
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowManageCategoriesModal(true)}
+            className="inline-flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            Manage Categories
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="inline-flex items-center gap-2 bg-[#1E3A2B] text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-[#162A1F] transition-colors shadow-sm"
+          >
+            <Plus size={18} /> Add Product
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -284,6 +295,11 @@ export const ProductsDashboardPage = () => {
           </div>
         </div>
       )}
+
+      <ManageCategoriesModal
+        isOpen={showManageCategoriesModal}
+        onClose={() => setShowManageCategoriesModal(false)}
+      />
 
       <style>{`
         @keyframes modalSlideIn {

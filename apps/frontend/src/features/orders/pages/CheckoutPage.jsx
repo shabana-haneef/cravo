@@ -157,55 +157,64 @@ export const CheckoutPage = () => {
 
     createOrder({ addressId: selectedAddressId }, {
       onSuccess: (res) => {
-        const order = res?.data?.order;
-        const razorpayOrder = res?.data?.razorpayOrder;
+        try {
+          const order = res?.data?.order;
+          const razorpayOrder = res?.data?.payment;
 
-        const options = {
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-          amount: razorpayOrder.amount,
-          currency: razorpayOrder.currency,
-          name: 'Cravo',
-          description: `Order #${order.orderNumber}`,
-          order_id: razorpayOrder.id,
-          handler: (paymentResponse) => {
-            verifyPayment({
-              razorpay_order_id: paymentResponse.razorpay_order_id,
-              razorpay_payment_id: paymentResponse.razorpay_payment_id,
-              razorpay_signature: paymentResponse.razorpay_signature,
-            }, {
-              onSuccess: () => {
-                clearCartCount();
-                toast.success('Payment successful!');
-                navigate('/orders/success', {
-                  replace: true,
-                  state: { orderNumber: order.orderNumber, orderId: order.id }
-                });
-              },
-              onError: () => {
-                toast.error('Payment verification failed. Please contact support.');
+          if (!order || !razorpayOrder) {
+            throw new Error("Invalid response from server");
+          }
+
+          const options = {
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+            amount: razorpayOrder.amount,
+            currency: razorpayOrder.currency,
+            name: 'Cravo',
+            description: `Order #${order.orderNumber}`,
+            order_id: razorpayOrder.razorpayOrderId,
+            handler: (paymentResponse) => {
+              verifyPayment({
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_signature: paymentResponse.razorpay_signature,
+              }, {
+                onSuccess: () => {
+                  clearCartCount();
+                  toast.success('Payment successful!');
+                  navigate('/orders/success', {
+                    replace: true,
+                    state: { orderNumber: order.orderNumber, orderId: order.id }
+                  });
+                },
+                onError: () => {
+                  toast.error('Payment verification failed. Please contact support.');
+                  setIsProcessing(false);
+                }
+              });
+            },
+            prefill: {
+              name: addresses.find(a => a.id === selectedAddressId)?.fullName,
+              contact: addresses.find(a => a.id === selectedAddressId)?.phone,
+            },
+            theme: { color: '#16a34a' },
+            modal: {
+              ondismiss: () => {
+                toast.error('Payment cancelled');
                 setIsProcessing(false);
               }
-            });
-          },
-          prefill: {
-            name: addresses.find(a => a.id === selectedAddressId)?.fullName,
-            contact: addresses.find(a => a.id === selectedAddressId)?.phone,
-          },
-          theme: { color: '#16a34a' },
-          modal: {
-            ondismiss: () => {
-              toast.error('Payment cancelled');
-              setIsProcessing(false);
             }
-          }
-        };
+          };
 
-        const rzp = new window.Razorpay(options);
-        rzp.on('payment.failed', () => {
-          toast.error('Payment failed. Please try again.');
+          const rzp = new window.Razorpay(options);
+          rzp.on('payment.failed', () => {
+            toast.error('Payment failed. Please try again.');
+            setIsProcessing(false);
+          });
+          rzp.open();
+        } catch (err) {
+          toast.error('Payment initialization failed. Please try again.');
           setIsProcessing(false);
-        });
-        rzp.open();
+        }
       },
       onError: (err) => {
         toast.error(err.response?.data?.message || 'Failed to create order');
