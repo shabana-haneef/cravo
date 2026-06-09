@@ -16,7 +16,8 @@ export const productService = {
     if (!seller || seller.status !== 'APPROVED') throw new AppError("Only approved sellers can create products", 403);
 
     const shop = await shopRepository.findBySellerId(seller.id);
-    if (!shop || shop.status !== 'ACTIVE') throw new AppError("Shop is not active", 403);
+    if (!shop) throw new AppError("You do not have a shop profile. Please set up your shop first.", 400);
+    if (shop.status !== 'ACTIVE') throw new AppError("Your shop is currently inactive or suspended.", 403);
 
     // 2. Validate Category
     const category = await categoryRepository.findById(data.categoryId);
