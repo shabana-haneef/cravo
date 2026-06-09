@@ -25,6 +25,12 @@ const AdminSettingsPage = React.lazy(() => import('../features/admin/pages/Admin
 const HomePage = React.lazy(() => import('../features/customer/pages/HomePage.jsx').then(m => ({ default: m.HomePage })));
 const ProductListingPage = React.lazy(() => import('../features/customer/pages/ProductListingPage.jsx').then(m => ({ default: m.ProductListingPage })));
 const ProductDetailsPage = React.lazy(() => import('../features/customer/pages/ProductDetailsPage.jsx').then(m => ({ default: m.ProductDetailsPage })));
+const AboutUsPage = React.lazy(() => import('../features/customer/pages/AboutUsPage.jsx').then(m => ({ default: m.AboutUsPage })));
+const ContactUsPage = React.lazy(() => import('../features/customer/pages/ContactUsPage.jsx').then(m => ({ default: m.ContactUsPage })));
+const PrivacyPolicyPage = React.lazy(() => import('../features/customer/pages/PrivacyPolicyPage.jsx').then(m => ({ default: m.PrivacyPolicyPage })));
+const TermsPage = React.lazy(() => import('../features/customer/pages/TermsPage.jsx').then(m => ({ default: m.TermsPage })));
+const FaqPage = React.lazy(() => import('../features/customer/pages/FaqPage.jsx').then(m => ({ default: m.FaqPage })));
+const CookiePolicyPage = React.lazy(() => import('../features/customer/pages/CookiePolicyPage.jsx').then(m => ({ default: m.CookiePolicyPage })));
 
 // Lazy load cart, checkout, and order pages
 const CartPage = React.lazy(() => import('../features/cart/pages/CartPage.jsx').then(m => ({ default: m.CartPage })));
@@ -76,6 +82,12 @@ const router = createBrowserRouter([
       { path: '/products', element: <S><ProductListingPage /></S> },
       { path: '/products/:slug', element: <S><ProductDetailsPage /></S> },
       { path: '/become-seller', element: <S><BecomeSellerPage /></S> },
+      { path: '/about', element: <S><AboutUsPage /></S> },
+      { path: '/contact', element: <S><ContactUsPage /></S> },
+      { path: '/privacy', element: <S><PrivacyPolicyPage /></S> },
+      { path: '/terms', element: <S><TermsPage /></S> },
+      { path: '/faq', element: <S><FaqPage /></S> },
+      { path: '/cookie-policy', element: <S><CookiePolicyPage /></S> },
 
       // Protected customer routes (nested under MainLayout)
       {

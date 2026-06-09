@@ -155,19 +155,19 @@ export const MainLayout = () => {
             <div>
               <h4 className="font-bold text-[#111827] text-sm mb-4">Company</h4>
               <div className="flex flex-col gap-2.5 text-gray-500 text-xs font-medium">
-                <Link className="hover:text-[#00B259] transition-colors">About Us</Link>
-                <Link className="hover:text-[#00B259] transition-colors">How It Works</Link>
-                <Link className="hover:text-[#00B259] transition-colors">Blog</Link>
-                <Link className="hover:text-[#00B259] transition-colors">Contact Us</Link>
+                <Link to="/about" className="hover:text-[#00B259] transition-colors">About Us</Link>
+                <Link to="/" className="hover:text-[#00B259] transition-colors">How It Works</Link>
+                <Link to="/" className="hover:text-[#00B259] transition-colors">Blog</Link>
+                <Link to="/contact" className="hover:text-[#00B259] transition-colors">Contact Us</Link>
               </div>
             </div>
             <div>
               <h4 className="font-bold text-[#111827] text-sm mb-4">Help</h4>
               <div className="flex flex-col gap-2.5 text-gray-500 text-xs font-medium">
-                <Link className="hover:text-[#00B259] transition-colors">FAQs</Link>
-                <Link className="hover:text-[#00B259] transition-colors">Shipping & Delivery</Link>
-                <Link className="hover:text-[#00B259] transition-colors">Returns & Refunds</Link>
-                <Link className="hover:text-[#00B259] transition-colors">Support</Link>
+                <Link to="/faq" className="hover:text-[#00B259] transition-colors">FAQs</Link>
+                <Link to="/" className="hover:text-[#00B259] transition-colors">Shipping & Delivery</Link>
+                <Link to="/" className="hover:text-[#00B259] transition-colors">Returns & Refunds</Link>
+                <Link to="/contact" className="hover:text-[#00B259] transition-colors">Support</Link>
               </div>
             </div>
           </div>
@@ -193,9 +193,9 @@ export const MainLayout = () => {
         <div className="max-w-[1536px] w-full px-4 sm:px-6 lg:px-8 mx-auto flex flex-col md:flex-row justify-between items-center text-[11px] text-gray-400 border-t border-gray-100 pt-8 font-medium">
           <p>© 2026 Cravo Marketplace. All rights reserved.</p>
           <div className="flex gap-8 mt-4 md:mt-0">
-            <Link className="hover:text-gray-600 transition-colors">Privacy Policy</Link>
-            <Link className="hover:text-gray-600 transition-colors">Terms & Conditions</Link>
-            <Link className="hover:text-gray-600 transition-colors">Cookie Policy</Link>
+            <Link to="/privacy" className="hover:text-gray-600 transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-gray-600 transition-colors">Terms & Conditions</Link>
+            <Link to="/cookie-policy" className="hover:text-gray-600 transition-colors">Cookie Policy</Link>
           </div>
         </div>
       </footer>

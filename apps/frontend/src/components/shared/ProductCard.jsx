@@ -85,12 +85,22 @@ export const ProductCard = ({ product, variant = 'simple' }) => {
 
         {/* Ratings */}
         <div className="flex items-center gap-1.5 mb-3 text-[12px] text-gray-500 font-medium">
-          <div className="flex text-[#FFB800] gap-0.5">
-            {[1, 2, 3, 4, 5].map(star => (
-              <Star key={star} size={13} fill="currentColor" stroke="currentColor" />
-            ))}
+          <div className="flex gap-0.5">
+            {[1, 2, 3, 4, 5].map(star => {
+              const rating = product.rating || 0;
+              const isFilled = star <= Math.round(rating);
+              return (
+                <Star 
+                  key={star} 
+                  size={13} 
+                  fill={isFilled ? "currentColor" : "none"} 
+                  stroke="currentColor"
+                  className={isFilled ? "text-[#FFB800]" : "text-gray-300"}
+                />
+              );
+            })}
           </div>
-          <span>4.8 (125)</span>
+          <span>{(product.rating || 0).toFixed(1)} ({product.numReviews || 0})</span>
         </div>
 
         {variant === 'detailed' && (
