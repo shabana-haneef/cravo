@@ -48,7 +48,7 @@ export const GlobalAdPopup = () => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9, y: 50 }}
           transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-          className="fixed bottom-6 right-6 z-[9999] w-[320px] sm:w-[360px] bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 cursor-pointer group"
+          className="fixed bottom-6 right-6 z-[9999] w-[340px] sm:w-[400px] bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 cursor-pointer group"
           onClick={() => handleAdClick(currentAd)}
         >
           {/* Close Button */}
@@ -60,7 +60,7 @@ export const GlobalAdPopup = () => {
           </button>
 
           {/* Ad Image */}
-          <div className="relative h-[200px] w-full overflow-hidden bg-gray-100">
+          <div className="relative h-[230px] w-full overflow-hidden bg-gray-100">
             <AnimatePresence mode="wait">
               <motion.img
                 key={currentAd.id}
@@ -73,19 +73,19 @@ export const GlobalAdPopup = () => {
                 className="absolute inset-0 w-full h-full object-cover"
               />
             </AnimatePresence>
-            <div className="absolute top-3 left-3 z-10 px-2.5 py-1 bg-[#00B259] text-white text-[10px] font-bold rounded uppercase tracking-wider shadow-sm">
+            <div className="absolute top-3 left-3 z-10 px-2.5 py-1 bg-[#00B259] text-white text-[11px] font-bold rounded uppercase tracking-wider shadow-sm">
               Sponsored
             </div>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-5">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
               <motion.div
                 key={`text-${currentAd.id}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
               >
-                <h3 className="text-lg font-bold text-white mb-1 leading-tight">{currentAd.title}</h3>
-                <div className="flex items-center text-white/90 text-[13px] font-medium gap-1.5 group-hover:text-white transition-colors">
-                  View Details <ExternalLink size={14} />
+                <h3 className="text-xl font-bold text-white mb-1.5 leading-tight">{currentAd.title}</h3>
+                <div className="flex items-center text-white/90 text-[14px] font-medium gap-1.5 group-hover:text-white transition-colors">
+                  View Details <ExternalLink size={15} />
                 </div>
               </motion.div>
             </div>

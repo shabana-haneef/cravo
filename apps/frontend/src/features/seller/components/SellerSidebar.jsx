@@ -12,7 +12,8 @@ import {
   BarChart3,
   Megaphone,
   Star,
-  Settings
+  Settings,
+  ShoppingBag
 } from 'lucide-react';
 import { useLogout } from '../../auth/hooks/useAuthQueries.js';
 
@@ -56,10 +57,8 @@ export const SellerSidebar = () => {
     <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0 transition-all duration-300 z-20`}>
       <div className={`p-6 flex items-center justify-center border-b border-gray-100/50 h-20`}>
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold shrink-0 shadow-sm">
-            C
-          </div>
-          {!isCollapsed && <span className="font-bold text-gray-900 text-lg tracking-tight whitespace-nowrap">Cravo Seller</span>}
+          <img src="/images/logo.jpeg" alt="Cravo Logo" className="h-8 w-auto object-contain rounded-md mix-blend-multiply" />
+          {!isCollapsed && <span className="font-bold text-gray-900 text-lg tracking-tight whitespace-nowrap">Seller</span>}
         </div>
       </div>
 
@@ -106,6 +105,15 @@ export const SellerSidebar = () => {
       </div>
 
       <div className="p-4 border-t border-gray-100/50 flex flex-col gap-2">
+        <NavLink
+          to="/"
+          title={isCollapsed ? 'Browse Marketplace' : undefined}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2.5 rounded-xl text-sm font-medium transition-all text-[#16a34a] hover:bg-[#f0fdf4] hover:text-[#15803d]`}
+        >
+          <ShoppingBag size={18} />
+          {!isCollapsed && <span>Browse Marketplace</span>}
+        </NavLink>
+
         <button
           onClick={() => logout()}
           disabled={isLoggingOut}

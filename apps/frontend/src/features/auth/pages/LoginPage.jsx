@@ -45,9 +45,8 @@ export const LoginPage = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-primary-900/90 via-primary-900/40 to-transparent z-10" />
         <div className="absolute bottom-0 left-0 p-12 z-20 text-white">
-          <Link to="/" className="inline-flex items-center text-primary-50 hover:text-white transition-colors mb-6 group">
-            <Store className="w-8 h-8 mr-3 group-hover:scale-110 transition-transform" />
-            <span className="text-2xl font-bold tracking-tight">Cravo</span>
+          <Link to="/" className="inline-block mb-6 group">
+            <img src="/images/logo.jpeg" alt="Cravo Logo" className="h-16 w-auto object-contain mix-blend-screen opacity-90 group-hover:opacity-100 transition-opacity" />
           </Link>
           <h2 className="text-4xl font-extrabold mb-4 leading-tight">
             Discover the taste of <br/> home, delivered.
@@ -63,9 +62,8 @@ export const LoginPage = () => {
         <div className="w-full max-w-md space-y-8 bg-white p-8 sm:p-10 rounded-2xl shadow-xl border border-primary-100">
           <div className="text-center">
             <div className="lg:hidden flex justify-center mb-6">
-              <Link to="/" className="inline-flex items-center text-primary-700">
-                <Store className="w-8 h-8 mr-2" />
-                <span className="text-2xl font-bold tracking-tight">Cravo</span>
+              <Link to="/">
+                <img src="/images/logo.jpeg" alt="Cravo Logo" className="h-20 w-auto object-contain mb-4 mix-blend-multiply" />
               </Link>
             </div>
             <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Welcome back</h2>

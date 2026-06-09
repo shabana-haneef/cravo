@@ -35,9 +35,8 @@ export const MainLayout = () => {
       <header className={`bg-white border-b border-gray-100 sticky top-0 z-50 header-transition ${scrolled ? 'header-scrolled' : ''}`}>
         <div className="max-w-[1536px] w-full px-4 sm:px-6 lg:px-8 mx-auto h-20 flex items-center justify-between gap-4">
           <div className="flex items-center gap-6">
-            <Link to="/" className="flex items-center gap-2 text-2xl font-extrabold text-[#00B259] tracking-tight">
-              <Store size={26} className="stroke-[2.5]" />
-              Cravo
+            <Link to="/" className="flex items-center gap-2">
+              <img src="/images/logo.jpeg" alt="Cravo Logo" className="h-12 w-auto object-contain rounded-xl mix-blend-multiply" />
             </Link>
             
             <nav className="hidden md:flex items-center gap-2 ml-4">
@@ -78,12 +77,6 @@ export const MainLayout = () => {
               <div className="flex items-center gap-5">
                 {user?.role === 'SELLER' ? (
                   <>
-                    <NavLink to="/seller/inventory" className={`hidden md:flex items-center gap-1 text-sm font-medium ${navLinkClass({ isActive: false })}`}>
-                      <Box size={16} /> Inventory
-                    </NavLink>
-                    <NavLink to="/seller/products" className={`hidden md:flex items-center gap-1 text-sm font-medium ${navLinkClass({ isActive: false })}`}>
-                      <Package size={16} /> Products
-                    </NavLink>
                     <NavLink to="/seller/dashboard" className={`hidden md:flex items-center gap-1 text-sm font-medium ${navLinkClass({ isActive: false })}`}>
                       <Store size={16} /> My Shop
                     </NavLink>

@@ -51,61 +51,61 @@ export const ProductCard = ({ product, variant = 'simple' }) => {
         />
         
         {/* Organic Badge */}
-        <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#2E7D32] px-1.5 py-0.5 rounded text-[9px] font-bold flex items-center gap-1 border border-[#C8E6C9]/50">
-          <Leaf size={10} className="stroke-[2.5]" />
+        <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#2E7D32] px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1.5 border border-[#C8E6C9]/50">
+          <Leaf size={12} className="stroke-[2.5]" />
           Organic
         </div>
 
         {/* Favorite Button */}
         <button 
-          className="absolute top-2 right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400 hover:text-red-500 transition-colors z-10"
+          className="absolute top-2 right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400 hover:text-red-500 transition-colors z-10"
           onClick={(e) => { e.preventDefault(); /* handle favorite */ }}
         >
-          <Heart size={12} className="stroke-[2]" />
+          <Heart size={16} className="stroke-[2]" />
         </button>
 
         {isOutOfStock && (
           <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-10">
-            <span className="bg-red-500 text-white text-xs font-bold px-4 py-2 rounded-full tracking-wide">OUT OF STOCK</span>
+            <span className="bg-red-500 text-white text-sm font-bold px-4 py-2 rounded-full tracking-wide">OUT OF STOCK</span>
           </div>
         )}
       </Link>
       
       {/* Product Details */}
-      <div className="px-3 pt-2 pb-0 flex flex-col flex-1">
+      <div className="px-4 pt-3 pb-1 flex flex-col flex-1">
         {variant === 'detailed' && (
-          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">
             {category?.name || 'Category'}
           </p>
         )}
         
-        <Link to={`/products/${slug}`} className="text-[13px] font-bold text-[#111827] line-clamp-1 hover:text-[#1E3A2B] transition-colors mb-1.5 leading-snug">
+        <Link to={`/products/${slug}`} className="text-[15px] font-bold text-[#111827] line-clamp-1 hover:text-[#1E3A2B] transition-colors mb-2 leading-snug">
           {name}
         </Link>
 
         {/* Ratings */}
-        <div className="flex items-center gap-1.5 mb-2 text-[10px] text-gray-500 font-medium">
+        <div className="flex items-center gap-1.5 mb-3 text-[12px] text-gray-500 font-medium">
           <div className="flex text-[#FFB800] gap-0.5">
             {[1, 2, 3, 4, 5].map(star => (
-              <Star key={star} size={11} fill="currentColor" stroke="currentColor" />
+              <Star key={star} size={13} fill="currentColor" stroke="currentColor" />
             ))}
           </div>
           <span>4.8 (125)</span>
         </div>
 
         {variant === 'detailed' && (
-          <div className="flex items-center text-[10px] text-gray-500 font-medium mt-auto mb-2">
-            <Store size={10} className="mr-1 opacity-70" />
+          <div className="flex items-center text-[12px] text-gray-500 font-medium mt-auto mb-2">
+            <Store size={14} className="mr-1.5 opacity-70" />
             <span className="truncate">{shop?.name}</span>
           </div>
         )}
       </div>
 
       {/* Price & Action */}
-      <div className="px-3 pb-3 flex items-end justify-between mt-auto">
+      <div className="px-4 pb-4 flex items-end justify-between mt-auto">
         <div className="flex flex-col">
-          <span className="text-[15px] font-bold text-[#B88645] leading-none mb-1">₹{price.toFixed(2)}</span>
-          <span className="text-[10px] font-medium text-gray-400">{variantName}</span>
+          <span className="text-[18px] font-bold text-[#B88645] leading-none mb-1">₹{price.toFixed(2)}</span>
+          <span className="text-[12px] font-medium text-gray-400">{variantName}</span>
         </div>
         
         <motion.button
@@ -114,9 +114,9 @@ export const ProductCard = ({ product, variant = 'simple' }) => {
           transition={{ type: 'spring', stiffness: 400, damping: 18 }}
           disabled={isOutOfStock || isAdding}
           onClick={handleAddToCart}
-          className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center bg-white text-gray-500 transition-colors disabled:opacity-50 shadow-sm"
+          className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center bg-white text-gray-500 transition-colors disabled:opacity-50 shadow-sm"
         >
-          <ShoppingCart size={14} className="stroke-[2.5]" />
+          <ShoppingCart size={18} className="stroke-[2.5]" />
         </motion.button>
       </div>
     </motion.div>

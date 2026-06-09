@@ -94,9 +94,8 @@ export const RegisterPage = () => {
           
           <div className="text-center">
             <div className="lg:hidden flex justify-center mb-6">
-              <Link to="/" className="inline-flex items-center text-primary-700">
-                <Store className="w-8 h-8 mr-2" />
-                <span className="text-2xl font-bold tracking-tight">Cravo</span>
+              <Link to="/">
+                <img src="/images/logo.jpeg" alt="Cravo Logo" className="h-20 w-auto object-contain mb-4 mix-blend-multiply" />
               </Link>
             </div>
             <h2 className="mt-2 text-3xl font-extrabold text-gray-900 tracking-tight">Join the marketplace</h2>
