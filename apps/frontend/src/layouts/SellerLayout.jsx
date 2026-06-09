@@ -38,62 +38,62 @@ export const SellerLayout = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <SellerHeader />
 
-        {/* Modern Floating Setup Reminder Widget */}
+        {/* Modern Centered Setup Reminder Modal */}
         <AnimatePresence>
           {isShopMissing && showBanner && (
-            <motion.div
-              initial={{ opacity: 0, y: 50, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 30, scale: 0.9 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-white/95 backdrop-blur-md border border-amber-200 rounded-2xl p-5 shadow-2xl flex flex-col gap-4"
-            >
-              <div className="flex items-start gap-3.5">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+                className="max-w-md w-full bg-white rounded-3xl p-7 shadow-2xl flex flex-col gap-5 text-center items-center"
+              >
                 {/* Pulsing Alarm Icon */}
-                <div className="relative shrink-0 mt-0.5">
-                  <span className="absolute inline-flex h-10 w-10 rounded-full bg-amber-400 opacity-20 animate-ping"></span>
-                  <div className="relative w-10 h-10 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500">
-                    <AlertTriangle size={20} className="stroke-[2.5]" />
+                <div className="relative shrink-0">
+                  <span className="absolute inline-flex h-14 w-14 rounded-full bg-amber-400 opacity-20 animate-ping"></span>
+                  <div className="relative w-14 h-14 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500">
+                    <AlertTriangle size={26} className="stroke-[2.5]" />
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-[#111827] text-sm">Shop Profile Incomplete</h4>
-                  <p className="text-xs text-gray-500 leading-relaxed mt-1">
-                    Customers cannot view your shop or purchase your products until you complete your shop profile setup.
+                  <h4 className="font-extrabold text-[#111827] text-lg animate-pulse">Shop Profile Incomplete</h4>
+                  <p className="text-sm text-gray-500 leading-relaxed mt-2 max-w-sm">
+                    Customers cannot view your shop or purchase your products until you complete your shop profile setup. Let's get your store ready!
                   </p>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-3 pt-1">
-                <button
-                  onClick={() => setShowBanner(false)}
-                  className="flex-1 py-2 text-xs font-semibold text-gray-400 hover:text-gray-600 transition-colors border border-gray-100 hover:bg-gray-50 rounded-xl"
-                >
-                  Later
-                </button>
-                <MotionLink
-                  to="/seller/shop-profile"
-                  onClick={() => setShowBanner(false)}
-                  animate={{
-                    scale: [1, 1.04, 1],
-                    boxShadow: [
-                      "0px 4px 10px rgba(245, 158, 11, 0.2)",
-                      "0px 4px 22px rgba(245, 158, 11, 0.5)",
-                      "0px 4px 10px rgba(245, 158, 11, 0.2)"
-                    ]
-                  }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="flex-1 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white text-center rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
-                >
-                  Set Up Now <ArrowRight size={14} />
-                </MotionLink>
-              </div>
-            </motion.div>
+                <div className="flex w-full gap-3 mt-2">
+                  <button
+                    onClick={() => setShowBanner(false)}
+                    className="flex-1 py-2.5 text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors border border-gray-200 hover:bg-gray-50 rounded-xl cursor-pointer"
+                  >
+                    Later
+                  </button>
+                  <MotionLink
+                    to="/seller/shop-profile"
+                    onClick={() => setShowBanner(false)}
+                    animate={{
+                      scale: [1, 1.04, 1],
+                      boxShadow: [
+                        "0px 4px 10px rgba(245, 158, 11, 0.2)",
+                        "0px 4px 22px rgba(245, 158, 11, 0.5)",
+                        "0px 4px 10px rgba(245, 158, 11, 0.2)"
+                      ]
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                    className="flex-1 py-2.5 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white text-center rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    Set Up Now <ArrowRight size={14} />
+                  </MotionLink>
+                </div>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
 
