@@ -47,10 +47,6 @@ export const WishlistButton = ({ productId, className = "" }) => {
     });
   };
 
-  if (isAuthenticated && user?.role !== 'CUSTOMER') {
-    return null; // Don't show wishlist button for Admins or Sellers
-  }
-
   return (
     <motion.button
       whileTap={{ scale: 0.8 }}
