@@ -19,10 +19,10 @@ export const SellerLayout = () => {
       return;
     }
 
-    // Toggle banner visibility every 6 seconds (alternate show/hide)
+    // Toggle widget visibility every 12 seconds (visible for 8s, hidden for 4s)
     const interval = setInterval(() => {
       setShowBanner(prev => !prev);
-    }, 6000);
+    }, 12000);
 
     // Initial show
     setShowBanner(true);
@@ -31,31 +31,51 @@ export const SellerLayout = () => {
   }, [isShopMissing]);
 
   return (
-    <div className="flex min-h-screen bg-[#f8f9fc] font-sans antialiased text-gray-800">
+    <div className="flex min-h-screen bg-[#f8f9fc] font-sans antialiased text-gray-800 relative">
       <SellerSidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <SellerHeader />
 
-        {/* Periodic Setup Shop Banner */}
+        {/* Modern Floating Setup Reminder Widget */}
         <AnimatePresence>
           {isShopMissing && showBanner && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.4, ease: 'easeInOut' }}
-              className="bg-gradient-to-r from-amber-500 to-orange-600 text-white overflow-hidden shadow-sm"
+              initial={{ opacity: 0, y: 50, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.9 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-white/95 backdrop-blur-md border border-amber-200 rounded-2xl p-5 shadow-2xl flex flex-col gap-4"
             >
-              <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4 text-sm font-semibold">
-                <div className="flex items-center gap-2.5">
-                  <AlertTriangle className="animate-bounce shrink-0 text-white" size={18} />
-                  <span>Important: Your shop profile is not set up! Customers cannot view or buy your products.</span>
+              <div className="flex items-start gap-3.5">
+                {/* Pulsing Alarm Icon */}
+                <div className="relative shrink-0 mt-0.5">
+                  <span className="absolute inline-flex h-10 w-10 rounded-full bg-amber-400 opacity-20 animate-ping"></span>
+                  <div className="relative w-10 h-10 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500">
+                    <AlertTriangle size={20} className="stroke-[2.5]" />
+                  </div>
                 </div>
-                <Link 
-                  to="/seller/shop-profile"
-                  className="bg-white text-orange-600 px-4 py-1.5 rounded-full hover:bg-orange-50 transition-colors shrink-0 flex items-center gap-1.5 text-xs font-bold shadow-sm"
+
+                <div>
+                  <h4 className="font-bold text-[#111827] text-sm">Shop Profile Incomplete</h4>
+                  <p className="text-xs text-gray-500 leading-relaxed mt-1">
+                    Customers cannot view your shop or purchase your products until you complete your shop profile setup.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-1">
+                <button
+                  onClick={() => setShowBanner(false)}
+                  className="flex-1 py-2 text-xs font-semibold text-gray-400 hover:text-gray-600 transition-colors border border-gray-100 hover:bg-gray-50 rounded-xl"
                 >
-                  Create Shop Now <ArrowRight size={14} />
+                  Later
+                </button>
+                <Link
+                  to="/seller/shop-profile"
+                  onClick={() => setShowBanner(false)}
+                  className="flex-1 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white text-center rounded-xl transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-1"
+                >
+                  Set Up Now <ArrowRight size={14} />
                 </Link>
               </div>
             </motion.div>
