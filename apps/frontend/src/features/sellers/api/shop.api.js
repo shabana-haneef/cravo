@@ -5,6 +5,12 @@ export const shopApi = {
     const response = await api.get('/shops/me');
     return response.data;
   },
+  createShop: async (formData) => {
+    const response = await api.post('/shops', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
   updateShop: async (formData) => {
     const response = await api.put('/shops/me', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
