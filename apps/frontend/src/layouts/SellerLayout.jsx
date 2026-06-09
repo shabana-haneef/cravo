@@ -6,6 +6,8 @@ import { useMyShop } from '../features/sellers/hooks/useShopQueries.js';
 import { AlertTriangle, ArrowRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
+const MotionLink = motion(Link);
+
 export const SellerLayout = () => {
   const { data: shop, isLoading, isError } = useMyShop();
   const [showBanner, setShowBanner] = useState(false);
@@ -70,13 +72,26 @@ export const SellerLayout = () => {
                 >
                   Later
                 </button>
-                <Link
+                <MotionLink
                   to="/seller/shop-profile"
                   onClick={() => setShowBanner(false)}
-                  className="flex-1 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white text-center rounded-xl transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-1"
+                  animate={{
+                    scale: [1, 1.04, 1],
+                    boxShadow: [
+                      "0px 4px 10px rgba(245, 158, 11, 0.2)",
+                      "0px 4px 22px rgba(245, 158, 11, 0.5)",
+                      "0px 4px 10px rgba(245, 158, 11, 0.2)"
+                    ]
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                  className="flex-1 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white text-center rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
                 >
                   Set Up Now <ArrowRight size={14} />
-                </Link>
+                </MotionLink>
               </div>
             </motion.div>
           )}
