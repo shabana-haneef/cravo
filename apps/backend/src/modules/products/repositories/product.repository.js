@@ -55,12 +55,14 @@ export const productRepository = {
 
     return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   },
-  async findPendingApplications() {
+  async findPendingApplications(status = 'PENDING_APPROVAL') {
     return prisma.product.findMany({
-      where: { status: 'PENDING_APPROVAL' },
+      where: { status },
       include: {
-        shop: true,
-        category: true
+        shop: { include: { seller: { include: { user: { include: { profile: true } } } } } },
+        category: true,
+        images: { orderBy: { sortOrder: 'asc' }, take: 3 },
+        variants: { where: { isActive: true }, take: 5 }
       },
       orderBy: { createdAt: 'desc' }
     });

@@ -54,7 +54,7 @@ export const productService = {
         tags: data.tags || [],
         additionalInformation: data.additionalInformation,
         isFeatured: data.isFeatured,
-        status: 'APPROVED'
+        status: 'PENDING_APPROVAL'
       }, tx);
 
       // Create Images
@@ -167,8 +167,8 @@ export const productService = {
     return productRepository.update(product.id, { status: 'ARCHIVED' });
   },
 
-  async getPendingApplications() {
-    return productRepository.findPendingApplications();
+  async getPendingApplications(status = 'PENDING_APPROVAL') {
+    return productRepository.findPendingApplications(status);
   },
 
   async approveProduct(productId) {

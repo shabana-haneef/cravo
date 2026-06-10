@@ -9,7 +9,8 @@ import {
   ChevronRight,
   ChevronLeft,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  Package
 } from 'lucide-react';
 import { useLogout } from '../../auth/hooks/useAuthQueries.js';
 
@@ -25,6 +26,7 @@ const navGroups = [
     items: [
       { name: 'Users', path: '/admin/users', icon: <Users size={18} /> },
       { name: 'Sellers', path: '/admin/sellers', icon: <Store size={18} /> },
+      { name: 'Products', path: '/admin/products', icon: <Package size={18} /> },
       { name: 'Ads', path: '/admin/ads', icon: <Megaphone size={18} /> },
     ]
   },

@@ -75,5 +75,21 @@ export const adminService = {
   async rejectApplication(id, reason) {
     const response = await api.patch(`/admin/seller-applications/${id}/reject`, { reason });
     return response.data;
+  },
+
+  // Product Verification
+  async listProducts(status = 'PENDING_APPROVAL') {
+    const response = await api.get(`/admin/products/pending?status=${status}`);
+    return response.data;
+  },
+
+  async approveProduct(id) {
+    const response = await api.patch(`/admin/products/${id}/approve`);
+    return response.data;
+  },
+
+  async rejectProduct(id, reason) {
+    const response = await api.patch(`/admin/products/${id}/reject`, { reason });
+    return response.data;
   }
 };

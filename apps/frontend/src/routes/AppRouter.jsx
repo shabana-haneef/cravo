@@ -20,6 +20,7 @@ const AdminUsersPage = React.lazy(() => import('../features/admin/pages/AdminUse
 const AdminSellersPage = React.lazy(() => import('../features/admin/pages/AdminSellersPage.jsx').then(m => ({ default: m.AdminSellersPage })));
 const AdminAdsPage = React.lazy(() => import('../features/admin/pages/AdminAdsPage.jsx').then(m => ({ default: m.AdminAdsPage })));
 const AdminSettingsPage = React.lazy(() => import('../features/admin/pages/AdminSettingsPage.jsx').then(m => ({ default: m.AdminSettingsPage })));
+const AdminProductsPage = React.lazy(() => import('../features/admin/pages/AdminProductsPage.jsx').then(m => ({ default: m.AdminProductsPage })));
 
 // Lazy load marketplace pages
 const HomePage = React.lazy(() => import('../features/customer/pages/HomePage.jsx').then(m => ({ default: m.HomePage })));
@@ -149,6 +150,7 @@ const router = createBrowserRouter([
               { path: '/admin/users', element: <S><AdminUsersPage /></S> },
               { path: '/admin/sellers', element: <S><AdminSellersPage /></S> },
               { path: '/admin/ads', element: <S><AdminAdsPage /></S> },
+              { path: '/admin/products', element: <S><AdminProductsPage /></S> },
               { path: '/admin/settings', element: <S><AdminSettingsPage /></S> }
             ]
           }

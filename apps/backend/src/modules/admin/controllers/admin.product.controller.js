@@ -6,8 +6,9 @@ import { z } from 'zod';
 export const adminProductController = {
   async getPending(req, res, next) {
     try {
-      const products = await productService.getPendingApplications();
-      return successResponse(res, 'Pending products retrieved', { products });
+      const { status = 'PENDING_APPROVAL' } = req.query;
+      const products = await productService.getPendingApplications(status);
+      return successResponse(res, 'Products retrieved', { products });
     } catch (error) { next(error); }
   },
 
