@@ -2,6 +2,7 @@ import { sellerRepository } from '../repositories/seller.repository.js';
 import { sellerDocumentRepository } from '../repositories/sellerDocument.repository.js';
 import { userRepository } from '../../users/repositories/user.repository.js';
 import { cloudinaryService } from '../../../shared/services/cloudinary.service.js';
+import { notificationService } from '../../notifications/services/notification.service.js';
 import prisma from '../../../lib/prisma.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 
@@ -95,9 +96,9 @@ export const sellerService = {
     if (!application) throw new AppError("Application not found", 404);
     if (application.status === 'APPROVED') throw new AppError("Application is already approved", 400);
 
-    return prisma.$transaction(async (tx) => {
+    const updatedSeller = await prisma.$transaction(async (tx) => {
       // 1. Update seller status
-      const updatedSeller = await sellerRepository.updateStatus(sellerId, 'APPROVED', {
+      const result = await sellerRepository.updateStatus(sellerId, 'APPROVED', {
         approvedAt: new Date(),
         rejectionReason: null
       }, tx);
@@ -105,8 +106,19 @@ export const sellerService = {
       // 2. Promote user to SELLER role
       await userRepository.update(application.userId, { role: 'SELLER' }, tx);
 
-      return updatedSeller;
+      return result;
     });
+
+    // Notify the user (fire-and-forget) — runs AFTER transaction commits
+    notificationService.createAndEmit(
+      application.userId,
+      'SELLER_APPROVED',
+      'Seller Application Approved 🎉',
+      'Congratulations! Your seller application has been approved. You can now set up your shop and start selling.',
+      { sellerId }
+    ).catch(() => {});
+
+    return updatedSeller;
   },
 
   /**
@@ -119,8 +131,19 @@ export const sellerService = {
     if (!application) throw new AppError("Application not found", 404);
     if (application.status === 'REJECTED') throw new AppError("Application is already rejected", 400);
 
-    return sellerRepository.updateStatus(sellerId, 'REJECTED', {
+    const result = await sellerRepository.updateStatus(sellerId, 'REJECTED', {
       rejectionReason: reason
     });
+
+    // Notify the user (fire-and-forget)
+    notificationService.createAndEmit(
+      application.userId,
+      'SELLER_REJECTED',
+      'Seller Application Update',
+      `Unfortunately, your seller application has been rejected. Reason: ${reason}`,
+      { sellerId }
+    ).catch(() => {});
+
+    return result;
   }
 };

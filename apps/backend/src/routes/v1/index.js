@@ -15,6 +15,7 @@ import paymentRoutes from "../../modules/payments/routes/payment.routes.js";
 import deliveryRoutes from "../../modules/delivery/routes/delivery.routes.js";
 import wishlistRoutes from "../../modules/wishlist/routes/wishlist.routes.js";
 import { adminAdRoutes, sellerAdRoutes, publicAdRoutes } from "../../modules/advertisements/routes/ad.routes.js";
+import notificationRoutes from "../../modules/notifications/routes/notification.routes.js";
 
 const router = Router();
 
@@ -44,5 +45,6 @@ router.use("/payments", paymentRoutes);
 router.use("/deliveries", deliveryRoutes);
 router.use("/admin/ads", adminAdRoutes);
 router.use("/sellers/ads", sellerAdRoutes);
+router.use("/notifications", notificationRoutes);
 
 export default router;

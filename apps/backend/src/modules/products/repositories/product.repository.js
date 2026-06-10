@@ -13,7 +13,8 @@ export const productRepository = {
       include: {
         images: { orderBy: { sortOrder: 'asc' } },
         variants: true,
-        category: true
+        category: true,
+        shop: { include: { seller: { include: { user: true } } } }
       }
     });
   },

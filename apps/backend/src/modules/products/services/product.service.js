@@ -6,6 +6,7 @@ import { shopRepository } from '../../shops/repositories/shop.repository.js';
 import { sellerRepository } from '../../sellers/repositories/seller.repository.js';
 import { slugService } from '../../shops/services/slug.service.js';
 import { cloudinaryService } from '../../../shared/services/cloudinary.service.js';
+import { notificationService } from '../../notifications/services/notification.service.js';
 import prisma from '../../../lib/prisma.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 
@@ -175,14 +176,42 @@ export const productService = {
     const product = await productRepository.findById(productId);
     if (!product) throw new AppError("Product not found", 404);
     if (product.status === 'APPROVED') throw new AppError("Already approved", 400);
-    return productRepository.update(productId, { status: 'APPROVED', rejectionReason: null });
+
+    const result = await productRepository.update(productId, { status: 'APPROVED', rejectionReason: null });
+
+    // Notify seller (fire-and-forget) — findById includes shop→seller
+    if (product.shop?.seller?.userId) {
+      notificationService.createAndEmit(
+        product.shop.seller.userId,
+        'PRODUCT_APPROVED',
+        'Product Approved ✅',
+        `Your product "${product.name}" has been approved and is now live on the marketplace.`,
+        { productId }
+      ).catch(() => {});
+    }
+
+    return result;
   },
 
   async rejectProduct(productId, reason) {
     const product = await productRepository.findById(productId);
     if (!product) throw new AppError("Product not found", 404);
     if (product.status === 'REJECTED') throw new AppError("Already rejected", 400);
-    return productRepository.update(productId, { status: 'REJECTED', rejectionReason: reason });
+
+    const result = await productRepository.update(productId, { status: 'REJECTED', rejectionReason: reason });
+
+    // Notify seller (fire-and-forget)
+    if (product.shop?.seller?.userId) {
+      notificationService.createAndEmit(
+        product.shop.seller.userId,
+        'PRODUCT_REJECTED',
+        'Product Rejected',
+        `Your product "${product.name}" was not approved. Reason: ${reason}`,
+        { productId }
+      ).catch(() => {});
+    }
+
+    return result;
   },
 
   async getPublicProducts(filters, sort, page = 1, limit = 10) {

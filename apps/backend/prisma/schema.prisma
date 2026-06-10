@@ -82,6 +82,16 @@ enum ProductStatus {
   ARCHIVED
 }
 
+enum NotificationType {
+  ORDER_PLACED
+  ORDER_STATUS_UPDATED
+  ORDER_CANCELLED
+  SELLER_APPROVED
+  SELLER_REJECTED
+  PRODUCT_APPROVED
+  PRODUCT_REJECTED
+}
+
 enum OrderStatus {
   PENDING_PAYMENT
   PLACED
@@ -138,6 +148,7 @@ model User {
   cart               Cart?
   orders             Order[]
   wishlist           WishlistItem[]
+  notifications      Notification[]
 
   @@index([email])
   @@index([status])
@@ -560,4 +571,19 @@ model WishlistItem {
   @@unique([userId, productId])
   @@index([userId])
   @@index([productId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  metadata  Json?            // Stores contextual data e.g. { orderId, productId }
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@index([createdAt])
 }

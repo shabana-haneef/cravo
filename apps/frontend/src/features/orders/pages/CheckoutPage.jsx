@@ -165,8 +165,13 @@ export const CheckoutPage = () => {
             throw new Error("Invalid response from server");
           }
 
+          const paymentKey = razorpayOrder.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
+          if (!paymentKey) {
+            throw new Error("Payment gateway key is missing. Please check your configuration.");
+          }
+
           const options = {
-            key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+            key: paymentKey,
             amount: razorpayOrder.amount,
             currency: razorpayOrder.currency,
             name: 'Cravo',

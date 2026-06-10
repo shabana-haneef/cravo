@@ -1,6 +1,7 @@
 import React from 'react';
-import { Bell, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useAuthStore } from '../../../store/auth.store.js';
+import { NotificationBell } from '../../notifications/components/NotificationBell.jsx';
 
 export const AdminHeader = () => {
   const { user } = useAuthStore();
@@ -19,10 +20,7 @@ export const AdminHeader = () => {
       </div>
 
       <div className="flex items-center gap-6 ml-4">
-        <button className="relative text-gray-400 hover:text-indigo-600 transition-colors">
-          <Bell size={20} />
-          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-        </button>
+        <NotificationBell variant="admin" />
 
         <div className="h-8 w-px bg-gray-200"></div>
 

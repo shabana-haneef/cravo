@@ -5,6 +5,7 @@ import { AppRouter } from './routes/AppRouter.jsx';
 import { useAuthStore } from './store/auth.store.js';
 import { api } from './lib/axios.js';
 import { LoadingScreen } from './components/ui/LoadingScreen.jsx';
+import { getSocket, disconnectSocket } from './lib/socket.js';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,15 +24,13 @@ function App() {
   const [isInitializing, setIsInitializing] = useState(true);
   const setAuth = useAuthStore((state) => state.setAuth);
   const clearAuth = useAuthStore((state) => state.clearAuth);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // Hydrate auth state on mount
         const { data } = await api.get('/auth/me');
-        // We assume backend sets access token via refresh flow if missing or we just fetch user
-        // If /me succeeds, user is authenticated
-        setAuth(data.data.user, null); // Token might be inside httpOnly cookies now
+        setAuth(data.data.user, null);
       } catch (error) {
         clearAuth();
       } finally {
@@ -41,6 +40,15 @@ function App() {
 
     initAuth();
   }, [setAuth, clearAuth]);
+
+  // Manage socket lifecycle based on auth state
+  useEffect(() => {
+    if (isAuthenticated) {
+      getSocket(); // Lazily connect
+    } else {
+      disconnectSocket();
+    }
+  }, [isAuthenticated]);
 
   if (isInitializing) {
     return <LoadingScreen message="Starting up Cravo..." />;
@@ -55,3 +63,4 @@ function App() {
 }
 
 export default App;
+

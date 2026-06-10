@@ -59,7 +59,7 @@ export const checkoutService = {
 
     const orderNumber = generateOrderNumber();
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // 1. Reserve Stock for all items
       for (const item of cart.items) {
         // Note: Calling inventoryService inside a transaction requires passing tx if it supported it.
@@ -142,6 +142,11 @@ export const checkoutService = {
 
       logger.info({ userId, orderId: order.id }, 'Order initialized and stock reserved');
 
+      const shop = await tx.shop.findUnique({
+        where: { id: cart.shopId },
+        select: { seller: { select: { userId: true } } }
+      });
+
       return {
         order,
         payment: {
@@ -149,8 +154,25 @@ export const checkoutService = {
           amount: rzpOrder.amount,
           currency: rzpOrder.currency,
           keyId: process.env.RAZORPAY_KEY_ID // Send to frontend
-        }
+        },
+        sellerUserId: shop?.seller?.userId
       };
     });
+
+    if (result.sellerUserId) {
+      // Need to dynamically import notificationService to avoid circular dependency
+      import('../../notifications/services/notification.service.js').then(({ notificationService }) => {
+        notificationService.createAndEmit(
+          result.sellerUserId,
+          'ORDER_PLACED',
+          'New Order Initiated 🛍️',
+          `Order #${result.order.orderNumber} has been initiated (Pending Payment).`,
+          { orderId: result.order.id, orderNumber: result.order.orderNumber }
+        ).catch(() => {});
+      });
+    }
+
+    delete result.sellerUserId;
+    return result;
   }
 };

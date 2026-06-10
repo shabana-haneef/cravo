@@ -8,7 +8,17 @@ export const paymentRepository = {
   async findByRazorpayOrderId(razorpayOrderId) {
     return prisma.payment.findUnique({
       where: { razorpayOrderId },
-      include: { order: true }
+      include: {
+        order: {
+          include: {
+            shop: {
+              select: {
+                seller: { select: { userId: true } }
+              }
+            }
+          }
+        }
+      }
     });
   },
 

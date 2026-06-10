@@ -1,7 +1,8 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { Bell, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import { useAuthStore } from '../../../store/auth.store.js';
+import { NotificationBell } from '../../notifications/components/NotificationBell.jsx';
 
 export const SellerHeader = () => {
   const location = useLocation();
@@ -22,10 +23,7 @@ export const SellerHeader = () => {
       </h1>
 
       <div className="flex items-center gap-6">
-        <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
-          <Bell size={20} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-        </button>
+        <NotificationBell variant="seller" />
         
         <div className="flex items-center gap-3 pl-6">
           <div className="text-right hidden md:block">

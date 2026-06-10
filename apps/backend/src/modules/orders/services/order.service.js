@@ -2,6 +2,7 @@ import { orderRepository } from '../repositories/order.repository.js';
 import { shopRepository } from '../../shops/repositories/shop.repository.js';
 import { sellerRepository } from '../../sellers/repositories/seller.repository.js';
 import { deliveryService } from '../../delivery/services/delivery.service.js';
+import { notificationService } from '../../notifications/services/notification.service.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 import prisma from '../../../lib/prisma.js';
 import { logger } from '../../../shared/services/logger.js';
@@ -77,6 +78,18 @@ export const orderService = {
       }
 
       logger.info({ userId, orderId }, 'Order cancelled by customer');
+
+      // Notify seller that order was cancelled (fire-and-forget)
+      if (order.shop?.seller?.userId) {
+        notificationService.createAndEmit(
+          order.shop.seller.userId,
+          'ORDER_CANCELLED',
+          'Order Cancelled',
+          `Order #${order.orderNumber} has been cancelled by the customer.`,
+          { orderId, orderNumber: order.orderNumber }
+        ).catch(() => {});
+      }
+
       return { message: "Order cancelled successfully" };
     });
   },
@@ -138,6 +151,15 @@ export const orderService = {
       return { message: "Order status updated" };
     });
     
+    // Notify customer about status change (fire-and-forget)
+    notificationService.createAndEmit(
+      order.customerId,
+      'ORDER_STATUS_UPDATED',
+      'Order Update 📦',
+      `Your order #${order.orderNumber} status is now: ${status.replace(/_/g, ' ')}.`,
+      { orderId, orderNumber: order.orderNumber, status }
+    ).catch(() => {});
+
     // Outside transaction, trigger delivery if confirmed
     if (status === 'CONFIRMED') {
       // Execute asynchronously, don't wait or block response

@@ -11,7 +11,13 @@ export const orderRepository = {
       include: {
         items: true,
         payments: true,
-        shop: { select: { name: true, slug: true } },
+        shop: {
+          select: {
+            name: true,
+            slug: true,
+            seller: { select: { userId: true } }
+          }
+        },
         address: true
       }
     });
