@@ -1,8 +1,8 @@
-import { cartService } from './cart.service.js';
+import { cartService } from '../../cart/services/cart.service.js';
 import { orderRepository } from '../repositories/order.repository.js';
-import { paymentRepository } from '../repositories/payment.repository.js';
-import { razorpayService } from './razorpay.service.js';
-import { inventoryService } from '../../products/services/inventory.service.js';
+import { paymentRepository } from '../../payments/repositories/payment.repository.js';
+import { razorpayService } from '../../payments/services/razorpay.service.js';
+import { inventoryService } from '../../inventory/services/inventory.service.js';
 import { addressRepository } from '../../users/repositories/address.repository.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 import { logger } from '../../../shared/services/logger.js';

@@ -1,6 +1,6 @@
 import { inventoryRepository } from '../repositories/inventory.repository.js';
 import { inventoryTransactionRepository } from '../repositories/inventoryTransaction.repository.js';
-import { productService } from './product.service.js';
+import { productService } from '../../products/services/product.service.js';
 import prisma from '../../../lib/prisma.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 import { logger } from '../../../shared/services/logger.js';

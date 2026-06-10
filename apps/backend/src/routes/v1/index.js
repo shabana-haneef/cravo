@@ -6,13 +6,13 @@ import addressRoutes from "../../modules/users/routes/address.routes.js";
 import sellerRoutes from "../../modules/sellers/routes/seller.routes.js";
 import adminRoutes from "../../modules/admin/routes/admin.routes.js";
 import shopRoutes from "../../modules/shops/routes/shop.routes.js";
-import categoryRoutes from "../../modules/products/routes/category.routes.js";
+import categoryRoutes from "../../modules/categories/routes/category.routes.js";
 import productRoutes from "../../modules/products/routes/product.routes.js";
-import inventoryRoutes from "../../modules/products/routes/inventory.routes.js";
-import cartRoutes from "../../modules/orders/routes/cart.routes.js";
+import inventoryRoutes from "../../modules/inventory/routes/inventory.routes.js";
+import cartRoutes from "../../modules/cart/routes/cart.routes.js";
 import orderRoutes from "../../modules/orders/routes/order.routes.js";
-import paymentRoutes from "../../modules/orders/routes/payment.routes.js";
-import deliveryRoutes from "../../modules/logistics/routes/delivery.routes.js";
+import paymentRoutes from "../../modules/payments/routes/payment.routes.js";
+import deliveryRoutes from "../../modules/delivery/routes/delivery.routes.js";
 import wishlistRoutes from "../../modules/wishlist/routes/wishlist.routes.js";
 import { adminAdRoutes, sellerAdRoutes, publicAdRoutes } from "../../modules/advertisements/routes/ad.routes.js";
 

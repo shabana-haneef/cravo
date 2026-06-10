@@ -1,5 +1,5 @@
 import { paymentService } from '../services/payment.service.js';
-import { verifyPaymentSchema } from '../validators/order.validation.js';
+import { verifyPaymentSchema } from '../../orders/validators/order.validation.js';
 import { successResponse, errorResponse } from '../../../shared/responses/apiResponse.js';
 
 export const paymentController = {

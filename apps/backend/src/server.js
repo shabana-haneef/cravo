@@ -5,7 +5,7 @@ import { redis } from "./config/redis.js";
 import { prisma } from "./config/prisma.js";
 
 import { logger } from "./shared/services/logger.js";
-import { initDeliverySyncJob } from "./modules/logistics/jobs/deliverySync.job.js";
+import { initDeliverySyncJob } from "./modules/delivery/jobs/deliverySync.job.js";
 
 const startServer = async () => {
   try {

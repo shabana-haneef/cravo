@@ -1,7 +1,7 @@
 import { productRepository } from '../repositories/product.repository.js';
 import { productImageRepository } from '../repositories/productImage.repository.js';
 import { productVariantRepository } from '../repositories/productVariant.repository.js';
-import { categoryRepository } from '../repositories/category.repository.js';
+import { categoryRepository } from '../../categories/repositories/category.repository.js';
 import { shopRepository } from '../../shops/repositories/shop.repository.js';
 import { sellerRepository } from '../../sellers/repositories/seller.repository.js';
 import { slugService } from '../../shops/services/slug.service.js';

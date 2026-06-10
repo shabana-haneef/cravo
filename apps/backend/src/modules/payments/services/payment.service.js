@@ -1,5 +1,5 @@
 import { paymentRepository } from '../repositories/payment.repository.js';
-import { orderRepository } from '../repositories/order.repository.js';
+import { orderRepository } from '../../orders/repositories/order.repository.js';
 import { razorpayService } from './razorpay.service.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 import { logger } from '../../../shared/services/logger.js';

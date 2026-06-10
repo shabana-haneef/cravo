@@ -1,7 +1,7 @@
 import { cartRepository } from '../repositories/cart.repository.js';
 import { cartItemRepository } from '../repositories/cartItem.repository.js';
 import { productVariantRepository } from '../../products/repositories/productVariant.repository.js';
-import { inventoryRepository } from '../../products/repositories/inventory.repository.js';
+import { inventoryRepository } from '../../inventory/repositories/inventory.repository.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 import { logger } from '../../../shared/services/logger.js';
 import prisma from '../../../lib/prisma.js';

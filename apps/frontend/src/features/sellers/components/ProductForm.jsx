@@ -150,18 +150,26 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
       // Append File objects directly from our state (never touched by Zod)
       newFiles.forEach(img => formData.append('images', img));
 
+      const variants = data.variants || [];
       if (!isEditing) {
-        const initialVariant = data.variants[0];
+        const initialVariant = variants[0];
+        if (!initialVariant) {
+          toast.error('At least one variant is required');
+          return;
+        }
         formData.append('variantName', initialVariant.variantName);
         formData.append('price', initialVariant.price);
         if (initialVariant.compareAtPrice) formData.append('compareAtPrice', initialVariant.compareAtPrice);
         formData.append('initialStock', initialVariant.initialStock);
 
         const res = await createProductMut.mutateAsync(formData);
-        const productId = res.data.product.id;
+        const productId = res?.data?.product?.id || res?.product?.id;
+        if (!productId) {
+          throw new Error('Failed to retrieve product ID from server response');
+        }
 
-        if (data.variants.length > 1) {
-          const extraVariants = data.variants.slice(1);
+        if (variants.length > 1) {
+          const extraVariants = variants.slice(1);
           for (const variant of extraVariants) {
             await addVariantMut.mutateAsync({ productId, payload: variant });
           }
@@ -170,7 +178,7 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
       } else {
         await updateProductMut.mutateAsync({ id: initialData.id, formData });
         
-        for (const variant of data.variants) {
+        for (const variant of variants) {
           if (variant.id) {
             await updateVariantMut.mutateAsync({ productId: initialData.id, variantId: variant.id, payload: variant });
           } else {

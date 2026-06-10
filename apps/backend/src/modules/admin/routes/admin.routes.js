@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { adminSellerController } from '../controllers/admin.seller.controller.js';
 import { adminUserController } from '../controllers/admin.user.controller.js';
 import { adminDashboardController } from '../controllers/admin.dashboard.controller.js';
-import { categoryController } from '../../products/controllers/category.controller.js';
+import { categoryController } from '../../categories/controllers/category.controller.js';
 import { adminProductController } from '../controllers/admin.product.controller.js';
 import { protect } from '../../../shared/middleware/auth.middleware.js';
 import { allowRoles } from '../../../shared/middleware/role.middleware.js';

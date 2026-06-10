@@ -1,7 +1,7 @@
 import { orderRepository } from '../repositories/order.repository.js';
 import { shopRepository } from '../../shops/repositories/shop.repository.js';
 import { sellerRepository } from '../../sellers/repositories/seller.repository.js';
-import { deliveryService } from '../../logistics/services/delivery.service.js';
+import { deliveryService } from '../../delivery/services/delivery.service.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 import prisma from '../../../lib/prisma.js';
 import { logger } from '../../../shared/services/logger.js';
