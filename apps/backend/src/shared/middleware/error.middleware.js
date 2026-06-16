@@ -1,14 +1,26 @@
+import { ZodError } from "zod";
+
 export const errorHandler = (
-  err,
+  error,
   req,
   res,
   next
 ) => {
-  const statusCode = err.statusCode || 500;
+  if (error instanceof ZodError) {
+    return res.status(400).json({
+      success: false,
+      message: "Validation failed",
+      errors: error.flatten(),
+    });
+  }
 
-  
-  res.status(statusCode).json({
+  const statusCode =
+    error.statusCode || 500;
+
+  return res.status(statusCode).json({
     success: false,
-    message: err.message || "Internal Server Error",
+    message:
+      error.message ||
+      "Internal Server Error",
   });
 };

@@ -1,22 +1,34 @@
-import app from "./app.js";
+import { createServer } from 'http';
+import app from './app.js';
 
-import { env } from "./config/env.js";
-import { redis } from "./config/redis.js";
+import { env } from './config/env.js';
+import { redis } from './config/redis.js';
+import { prisma } from './config/prisma.js';
+
+import { logger } from './shared/services/logger.js';
+import { initDeliverySyncJob } from './modules/delivery/jobs/deliverySync.job.js';
+import { initSocket } from './lib/socket.js';
 
 const startServer = async () => {
   try {
+    await prisma.$connect();
+    logger.info('PostgreSQL Connected');
+
     await redis.connect();
+    logger.info('Redis Connected');
 
-    console.log("Redis Connected");
+    initDeliverySyncJob();
 
-    app.listen(env.port, () => {
-      console.log(`Server running on port ${env.port}`);
+    const httpServer = createServer(app);
+    initSocket(httpServer);
+
+    httpServer.listen(env.PORT, () => {
+      logger.info(`Server running on port ${env.PORT}`);
     });
   } catch (error) {
-    console.error(error);
-
+    logger.error(error);
     process.exit(1);
   }
 };
 
-startServer();
+startServer();

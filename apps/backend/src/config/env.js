@@ -1,14 +1,41 @@
 import "dotenv/config";
 
-export const env = {
-  nodeEnv: process.env.NODE_ENV,
-  port: process.env.PORT,
+import { z } from "zod";
 
-  databaseUrl: process.env.DATABASE_URL,
+const envSchema = z.object({
+  NODE_ENV: z.string(),
 
-  redisUrl: process.env.REDIS_URL,
+  PORT: z.string(),
 
-  accessSecret: process.env.JWT_ACCESS_SECRET,
+  DATABASE_URL: z.string(),
 
-  refreshSecret: process.env.JWT_REFRESH_SECRET,
-};
+  REDIS_URL: z.string(),
+
+  JWT_ACCESS_SECRET: z
+    .string()
+    .min(10),
+
+  JWT_REFRESH_SECRET: z
+    .string()
+    .min(10),
+
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
+});
+
+const parsed =
+  envSchema.safeParse(
+    process.env
+  );
+
+if (!parsed.success) {
+  console.error(
+    parsed.error.flatten()
+  );
+
+  process.exit(1);
+}
+
+export const env =
+  parsed.data;
