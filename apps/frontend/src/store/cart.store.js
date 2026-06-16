@@ -11,7 +11,7 @@ export const useCartStore = create((set, get) => ({
   syncCartCount: async () => {
     try {
       const { data } = await cartApi.getCart();
-      const count = data?.cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
+      const count = data?.cart?.items?.length || 0;
       set({ itemCount: count });
     } catch (error) {
       console.error('Failed to sync cart count:', error);

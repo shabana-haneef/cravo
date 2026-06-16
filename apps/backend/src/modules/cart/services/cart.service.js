@@ -15,20 +15,25 @@ export const cartService = {
     }
 
     let subtotal = 0;
-    let totalItems = 0;
+    let totalItems = cart.items.length;
 
     const validatedItems = cart.items.map(item => {
       const price = item.productVariant.price;
       const itemTotal = price * item.quantity;
       subtotal += itemTotal;
-      totalItems += item.quantity;
+
+      const productImages = item.product.images || [];
+      const sortedImages = productImages.sort((a, b) => a.sortOrder - b.sortOrder);
+      const imageUrl = sortedImages.length > 0 ? sortedImages[0].imageUrl : null;
 
       return {
         id: item.id,
         productId: item.productId,
         variantId: item.productVariantId,
+        productSlug: item.product.slug,
         productName: item.product.name,
         variantName: item.productVariant.name,
+        imageUrl,
         quantity: item.quantity,
         unitPrice: price,
         totalPrice: itemTotal
@@ -59,6 +64,19 @@ export const cartService = {
     if (variant.product.status !== 'APPROVED') throw new AppError("Product not available", 400);
 
     const targetShopId = variant.product.shopId;
+
+    // Check if the user is the owner of this shop
+    const userShop = await prisma.shop.findFirst({
+      where: {
+        seller: {
+          userId: userId
+        }
+      }
+    });
+
+    if (userShop && userShop.id === targetShopId) {
+      throw new AppError("You cannot purchase your own products", 400);
+    }
 
     // 2. Validate Inventory
     const inventory = await inventoryRepository.findByVariantId(variantId);

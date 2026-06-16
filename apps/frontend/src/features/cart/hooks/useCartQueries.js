@@ -14,7 +14,7 @@ export const useCart = () => {
     queryFn: async () => {
       const data = await cartApi.getCart();
       // Sync store count when fetching cart
-      const count = data?.data?.cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
+      const count = data?.data?.cart?.items?.length || 0;
       setItemCount(count);
       return data;
     },
@@ -31,7 +31,7 @@ export const useAddToCart = () => {
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: CART_KEYS.all });
       // Optimistically update count
-      const count = res?.data?.cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
+      const count = res?.data?.cart?.items?.length || 0;
       setItemCount(count);
     },
   });

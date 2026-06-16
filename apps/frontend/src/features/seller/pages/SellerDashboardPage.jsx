@@ -10,7 +10,7 @@ import {
 } from 'recharts';
 import { 
   IndianRupee, Package, Users, Clock, Plus, ChevronRight, Calendar, Search,
-  ShoppingBag, BarChart2, Settings
+  ShoppingBag, BarChart2, Settings, Megaphone
 } from 'lucide-react';
 
 const COLORS = ['#A855F7', '#10B981', '#3B82F6']; // Purple (Pending), Green (Completed), Blue (Cancelled)
@@ -84,13 +84,30 @@ export const SellerDashboardPage = () => {
   return (
     <div className="space-y-4">
       {/* Header text */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">
-          Welcome back, {(user?.profile?.fullName?.split(' ') || [])[0] || (user?.email?.split('@') || [])[0] || 'testseller'} 👋
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Here's a quick overview of your shop operations today.
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Welcome back, {(user?.profile?.fullName?.split(' ') || [])[0] || (user?.email?.split('@') || [])[0] || 'testseller'}
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Here's a quick overview of your shop operations today.
+          </p>
+        </div>
+        
+        {/* Ad & Promotion Campaign Top Banner */}
+        <Link to="/seller/ads" className="flex items-center gap-4 px-5 py-3 rounded-xl border border-transparent bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-md hover:shadow-lg transition-all cursor-pointer relative overflow-hidden group shrink-0">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/20 rounded-full blur-2xl group-hover:bg-white/30 transition-all"></div>
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white shrink-0 z-10 relative">
+            <Megaphone size={20} />
+          </div>
+          <div className="z-10 relative">
+            <p className="text-sm font-bold text-white flex items-center gap-2">
+              Ad & Promotion Campaigns
+              <span className="text-[9px] bg-white text-pink-600 px-1.5 py-0.5 rounded font-black uppercase tracking-wider shadow-sm">New</span>
+            </p>
+            <p className="text-xs text-white/90 mt-0.5">Boost sales with targeted ads</p>
+          </div>
+        </Link>
       </div>
 
       {/* KPI Cards (Top Row) */}
@@ -293,14 +310,22 @@ export const SellerDashboardPage = () => {
                 };
                 const sc = statusColors[order.status] || { bg: 'bg-gray-50', text: 'text-gray-600' };
                 return (
-                  <Link
-                    key={order.id || order._id}
-                    to={`/seller/orders/${order.id || order._id}`}
-                    className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all"
-                  >
+                    <Link
+                      key={order.id || order._id}
+                      to="/seller/orders"
+                      className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all"
+                    >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center text-green-600 shrink-0">
-                        <ShoppingBag size={16} />
+                      <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center text-green-600 shrink-0 overflow-hidden">
+                        {order.items?.[0]?.product?.images?.[0]?.imageUrl ? (
+                          <img 
+                            src={order.items[0].product.images[0].imageUrl} 
+                            alt={order.items[0].product?.name || "Product"} 
+                            className="w-full h-full object-cover" 
+                          />
+                        ) : (
+                          <ShoppingBag size={16} />
+                        )}
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-900">

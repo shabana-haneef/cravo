@@ -27,7 +27,10 @@ export const ProductCard = ({ product, variant = 'simple' }) => {
       quantity: 1 
     }, {
       onSuccess: () => {
-        toast.success(`Added 1x ${variantName} to cart`);
+        const variantSuffix = variantName && variantName.toLowerCase() !== 'default'
+          ? ` (${variantName})`
+          : '';
+        toast.success(`Added 1x "${name}"${variantSuffix} to cart`);
       },
       onError: (error) => {
         const msg = error.response?.data?.message || 'Failed to add item to cart';
@@ -35,6 +38,105 @@ export const ProductCard = ({ product, variant = 'simple' }) => {
       }
     });
   };
+
+  if (variant === 'wishlist') {
+    const compareAtPrice = defaultVariant?.compareAtPrice;
+    const hasDiscount = compareAtPrice && compareAtPrice > price;
+    const discountPercent = hasDiscount ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100) : 0;
+
+    const priceParts = price.toFixed(2).split('.');
+    const integerPart = Number(priceParts[0]).toLocaleString('en-IN');
+    const decimalPart = priceParts[1];
+
+    const isSize = /\b\d+\s*(kg|g|ml|l|oz|lb|pack|piece|pcs|in|cm|m)\b/i.test(variantName) || /^\d+(\.\d+)?\s*(kg|g|ml|l|oz|lb|pack|piece|pcs|in|cm|m)?$/i.test(variantName);
+    const label = isSize ? 'Size' : 'Colour';
+
+    return (
+      <motion.div
+        whileHover={{ y: -5, boxShadow: '0 10px 25px rgba(0,0,0,0.08)' }}
+        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+        className="group bg-white rounded-xl border border-gray-200 flex flex-col h-full overflow-hidden p-3 relative text-left"
+      >
+        {/* Favorite Button */}
+        <WishlistButton 
+          productId={product.id} 
+          className="absolute top-2 right-2 z-10 w-8 h-8 p-0 shadow-sm bg-white/95 rounded-full flex items-center justify-center"
+        />
+
+        {/* Image Container */}
+        <Link to={`/products/${slug}`} className="relative block w-full aspect-square bg-[#F6F9F6] rounded-lg overflow-hidden p-2 flex items-center justify-center mb-3">
+          <img 
+            src={mainImage} 
+            alt={name} 
+            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 mix-blend-multiply"
+            loading="lazy"
+          />
+          {isOutOfStock && (
+            <div className="absolute inset-0 bg-white/60 backdrop-blur-xs flex items-center justify-center z-10">
+              <span className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full tracking-wide">OUT OF STOCK</span>
+            </div>
+          )}
+        </Link>
+
+        {/* Product Info */}
+        <div className="flex flex-col flex-1 px-1">
+          {/* Title */}
+          <Link 
+            to={`/products/${slug}`} 
+            className="text-[14px] font-medium text-gray-900 line-clamp-2 leading-tight hover:text-green-700 transition-colors mb-2 min-h-[36px]"
+          >
+            {name}
+          </Link>
+
+          {/* Price & Discount Section */}
+          <div className="flex flex-col gap-0.5 mt-auto">
+            {hasDiscount ? (
+              <>
+                <div className="flex items-baseline flex-wrap">
+                  <span className="bg-[#CC0C39] text-white text-[11px] font-bold px-1.5 py-0.5 rounded leading-none mr-2">
+                    -{discountPercent}%
+                  </span>
+                  <span className="text-[12px] font-semibold text-gray-950 relative -top-[0.3em] mr-[1px]">₹</span>
+                  <span className="text-[22px] font-extrabold text-gray-950 leading-none">{integerPart}</span>
+                  <span className="text-[12px] font-bold text-gray-950 relative -top-[0.4em] ml-[1px]">{decimalPart}</span>
+                </div>
+                <div className="text-[11px] text-gray-500 mt-0.5">
+                  M.R.P.: <span className="line-through">₹{Number(compareAtPrice.toFixed(0)).toLocaleString('en-IN')}.00</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-baseline">
+                <span className="text-[12px] font-semibold text-gray-950 relative -top-[0.3em] mr-[1px]">₹</span>
+                <span className="text-[22px] font-extrabold text-gray-950 leading-none">{integerPart}</span>
+                <span className="text-[12px] font-bold text-gray-950 relative -top-[0.4em] ml-[1px]">{decimalPart}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Stock Status */}
+          <p className={`text-xs font-semibold mt-2 ${isOutOfStock ? 'text-[#B12704]' : 'text-[#007600]'}`}>
+            {isOutOfStock ? 'Out of stock' : 'In stock'}
+          </p>
+
+          {/* Variant Property */}
+          {variantName && (
+            <p className="text-xs text-gray-700 mt-1">
+              <span className="font-semibold">{label}:</span> {variantName}
+            </p>
+          )}
+
+          {/* Move to Cart Button */}
+          <button
+            disabled={isOutOfStock || isAdding}
+            onClick={handleAddToCart}
+            className="w-full mt-4 py-2 px-4 rounded-full border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold transition-colors text-center flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-sm"
+          >
+            {isAdding ? 'Moving...' : 'Move to cart'}
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -118,7 +220,7 @@ export const ProductCard = ({ product, variant = 'simple' }) => {
         </div>
         
         <motion.button
-          whileHover={{ scale: 1.13, borderColor: '#00B259', color: '#00B259' }}
+          whileHover={{ scale: 1.13, borderColor: '#154D21', color: '#154D21' }}
           whileTap={{ scale: 0.9 }}
           transition={{ type: 'spring', stiffness: 400, damping: 18 }}
           disabled={isOutOfStock || isAdding}

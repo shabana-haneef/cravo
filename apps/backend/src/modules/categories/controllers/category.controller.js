@@ -8,7 +8,7 @@ export const categoryController = {
       const parsed = categorySchema.safeParse(req.body);
       if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
 
-      const category = await categoryService.createCategory(parsed.data);
+      const category = await categoryService.createCategory(parsed.data, req.file);
       return successResponse(res, 'Category created successfully', { category }, 201);
     } catch (error) { next(error); }
   },

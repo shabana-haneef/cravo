@@ -29,6 +29,7 @@ export const ProductsDashboardPage = () => {
   const [filterCategory, setFilterCategory] = useState('ALL');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showManageCategoriesModal, setShowManageCategoriesModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
 
   // Stats (Note: Total stats might require a separate unpaginated endpoint for accuracy, but using meta.total for now)
   const total = meta?.total || products.length;
@@ -44,14 +45,19 @@ export const ProductsDashboardPage = () => {
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-      try {
-        await deleteProductMut.mutateAsync(id);
-        toast.success('Product deleted successfully');
-      } catch (err) {
-        toast.error('Failed to delete product');
-      }
+  const handleDeleteClick = (id) => {
+    setProductToDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+    try {
+      await deleteProductMut.mutateAsync(productToDelete);
+      toast.success('Product deleted successfully');
+    } catch (err) {
+      toast.error('Failed to delete product');
+    } finally {
+      setProductToDelete(null);
     }
   };
 
@@ -245,7 +251,7 @@ export const ProductsDashboardPage = () => {
                             <Edit2 size={16} />
                           </Link>
                           <button
-                            onClick={() => handleDelete(product.id)}
+                            onClick={() => handleDeleteClick(product.id)}
                             className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Delete Product"
                           >
@@ -300,6 +306,45 @@ export const ProductsDashboardPage = () => {
         isOpen={showManageCategoriesModal}
         onClose={() => setShowManageCategoriesModal(false)}
       />
+
+      {/* Custom Delete Confirmation Modal */}
+      {productToDelete && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ backdropFilter: 'blur(4px)', backgroundColor: 'rgba(0,0,0,0.4)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setProductToDelete(null); }}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+            style={{ animation: 'modalSlideIn 0.2s ease' }}
+          >
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4 mx-auto">
+                <Trash2 size={24} className="text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-center text-gray-900 mb-2">Delete Product?</h3>
+              <p className="text-sm text-center text-gray-500 mb-6">
+                Are you sure you want to delete this product? This action cannot be undone and will remove it from your store entirely.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setProductToDelete(null)}
+                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleteProductMut.isLoading}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
+                >
+                  {deleteProductMut.isLoading ? <Loader2 size={16} className="animate-spin" /> : 'Yes, Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes modalSlideIn {

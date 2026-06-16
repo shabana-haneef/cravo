@@ -34,21 +34,25 @@ export const WishlistPage = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-10 pb-6 border-b border-gray-100">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
-            <Link to="/" className="hover:text-gray-600 transition-colors flex items-center gap-1">
-              <ArrowLeft size={12} /> Back to Home
-            </Link>
+      <div className="mb-8 pb-5 border-b border-gray-200/80">
+        {/* Breadcrumbs */}
+        <nav className="flex items-center gap-2 text-[12px] font-medium text-gray-400 uppercase tracking-wider mb-2">
+          <Link to="/" className="hover:text-gray-600 transition-colors">Home</Link>
+          <span className="text-gray-300">/</span>
+          <span className="text-gray-600">Wishlist</span>
+        </nav>
+
+        {/* Title & Count */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+              My Wishlist
+            </h1>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#111827] flex items-center gap-2.5">
-            My <span className="text-rose-500">Wishlist</span>
-            <Heart size={26} className="fill-rose-500 stroke-rose-500 shrink-0" />
-          </h1>
+          <p className="text-sm font-medium text-gray-500 bg-gray-50 px-3 py-1 rounded-full border border-gray-100 self-start sm:self-auto">
+            {wishlistedProducts.length} {wishlistedProducts.length === 1 ? 'item' : 'items'} saved
+          </p>
         </div>
-        <p className="text-sm font-medium text-gray-500">
-          You have <span className="text-rose-500 font-bold">{wishlistedProducts.length}</span> {wishlistedProducts.length === 1 ? 'item' : 'items'} saved
-        </p>
       </div>
 
       {wishlistedProducts.length === 0 ? (
@@ -68,7 +72,7 @@ export const WishlistPage = () => {
           </p>
           <Link 
             to="/products"
-            className="inline-flex items-center gap-2 bg-[#00B259] hover:bg-[#009B4E] text-white font-semibold text-[13px] px-6 py-3 rounded-full shadow-lg shadow-[#00B259]/30 transition-all duration-300 hover:scale-105 active:scale-95"
+            className="inline-flex items-center gap-2 bg-[#154D21] hover:bg-[#103B19] text-white font-semibold text-[13px] px-6 py-3 rounded-full shadow-lg shadow-[#154D21]/30 transition-all duration-300 hover:scale-105 active:scale-95"
           >
             <ShoppingBag size={16} /> Start Shopping
           </Link>
@@ -83,7 +87,7 @@ export const WishlistPage = () => {
         >
           {wishlistedProducts.map(product => (
             <motion.div key={product.id} variants={itemVariants}>
-              <ProductCard product={product} variant="detailed" />
+              <ProductCard product={product} variant="wishlist" />
             </motion.div>
           ))}
         </motion.div>

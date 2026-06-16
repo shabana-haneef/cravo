@@ -44,17 +44,30 @@ export const MainLayout = () => {
               <img src="/images/logo.jpeg" alt="Cravo Logo" className="h-12 w-auto object-contain rounded-xl mix-blend-multiply" />
             </Link>
             
-            <nav className="hidden md:flex items-center gap-2 ml-4">
-              <Store size={18} className="text-[#00B259]" />
-              <NavLink to="/products" className="text-[14px] font-bold text-[#111827] hover:text-[#00B259] transition-colors">
-                Browse Market
+            <nav className="hidden md:flex items-center gap-6 ml-6">
+              <NavLink 
+                to="/" 
+                className={({ isActive }) => 
+                  `text-[14px] font-bold transition-colors ${isActive ? 'text-[#154D21]' : 'text-[#111827] hover:text-[#154D21]'}`
+                }
+                end
+              >
+                Home
+              </NavLink>
+              <NavLink 
+                to="/products" 
+                className={({ isActive }) => 
+                  `text-[14px] font-bold transition-colors ${isActive ? 'text-[#154D21]' : 'text-[#111827] hover:text-[#154D21]'}`
+                }
+              >
+                Shop
               </NavLink>
             </nav>
           </div>
 
           {/* Central Search Bar */}
           <div className="hidden lg:flex flex-1 max-w-xl mx-8">
-            <div className="w-full flex items-center bg-[#F8FAF8] border border-gray-100 rounded-lg px-4 py-2.5 transition-colors focus-within:bg-white focus-within:border-[#00B259] focus-within:ring-2 focus-within:ring-[#00B259]/20 shadow-sm">
+            <div className="w-full flex items-center bg-[#F8FAF8] border border-gray-100 rounded-lg px-4 py-2.5 transition-colors focus-within:bg-white focus-within:border-[#154D21] focus-within:ring-2 focus-within:ring-[#154D21]/20 shadow-sm">
               <input 
                 type="text"
                 placeholder="Search for fresh vegetables, homemade cakes..."
@@ -159,7 +172,7 @@ export const MainLayout = () => {
             <p className="text-gray-500 mb-5 text-xs">Subscribe to get updates on new products, offers, and more.</p>
             <div className="flex bg-white border border-gray-200 rounded-lg overflow-hidden p-1 shadow-sm">
               <input type="email" placeholder="Enter your email address" className="flex-1 outline-none px-3 text-gray-700 text-xs" />
-              <button className="bg-[#00B259] hover:bg-[#009B4E] text-white px-4 py-2 rounded-md font-semibold text-xs transition-colors">Subscribe</button>
+              <button className="bg-[#154D21] hover:bg-[#103B19] text-white px-4 py-2 rounded-md font-semibold text-xs transition-colors">Subscribe</button>
             </div>
           </div>
           
@@ -167,28 +180,28 @@ export const MainLayout = () => {
             <div>
               <h4 className="font-bold text-[#111827] text-sm mb-4">Marketplace</h4>
               <div className="flex flex-col gap-2.5 text-gray-500 text-xs font-medium">
-                <Link className="hover:text-[#00B259] transition-colors">All Products</Link>
-                <Link className="hover:text-[#00B259] transition-colors">Categories</Link>
-                <Link className="hover:text-[#00B259] transition-colors">Stores</Link>
-                <Link className="hover:text-[#00B259] transition-colors">Today's Deals</Link>
+                <Link className="hover:text-[#154D21] transition-colors">All Products</Link>
+                <Link className="hover:text-[#154D21] transition-colors">Categories</Link>
+                <Link className="hover:text-[#154D21] transition-colors">Stores</Link>
+                <Link className="hover:text-[#154D21] transition-colors">Today's Deals</Link>
               </div>
             </div>
             <div>
               <h4 className="font-bold text-[#111827] text-sm mb-4">Company</h4>
               <div className="flex flex-col gap-2.5 text-gray-500 text-xs font-medium">
-                <Link to="/about" className="hover:text-[#00B259] transition-colors">About Us</Link>
-                <Link to="/" className="hover:text-[#00B259] transition-colors">How It Works</Link>
-                <Link to="/" className="hover:text-[#00B259] transition-colors">Blog</Link>
-                <Link to="/contact" className="hover:text-[#00B259] transition-colors">Contact Us</Link>
+                <Link to="/about" className="hover:text-[#154D21] transition-colors">About Us</Link>
+                <Link to="/" className="hover:text-[#154D21] transition-colors">How It Works</Link>
+                <Link to="/" className="hover:text-[#154D21] transition-colors">Blog</Link>
+                <Link to="/contact" className="hover:text-[#154D21] transition-colors">Contact Us</Link>
               </div>
             </div>
             <div>
               <h4 className="font-bold text-[#111827] text-sm mb-4">Help</h4>
               <div className="flex flex-col gap-2.5 text-gray-500 text-xs font-medium">
-                <Link to="/faq" className="hover:text-[#00B259] transition-colors">FAQs</Link>
-                <Link to="/" className="hover:text-[#00B259] transition-colors">Shipping & Delivery</Link>
-                <Link to="/" className="hover:text-[#00B259] transition-colors">Returns & Refunds</Link>
-                <Link to="/contact" className="hover:text-[#00B259] transition-colors">Support</Link>
+                <Link to="/faq" className="hover:text-[#154D21] transition-colors">FAQs</Link>
+                <Link to="/" className="hover:text-[#154D21] transition-colors">Shipping & Delivery</Link>
+                <Link to="/" className="hover:text-[#154D21] transition-colors">Returns & Refunds</Link>
+                <Link to="/contact" className="hover:text-[#154D21] transition-colors">Support</Link>
               </div>
             </div>
           </div>
@@ -196,16 +209,16 @@ export const MainLayout = () => {
           <div className="w-full md:w-[15%]">
             <h4 className="font-bold text-[#111827] text-sm mb-4">Connect</h4>
             <div className="flex gap-2">
-              <button className="w-7 h-7 rounded-full bg-[#E8F5E9] text-[#00B259] flex items-center justify-center hover:bg-[#00B259] hover:text-white transition-colors">
+              <button className="w-7 h-7 rounded-full bg-[#E8F5E9] text-[#154D21] flex items-center justify-center hover:bg-[#154D21] hover:text-white transition-colors">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
               </button>
-              <button className="w-7 h-7 rounded-full bg-[#E8F5E9] text-[#00B259] flex items-center justify-center hover:bg-[#00B259] hover:text-white transition-colors">
+              <button className="w-7 h-7 rounded-full bg-[#E8F5E9] text-[#154D21] flex items-center justify-center hover:bg-[#154D21] hover:text-white transition-colors">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
               </button>
-              <button className="w-7 h-7 rounded-full bg-[#E8F5E9] text-[#00B259] flex items-center justify-center hover:bg-[#00B259] hover:text-white transition-colors">
+              <button className="w-7 h-7 rounded-full bg-[#E8F5E9] text-[#154D21] flex items-center justify-center hover:bg-[#154D21] hover:text-white transition-colors">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
               </button>
-              <button className="w-7 h-7 rounded-full bg-[#E8F5E9] text-[#00B259] flex items-center justify-center hover:bg-[#00B259] hover:text-white transition-colors">
+              <button className="w-7 h-7 rounded-full bg-[#E8F5E9] text-[#154D21] flex items-center justify-center hover:bg-[#154D21] hover:text-white transition-colors">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
               </button>
             </div>

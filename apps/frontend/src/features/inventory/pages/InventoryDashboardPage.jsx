@@ -41,7 +41,7 @@ export const InventoryDashboardPage = () => {
         items.push({
           id: variant.id,
           productName: product.name,
-          productImage: product.images?.[0]?.url || 'https://via.placeholder.com/150',
+          productImage: product.images?.[0]?.imageUrl || 'https://via.placeholder.com/150',
           categoryId: product.categoryId,
           categoryName: product.category?.name || 'Uncategorized',
           variantName: variant.variantName,

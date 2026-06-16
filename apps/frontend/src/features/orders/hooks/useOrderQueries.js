@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { orderApi } from '../api/order.api.js';
 import { paymentApi } from '../api/payment.api.js';
 
@@ -40,5 +40,15 @@ export const useOrderById = (id) => {
     queryKey: ORDER_KEYS.order(id),
     queryFn: () => orderApi.getOrderById(id),
     enabled: !!id,
+  });
+};
+
+export const useCancelOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: orderApi.cancelOrder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.myOrders });
+    },
   });
 };

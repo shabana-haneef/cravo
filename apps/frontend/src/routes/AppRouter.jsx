@@ -24,6 +24,7 @@ const AdminProductsPage = React.lazy(() => import('../features/admin/pages/Admin
 
 // Lazy load marketplace pages
 const HomePage = React.lazy(() => import('../features/customer/pages/HomePage.jsx').then(m => ({ default: m.HomePage })));
+const CategoriesPage = React.lazy(() => import('../features/customer/pages/CategoriesPage.jsx').then(m => ({ default: m.CategoriesPage })));
 const ProductListingPage = React.lazy(() => import('../features/customer/pages/ProductListingPage.jsx').then(m => ({ default: m.ProductListingPage })));
 const ProductDetailsPage = React.lazy(() => import('../features/customer/pages/ProductDetailsPage.jsx').then(m => ({ default: m.ProductDetailsPage })));
 const AboutUsPage = React.lazy(() => import('../features/customer/pages/AboutUsPage.jsx').then(m => ({ default: m.AboutUsPage })));
@@ -38,6 +39,7 @@ const WishlistPage = React.lazy(() => import('../features/wishlist/pages/Wishlis
 const CartPage = React.lazy(() => import('../features/cart/pages/CartPage.jsx').then(m => ({ default: m.CartPage })));
 const CheckoutPage = React.lazy(() => import('../features/orders/pages/CheckoutPage.jsx').then(m => ({ default: m.CheckoutPage })));
 const OrderSuccessPage = React.lazy(() => import('../features/orders/pages/OrderSuccessPage.jsx').then(m => ({ default: m.OrderSuccessPage })));
+const OrdersPage = React.lazy(() => import('../features/orders/pages/OrdersPage.jsx').then(m => ({ default: m.OrdersPage })));
 
 // Lazy load profile/account pages
 const ProfilePage = React.lazy(() => import('../features/users/pages/ProfilePage.jsx').then(m => ({ default: m.ProfilePage })));
@@ -81,6 +83,7 @@ const router = createBrowserRouter([
     children: [
       // Public marketplace routes
       { path: '/', element: <S><HomePage /></S> },
+      { path: '/categories', element: <S><CategoriesPage /></S> },
       { path: '/products', element: <S><ProductListingPage /></S> },
       { path: '/products/:slug', element: <S><ProductDetailsPage /></S> },
       { path: '/become-seller', element: <S><BecomeSellerPage /></S> },
@@ -98,6 +101,7 @@ const router = createBrowserRouter([
           { path: '/cart', element: <S><CartPage /></S> },
           { path: '/checkout', element: <S><CheckoutPage /></S> },
           { path: '/orders/success', element: <S><OrderSuccessPage /></S> },
+          { path: '/orders', element: <S><OrdersPage /></S> },
           { path: '/profile', element: <S><ProfilePage /></S> },
           { path: '/addresses', element: <S><AddressesPage /></S> },
           { path: '/seller/application', element: <S><SellerApplicationContainer /></S> },

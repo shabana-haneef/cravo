@@ -7,7 +7,7 @@ export const AdminHeader = () => {
   const { user } = useAuthStore();
 
   return (
-    <header className="h-20 bg-white border-b border-gray-100 px-8 flex items-center justify-between sticky top-0 z-10">
+    <header className="h-20 bg-white border-b border-gray-100 px-8 flex items-center justify-between sticky top-0 z-50">
       <div className="flex-1 max-w-xl">
         <div className="relative group">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />

@@ -25,13 +25,21 @@ export const productService = {
     if (!category || !category.isActive) throw new AppError("Invalid or inactive category", 400);
 
     // 3. Handle Images
-    if (!files || files.length === 0) throw new AppError("At least one product image is required", 400);
-    if (files.length > 10) throw new AppError("Maximum 10 images allowed", 400);
+    const imageFiles = files?.images || [];
+    const labelImageFile = files?.labelImage?.[0];
 
-    const uploadTasks = files.map((file) => 
+    if (!imageFiles || imageFiles.length === 0) throw new AppError("At least one product image is required", 400);
+    if (imageFiles.length > 10) throw new AppError("Maximum 10 images allowed", 400);
+
+    const uploadTasks = imageFiles.map((file) => 
       cloudinaryService.uploadBuffer(file.buffer, 'cravo/products')
     );
     const uploadedImages = await Promise.all(uploadTasks);
+
+    let labelUploadResult = null;
+    if (labelImageFile) {
+      labelUploadResult = await cloudinaryService.uploadBuffer(labelImageFile.buffer, 'cravo/products/labels');
+    }
 
     // 4. Generate Slug
     let baseSlug = slugService.slugify(data.name);
@@ -53,7 +61,9 @@ export const productService = {
         description: data.description,
         features: data.features || [],
         tags: data.tags || [],
-        additionalInformation: data.additionalInformation,
+        ingredients: data.ingredients,
+        labelImageUrl: labelUploadResult?.secure_url || null,
+        labelImagePublicId: labelUploadResult?.public_id || null,
         isFeatured: data.isFeatured,
         status: 'PENDING_APPROVAL'
       }, tx);
@@ -132,11 +142,20 @@ export const productService = {
     const product = await this.getMyProductById(userId, productId);
     
     let updates = { ...data };
+    
+    const imageFiles = files?.images || [];
+    const labelImageFile = files?.labelImage?.[0];
 
-    if (files && files.length > 0) {
-      if (files.length > 10) throw new AppError("Maximum 10 images allowed", 400);
+    if (labelImageFile) {
+      const labelUploadResult = await cloudinaryService.uploadBuffer(labelImageFile.buffer, 'cravo/products/labels');
+      updates.labelImageUrl = labelUploadResult.secure_url;
+      updates.labelImagePublicId = labelUploadResult.public_id;
+    }
+
+    if (imageFiles.length > 0) {
+      if (imageFiles.length > 10) throw new AppError("Maximum 10 images allowed", 400);
       
-      const uploadTasks = files.map((file) => 
+      const uploadTasks = imageFiles.map((file) => 
         cloudinaryService.uploadBuffer(file.buffer, 'cravo/products')
       );
       const uploadedImages = await Promise.all(uploadTasks);
@@ -159,7 +178,10 @@ export const productService = {
       });
       return productRepository.findById(product.id);
     } else {
-      return productRepository.update(product.id, updates);
+      if (Object.keys(updates).length > 0) {
+        return productRepository.update(product.id, updates);
+      }
+      return product;
     }
   },
 
@@ -218,8 +240,14 @@ export const productService = {
     return productRepository.searchPublicProducts(filters, sort, page, limit);
   },
 
-  async getPublicProduct(slug) {
-    const product = await productRepository.findBySlug(slug);
+  async getPublicProduct(slugOrId) {
+    if (!slugOrId || slugOrId === 'undefined') {
+      throw new AppError("Product not found", 404);
+    }
+    let product = await productRepository.findBySlug(slugOrId);
+    if (!product) {
+      product = await productRepository.findByIdWithDetails(slugOrId);
+    }
     if (!product || product.status !== 'APPROVED') throw new AppError("Product not found", 404);
     return product;
   }

@@ -67,7 +67,7 @@ export const ProductListingPage = () => {
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Page Header */}
       <ScrollReveal variant={fadeUp} className="mb-12 text-center mt-6">
-        <div className="flex items-center justify-center gap-1.5 text-[13px] font-bold text-[#00B259] mb-3">
+        <div className="flex items-center justify-center gap-1.5 text-[13px] font-bold text-[#154D21] mb-3">
           <Leaf size={16} className="stroke-[2.5]" />
           Premium. Organic. Local.
         </div>
@@ -77,16 +77,16 @@ export const ProductListingPage = () => {
 
       <div className="flex flex-col lg:flex-row gap-10">
         {/* Sidebar Filters */}
-        <aside className="w-full lg:w-[280px] flex-shrink-0">
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] sticky top-28">
+        <aside className="w-full lg:w-[280px] flex-shrink-0 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-120px)] z-10 custom-scrollbar overflow-y-auto rounded-2xl">
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-2">
-                <Filter size={18} className="text-[#00B259]" />
+                <Filter size={18} className="text-[#154D21]" />
                 <h2 className="text-[17px] font-bold text-[#111827]">Filters</h2>
               </div>
               <button 
                 onClick={() => { setSearch(''); setCategory(''); setMinPrice(''); setMaxPrice(''); setPage(1); }}
-                className="text-[12px] font-bold text-[#00B259] hover:text-[#009B4E] transition-colors"
+                className="text-[12px] font-bold text-[#154D21] hover:text-[#103B19] transition-colors"
               >
                 Clear All
               </button>
@@ -98,8 +98,8 @@ export const ProductListingPage = () => {
                 <h3 className="text-[11px] font-bold text-gray-400 mb-4 uppercase tracking-widest">Categories</h3>
                 <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                   <label className="flex items-center gap-3 cursor-pointer group py-1">
-                    <div className={`w-[18px] h-[18px] shrink-0 rounded-full border-[2px] flex items-center justify-center transition-all duration-200 ${category === '' ? 'border-[#00B259]' : 'border-gray-300 group-hover:border-[#00B259]'}`}>
-                      {category === '' && <div className="w-2.5 h-2.5 bg-[#00B259] rounded-full scale-in" />}
+                    <div className={`w-[18px] h-[18px] shrink-0 rounded-full border-[2px] flex items-center justify-center transition-all duration-200 ${category === '' ? 'border-[#154D21]' : 'border-gray-300 group-hover:border-[#154D21]'}`}>
+                      {category === '' && <div className="w-2.5 h-2.5 bg-[#154D21] rounded-full scale-in" />}
                     </div>
                     <span className={`text-[14px] transition-colors ${category === '' ? 'text-[#111827] font-bold' : 'text-gray-600 font-medium group-hover:text-gray-900'}`}>All Categories</span>
                     <input 
@@ -112,8 +112,8 @@ export const ProductListingPage = () => {
                   </label>
                   {categories.map(cat => (
                     <label key={cat.id} className="flex items-center gap-3 cursor-pointer group py-1">
-                      <div className={`w-[18px] h-[18px] shrink-0 rounded-full border-[2px] flex items-center justify-center transition-all duration-200 ${category === cat.slug ? 'border-[#00B259]' : 'border-gray-300 group-hover:border-[#00B259]'}`}>
-                        {category === cat.slug && <div className="w-2.5 h-2.5 bg-[#00B259] rounded-full scale-in" />}
+                      <div className={`w-[18px] h-[18px] shrink-0 rounded-full border-[2px] flex items-center justify-center transition-all duration-200 ${category === cat.slug ? 'border-[#154D21]' : 'border-gray-300 group-hover:border-[#154D21]'}`}>
+                        {category === cat.slug && <div className="w-2.5 h-2.5 bg-[#154D21] rounded-full scale-in" />}
                       </div>
                       <span className={`text-[14px] transition-colors ${category === cat.slug ? 'text-[#111827] font-bold' : 'text-gray-600 font-medium group-hover:text-gray-900'}`}>{cat.name}</span>
                       <input 
@@ -137,7 +137,7 @@ export const ProductListingPage = () => {
                     <input 
                       type="number" 
                       placeholder="Min" 
-                      className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 focus:ring-1 focus:ring-[#00B259] focus:border-[#00B259] transition-colors outline-none bg-white"
+                      className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 focus:ring-1 focus:ring-[#154D21] focus:border-[#154D21] transition-colors outline-none bg-white"
                       value={minPrice}
                       onChange={(e) => { setMinPrice(e.target.value); setPage(1); }}
                     />
@@ -147,7 +147,7 @@ export const ProductListingPage = () => {
                     <input 
                       type="number" 
                       placeholder="Max" 
-                      className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 focus:ring-1 focus:ring-[#00B259] focus:border-[#00B259] transition-colors outline-none bg-white"
+                      className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 focus:ring-1 focus:ring-[#154D21] focus:border-[#154D21] transition-colors outline-none bg-white"
                       value={maxPrice}
                       onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
                     />
@@ -157,7 +157,7 @@ export const ProductListingPage = () => {
 
               <button 
                 onClick={() => refetch()}
-                className="w-full py-3 bg-[#00B259] hover:bg-[#009B4E] text-white rounded-lg text-[14px] font-bold transition-colors shadow-sm"
+                className="w-full py-3 bg-[#154D21] hover:bg-[#103B19] text-white rounded-lg text-[14px] font-bold transition-colors shadow-sm"
               >
                 Apply Filter
               </button>
@@ -174,7 +174,7 @@ export const ProductListingPage = () => {
                 <DebouncedSearch 
                   onSearch={handleSearch} 
                   placeholder="Search for products, categories, or keywords..." 
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-[14px] bg-white shadow-sm focus:ring-1 focus:ring-[#00B259] focus:border-[#00B259] outline-none"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-[14px] bg-white shadow-sm focus:ring-1 focus:ring-[#154D21] focus:border-[#154D21] outline-none"
                 />
               </div>
             </div>

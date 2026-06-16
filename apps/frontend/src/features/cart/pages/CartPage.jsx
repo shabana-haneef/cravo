@@ -40,6 +40,16 @@ const EmptyCart = () => (
 export const CartPage = () => {
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useCart();
+  const [unselectedItemIds, setUnselectedItemIds] = React.useState(new Set());
+
+  const toggleSelection = (id) => {
+    setUnselectedItemIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
   const { mutate: updateQuantity, isPending: isUpdating } = useUpdateCartItem();
   const { mutate: removeItem, isPending: isRemoving } = useRemoveCartItem();
   const { mutate: clearCart, isPending: isClearing } = useClearCart();
@@ -53,24 +63,15 @@ export const CartPage = () => {
 
   if (items.length === 0) return <EmptyCart />;
 
-  // Free delivery calculation
-  const freeDeliveryThreshold = 499;
-  const amountAway = Math.max(0, freeDeliveryThreshold - summary.subtotal);
-  const progressPercent = Math.min(100, (summary.subtotal / freeDeliveryThreshold) * 100);
+  const activeItems = items.filter(item => !unselectedItemIds.has(item.id));
+  const activeSubtotal = activeItems.reduce((acc, item) => acc + item.totalPrice, 0);
+  const activeTotalItems = activeItems.length;
 
   return (
     <div className="max-w-7xl mx-auto pb-16 pt-1 px-4 sm:px-6 lg:px-8 font-inter bg-[#fafafa] min-h-screen">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#f0fdf4] rounded-xl flex items-center justify-center shrink-0 border border-[#bbf7d0]/30 shadow-sm">
-            <ShoppingCart className="w-5 h-5 text-[#16a34a]" />
-          </div>
-          <div>
-            <h1 className="text-[22px] sm:text-[24px] font-bold text-[#111827] tracking-tight leading-tight">Shopping Cart</h1>
-            <p className="text-[#6b7280] text-[13px]">Review your items and proceed to checkout</p>
-          </div>
-        </div>
+        <h1 className="text-[22px] sm:text-[24px] font-bold text-[#111827] tracking-tight leading-tight">Shopping Cart</h1>
         
         {cart.shop && (
           <div className="flex items-center gap-2 px-4 py-2.5 bg-[#f0fdf4] text-[#16a34a] rounded-xl text-[14px] font-medium border border-[#bbf7d0]/50 shadow-sm">
@@ -85,85 +86,94 @@ export const CartPage = () => {
         <div className="flex-1 flex flex-col">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col h-full">
             
-            {/* Table Header (Desktop) */}
-            <div className="hidden sm:grid grid-cols-12 gap-4 px-8 py-5 border-b border-gray-100 text-[14px] font-medium text-[#6b7280]">
-              <div className="col-span-5">Product</div>
-              <div className="col-span-2 text-center">Price</div>
-              <div className="col-span-3 text-center">Quantity</div>
-              <div className="col-span-2 text-right pr-2">Total</div>
-            </div>
-
             {/* Cart Items List */}
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-gray-200 px-6 pt-4">
               {items.map(item => (
-                <div key={item.id} className="p-6 sm:px-8 sm:py-6 grid grid-cols-1 sm:grid-cols-12 gap-6 sm:gap-4 items-center">
-                  
-                  {/* Product Info */}
-                  <div className="col-span-1 sm:col-span-5 flex items-center gap-5">
-                    <div className="w-[100px] h-[100px] bg-[#f8f9fa] rounded-[16px] overflow-hidden shrink-0 border border-gray-100 flex items-center justify-center p-1">
+                <div key={item.id} className="py-6 flex flex-col sm:flex-row gap-6">
+                  {/* Selection Checkbox & Image */}
+                  <div className="flex items-center gap-4 shrink-0">
+                    <input 
+                      type="checkbox" 
+                      checked={!unselectedItemIds.has(item.id)}
+                      onChange={() => toggleSelection(item.id)}
+                      className="w-5 h-5 rounded border-gray-300 text-[#007185] focus:ring-[#007185] cursor-pointer shrink-0 mt-2 self-start sm:self-center sm:mt-0" 
+                    />
+                    <div className="w-[180px] h-[180px] bg-white flex items-center justify-center p-2 rounded-xl overflow-hidden">
                       {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-contain rounded-[12px]" />
+                        <img src={item.imageUrl} alt={item.productName} className="max-w-full max-h-full object-contain" />
                       ) : (
-                        <ShoppingCart className="w-8 h-8 text-gray-300" />
+                        <ShoppingCart className="w-12 h-12 text-gray-300" />
                       )}
                     </div>
-                    <div className="flex flex-col">
-                      <Link to={`/products/${item.productId}`} className="text-[17px] font-bold text-gray-900 hover:text-[#16a34a] transition-colors line-clamp-2 leading-snug mb-1.5">
+                  </div>
+
+                  {/* Middle Details */}
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex justify-between items-start gap-4">
+                      <Link to={`/products/${item.productSlug || item.productId}`} className="text-[18px] sm:text-[20px] font-medium text-gray-900 hover:text-orange-600 transition-colors leading-snug line-clamp-2">
                         {item.productName}
                       </Link>
-                      <span className="text-[14px] text-gray-500 mb-2.5">Variant: {item.variantName}</span>
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#f0fdf4] text-[#16a34a] text-[12px] font-semibold rounded-md w-max border border-[#bbf7d0]/50">
-                        <ShieldCheck size={14} /> In stock
+                      <div className="text-[18px] sm:text-[20px] font-bold text-gray-900 shrink-0 text-right">
+                        ₹{item.unitPrice.toFixed(2)}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Price */}
-                  <div className="col-span-1 sm:col-span-2 text-left sm:text-center text-[15px] font-bold text-gray-900">
-                    <span className="sm:hidden text-gray-500 text-[14px] font-normal mr-2">Price:</span>
-                    ₹{item.unitPrice.toFixed(2)}
-                  </div>
+                    <div className="mt-1 text-[#007600] text-[13px]">In stock</div>
+                    
+                    <div className="mt-2 text-[13px] text-gray-900">
+                      <span className="font-bold">Variant:</span> {item.variantName}
+                    </div>
 
-                  {/* Quantity */}
-                  <div className="col-span-1 sm:col-span-3 flex justify-start sm:justify-center">
-                    <div className="flex items-center border border-gray-200 rounded-[12px] bg-white h-[44px] w-[110px] overflow-hidden shadow-sm">
-                      <button 
-                        disabled={item.quantity <= 1 || isUpdating}
-                        onClick={() => updateQuantity({ itemId: item.id, quantity: item.quantity - 1 })}
-                        className="w-10 h-full flex items-center justify-center text-[#16a34a] hover:bg-gray-50 disabled:text-gray-300 transition-colors"
-                      >
-                        <Minus size={16} />
-                      </button>
-                      <div className="flex-1 h-full flex items-center justify-center font-bold text-gray-900 text-[15px]">
-                        {item.quantity}
+                    {/* Actions Row */}
+                    <div className="mt-4 flex flex-wrap items-center gap-3 text-[13px] text-[#007185]">
+                      
+                      {/* Quantity Dropdown / Selector */}
+                      <div className="flex items-center border border-gray-300 rounded-lg bg-[#F0F2F2] shadow-sm overflow-hidden h-[32px] w-fit">
+                        <button 
+                          disabled={item.quantity <= 1 || isUpdating}
+                          onClick={() => updateQuantity({ itemId: item.id, quantity: item.quantity - 1 })}
+                          className="w-8 h-full flex items-center justify-center text-gray-800 hover:bg-gray-200 disabled:text-gray-400 transition-colors bg-gradient-to-b from-gray-100 to-gray-200"
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <div className="w-10 h-full flex items-center justify-center bg-white border-x border-gray-300 font-medium text-gray-900">
+                          {item.quantity}
+                        </div>
+                        <button 
+                          disabled={isUpdating}
+                          onClick={() => updateQuantity({ itemId: item.id, quantity: item.quantity + 1 })}
+                          className="w-8 h-full flex items-center justify-center text-gray-800 hover:bg-gray-200 disabled:text-gray-400 transition-colors bg-gradient-to-b from-gray-100 to-gray-200"
+                        >
+                          <Plus size={14} />
+                        </button>
                       </div>
+
+                      <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
+
                       <button 
-                        disabled={isUpdating}
-                        onClick={() => updateQuantity({ itemId: item.id, quantity: item.quantity + 1 })}
-                        className="w-10 h-full flex items-center justify-center text-[#16a34a] hover:bg-gray-50 disabled:text-gray-300 transition-colors"
+                        onClick={() => removeItem(item.id)}
+                        disabled={isRemoving}
+                        className="hover:underline disabled:opacity-50"
                       >
-                        <Plus size={16} />
+                        Delete
                       </button>
+
+                      <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
+                      <button className="hover:underline">Save for later</button>
+                      <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
+                      <button className="hover:underline">Share</button>
+
                     </div>
                   </div>
-
-                  {/* Total & Remove */}
-                  <div className="col-span-1 sm:col-span-2 flex items-center justify-between sm:justify-end gap-4">
-                    <div className="font-bold text-[17px] text-[#16a34a]">
-                      <span className="sm:hidden text-gray-500 text-[14px] font-normal mr-2">Total:</span>
-                      ₹{item.totalPrice.toFixed(2)}
-                    </div>
-                    <button 
-                      onClick={() => removeItem(item.id)}
-                      disabled={isRemoving}
-                      className="text-gray-400 hover:text-red-500 rounded-[12px] hover:bg-red-50 transition-colors disabled:opacity-50 border border-gray-200 bg-white shadow-sm flex items-center justify-center w-[40px] h-[40px]"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-
                 </div>
               ))}
+            </div>
+
+            {/* Subtotal row at bottom of items list like Amazon */}
+            <div className="px-6 py-5 flex justify-end text-[18px] border-t border-gray-200 bg-gray-50/50">
+              <span className="text-gray-900">
+                Subtotal ({activeTotalItems} item{activeTotalItems !== 1 ? 's' : ''}): <span className="font-bold">₹{activeSubtotal.toFixed(2)}</span>
+              </span>
             </div>
 
             {/* Flexible Spacer to match right column height perfectly */}
@@ -187,64 +197,41 @@ export const CartPage = () => {
         </div>
 
         {/* Right Column: Order Summary */}
-        <div className="w-full lg:w-[400px] shrink-0 flex flex-col">
-          <div className="bg-white p-6 rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04)] border border-gray-100 h-full flex flex-col">
+        <div className="w-full lg:w-[380px] shrink-0 flex flex-col">
+          <div className="bg-white p-8 rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04)] border border-gray-100 flex flex-col h-fit">
             
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-9 h-9 bg-[#f0fdf4] rounded-lg flex items-center justify-center shrink-0 border border-[#bbf7d0]/50 shadow-sm">
-                <Receipt className="w-[18px] h-[18px] text-[#16a34a]" />
-              </div>
-              <h2 className="text-[17px] font-bold text-gray-900">Order Summary</h2>
-            </div>
+            <h2 className="text-[18px] font-bold text-gray-900 mb-6 pb-5 border-b border-gray-100">Order Summary</h2>
             
-            <div className="space-y-4 mb-5 text-[14px]">
-              <div className="flex justify-between items-center text-gray-600 border-b border-dashed border-gray-200 pb-4">
-                <span>Subtotal ({summary.totalItems} item{summary.totalItems !== 1 ? 's' : ''})</span>
-                <span className="font-bold text-gray-900">₹{summary.subtotal.toFixed(2)}</span>
+            <div className="space-y-4 mb-8 text-[15px]">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">Items</span>
+                <span className="font-semibold text-gray-900">{activeTotalItems}</span>
               </div>
-              <div className="flex justify-between items-center text-gray-600 pb-1">
-                <span>Delivery</span>
-                <span className="text-[13px] font-medium text-gray-500">Calculated at checkout</span>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">Sub Total</span>
+                <span className="font-semibold text-gray-900">₹{activeSubtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">Shipping</span>
+                <span className="font-semibold text-gray-900">₹0.00</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">Taxes</span>
+                <span className="font-semibold text-gray-900">₹0.00</span>
               </div>
             </div>
 
-            <div className="bg-[#f0fdf4] rounded-[14px] p-4 mb-5 flex justify-between items-center border border-[#bbf7d0]/50">
-              <span className="font-bold text-gray-900 text-[15px]">Estimated Total</span>
-              <span className="text-[22px] font-extrabold text-[#16a34a]">₹{summary.estimatedTotal.toFixed(2)}</span>
+            <div className="flex justify-between items-center mb-8">
+              <span className="text-[16px] font-medium text-gray-500">Total</span>
+              <span className="text-[20px] font-bold text-gray-900">₹{activeSubtotal.toFixed(2)}</span>
             </div>
 
             <button 
-              onClick={() => navigate('/checkout')}
-              className="w-full h-[48px] bg-[#16a34a] hover:bg-green-700 text-white font-bold rounded-[12px] flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] transition-colors mb-3 text-[15px]"
+              onClick={() => navigate('/checkout', { state: { unselectedItemIds: Array.from(unselectedItemIds) } })}
+              className="w-full py-3.5 bg-[#16a34a] hover:bg-green-700 text-white font-bold rounded-full transition-colors text-[16px]"
             >
-              <Lock size={16} className="mb-0.5" /> Proceed to Checkout <ArrowRight size={16} className="mb-0.5" />
+              Proceed to Checkout
             </button>
-
-            <div className="flex items-center justify-center gap-2 mb-5 mt-3 text-[#16a34a]">
-              <ShieldCheck size={15} />
-              <span className="text-[12px] font-medium text-gray-500">Safe & Secure Payments</span>
-            </div>
-
-            <div className="grid grid-cols-3 pt-4 border-t border-gray-100">
-              <div className="flex flex-col items-center text-center gap-2 border-r border-gray-100 px-1">
-                <div className="w-7 h-7 rounded-full bg-white border border-[#bbf7d0] shadow-sm flex items-center justify-center text-[#16a34a]">
-                  <ShieldCheck size={14} />
-                </div>
-                <span className="text-[10px] font-medium text-gray-500 leading-[1.3]">Secure<br/>Checkout</span>
-              </div>
-              <div className="flex flex-col items-center text-center gap-2 border-r border-gray-100 px-1">
-                <div className="w-7 h-7 rounded-full bg-white border border-[#bbf7d0] shadow-sm flex items-center justify-center text-[#16a34a]">
-                  <Truck size={14} />
-                </div>
-                <span className="text-[10px] font-medium text-gray-500 leading-[1.3]">Fast & Reliable<br/>Delivery</span>
-              </div>
-              <div className="flex flex-col items-center text-center gap-2 px-1">
-                <div className="w-7 h-7 rounded-full bg-white border border-[#bbf7d0] shadow-sm flex items-center justify-center text-[#16a34a]">
-                  <BadgeCheck size={14} />
-                </div>
-                <span className="text-[10px] font-medium text-gray-500 leading-[1.3]">100% Money<br/>Back Guarantee</span>
-              </div>
-            </div>
 
           </div>
         </div>

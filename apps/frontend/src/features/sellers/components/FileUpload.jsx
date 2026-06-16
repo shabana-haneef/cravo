@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { Upload, X, FileText, Image, AlertCircle } from 'lucide-react';
 
 const ACCEPTED_TYPES = {
@@ -21,6 +21,19 @@ const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 export const FileUpload = ({ label, required = false, value, onChange, error }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [previewUrl, setPreviewUrl] = useState('');
+
+  useEffect(() => {
+    if (!value || !value.type.startsWith('image/')) {
+      setPreviewUrl('');
+      return;
+    }
+    const url = URL.createObjectURL(value);
+    setPreviewUrl(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [value]);
 
   const validate = (file) => {
     if (!ACCEPTED_TYPES[file.type]) {
@@ -78,7 +91,7 @@ export const FileUpload = ({ label, required = false, value, onChange, error }) 
         <div className="relative flex items-center gap-4 p-4 border-2 border-[#1E3A2B] rounded-xl bg-[#F0F8F3]">
           {value.type.startsWith('image/') ? (
             <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 shrink-0">
-              <img src={URL.createObjectURL(value)} alt="preview" className="w-full h-full object-cover" />
+              <img src={previewUrl} alt="preview" className="w-full h-full object-cover" />
             </div>
           ) : (
             <div className="w-16 h-16 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0">

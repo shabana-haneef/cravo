@@ -17,7 +17,7 @@ export const SellerHeader = () => {
   };
 
   return (
-    <header className="h-20 bg-white/80 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between px-8 border-b border-gray-100/50">
+    <header className="h-20 bg-white/80 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-8 border-b border-gray-100/50">
       <h1 className="text-xl font-bold text-gray-900 tracking-tight">
         {getPageTitle()}
       </h1>

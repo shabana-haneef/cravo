@@ -4,6 +4,8 @@ import { categoryController } from '../controllers/category.controller.js';
 import { protect } from '../../../shared/middleware/auth.middleware.js';
 import { allowRoles } from '../../../shared/middleware/role.middleware.js';
 
+import { upload } from '../../../shared/middleware/upload.middleware.js';
+
 const router = Router();
 
 // Public Routes
@@ -14,7 +16,7 @@ router.get('/:slug', categoryController.getCategoryBySlug);
 router.use(protect);
 router.use(allowRoles('SELLER', 'ADMIN'));
 
-router.post('/', categoryController.createCategory);
+router.post('/', upload.single('image'), categoryController.createCategory);
 router.put('/:id', categoryController.updateCategory);
 router.delete('/:id', categoryController.deleteCategory);
 

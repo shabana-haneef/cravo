@@ -322,7 +322,9 @@ model Product {
   description      String?
   features         String[]      @default([])
   tags             String[]      @default([])
-  additionalInformation String?
+  ingredients      String        @default("Not specified")
+  labelImageUrl    String?
+  labelImagePublicId String?
   status           ProductStatus @default(PENDING_APPROVAL)
   rejectionReason  String?
   isFeatured       Boolean       @default(false)

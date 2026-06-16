@@ -39,11 +39,28 @@ export const SellerShopProfilePage = () => {
     }
   }, [shop]);
 
+  useEffect(() => {
+    if (!logoFile) return;
+    const url = URL.createObjectURL(logoFile);
+    setLogoPreview(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [logoFile]);
+
+  useEffect(() => {
+    if (!bannerFile) return;
+    const url = URL.createObjectURL(bannerFile);
+    setBannerPreview(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [bannerFile]);
+
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setLogoFile(file);
-      setLogoPreview(URL.createObjectURL(file));
     }
   };
 
@@ -51,7 +68,6 @@ export const SellerShopProfilePage = () => {
     const file = e.target.files[0];
     if (file) {
       setBannerFile(file);
-      setBannerPreview(URL.createObjectURL(file));
     }
   };
 
@@ -101,7 +117,7 @@ export const SellerShopProfilePage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Store className="text-[#00B259]" />
+            <Store className="text-[#154D21]" />
             {isCreating ? 'Set Up Your Shop' : 'Shop Profile'}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -129,7 +145,7 @@ export const SellerShopProfilePage = () => {
             <div className="relative group">
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Shop Banner Image</label>
               <div 
-                className="h-44 w-full bg-[#F6F9F6] rounded-2xl flex items-center justify-center border-2 border-dashed border-gray-200 cursor-pointer overflow-hidden hover:bg-[#F0F5F0] hover:border-[#00B259]/30 transition-all relative"
+                className="h-44 w-full bg-[#F6F9F6] rounded-2xl flex items-center justify-center border-2 border-dashed border-gray-200 cursor-pointer overflow-hidden hover:bg-[#F0F5F0] hover:border-[#154D21]/30 transition-all relative"
                 onClick={() => document.getElementById('banner-input').click()}
               >
                 {bannerPreview ? (
@@ -140,7 +156,7 @@ export const SellerShopProfilePage = () => {
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-col items-center text-gray-400 group-hover:text-[#00B259] transition-colors">
+                  <div className="flex flex-col items-center text-gray-400 group-hover:text-[#154D21] transition-colors">
                     <Camera size={28} className="mb-2" />
                     <span className="text-sm font-semibold">Upload Shop Banner</span>
                     <span className="text-xs mt-1 text-gray-400">1200 x 400 suggested (JPEG, PNG, WEBP)</span>
@@ -171,7 +187,7 @@ export const SellerShopProfilePage = () => {
                       </div>
                     </>
                   ) : (
-                    <div className="flex flex-col items-center text-gray-400 group-hover:text-[#00B259] transition-colors">
+                    <div className="flex flex-col items-center text-gray-400 group-hover:text-[#154D21] transition-colors">
                       <Camera size={24} className="mb-1" />
                       <span className="text-[10px] font-bold text-center px-1">Logo</span>
                     </div>
@@ -206,7 +222,7 @@ export const SellerShopProfilePage = () => {
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Shop Name</label>
               <input 
                 type="text" 
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-[#00B259] focus:ring-2 focus:ring-[#00B259]/10 outline-none transition-shadow text-gray-800 font-semibold" 
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-[#154D21] focus:ring-2 focus:ring-[#154D21]/10 outline-none transition-shadow text-gray-800 font-semibold" 
                 placeholder="E.g., Grandma's Homemade Bakes" 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -217,7 +233,7 @@ export const SellerShopProfilePage = () => {
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Shop Type</label>
               <select 
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-[#00B259] focus:ring-2 focus:ring-[#00B259]/10 outline-none transition-shadow text-gray-700 font-medium cursor-pointer"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-[#154D21] focus:ring-2 focus:ring-[#154D21]/10 outline-none transition-shadow text-gray-700 font-medium cursor-pointer"
                 value={shopType}
                 onChange={(e) => setShopType(e.target.value)}
               >
@@ -235,7 +251,7 @@ export const SellerShopProfilePage = () => {
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Delivery Radius (KM)</label>
               <select 
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-[#00B259] focus:ring-2 focus:ring-[#00B259]/10 outline-none transition-shadow text-gray-700 font-medium cursor-pointer"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-[#154D21] focus:ring-2 focus:ring-[#154D21]/10 outline-none transition-shadow text-gray-700 font-medium cursor-pointer"
                 value={deliveryRadiusKm}
                 onChange={(e) => setDeliveryRadiusKm(Number(e.target.value))}
               >
@@ -255,7 +271,7 @@ export const SellerShopProfilePage = () => {
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Shop Description</label>
               <textarea 
                 rows={4} 
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-[#00B259] focus:ring-2 focus:ring-[#00B259]/10 outline-none transition-shadow text-gray-700 resize-y leading-relaxed" 
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-[#154D21] focus:ring-2 focus:ring-[#154D21]/10 outline-none transition-shadow text-gray-700 resize-y leading-relaxed" 
                 placeholder="Describe what makes your products and shop special. Tell your story to customers..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -274,10 +290,10 @@ export const SellerShopProfilePage = () => {
                 type="checkbox" 
                 checked={isPickupEnabled}
                 onChange={(e) => setIsPickupEnabled(e.target.checked)}
-                className="w-5 h-5 accent-[#00B259] border-gray-300 rounded cursor-pointer"
+                className="w-5 h-5 accent-[#154D21] border-gray-300 rounded cursor-pointer"
               />
               <div>
-                <span className="text-sm font-semibold text-gray-800 group-hover:text-[#00B259] transition-colors">Enable Self-Pickup</span>
+                <span className="text-sm font-semibold text-gray-800 group-hover:text-[#154D21] transition-colors">Enable Self-Pickup</span>
                 <p className="text-xs text-gray-400">Customers can order online and collect from shop</p>
               </div>
             </label>
@@ -287,10 +303,10 @@ export const SellerShopProfilePage = () => {
                 type="checkbox" 
                 checked={isDeliveryEnabled}
                 onChange={(e) => setIsDeliveryEnabled(e.target.checked)}
-                className="w-5 h-5 accent-[#00B259] border-gray-300 rounded cursor-pointer"
+                className="w-5 h-5 accent-[#154D21] border-gray-300 rounded cursor-pointer"
               />
               <div>
-                <span className="text-sm font-semibold text-gray-800 group-hover:text-[#00B259] transition-colors">Enable Home Delivery</span>
+                <span className="text-sm font-semibold text-gray-800 group-hover:text-[#154D21] transition-colors">Enable Home Delivery</span>
                 <p className="text-xs text-gray-400">Ship items to customers within delivery radius</p>
               </div>
             </label>

@@ -15,10 +15,10 @@ router.get('/:slug', productController.getPublicProduct);
 router.use(protect);
 router.use(allowRoles('SELLER'));
 
-router.post('/', upload.array('images', 10), productController.createProduct);
+router.post('/', upload.fields([{ name: 'images', maxCount: 10 }, { name: 'labelImage', maxCount: 1 }]), productController.createProduct);
 router.get('/me/all', productController.getMyProducts);
 router.get('/me/:id', productController.getMyProductById);
-router.put('/:id', upload.array('images', 10), productController.updateProduct);
+router.put('/:id', upload.fields([{ name: 'images', maxCount: 10 }, { name: 'labelImage', maxCount: 1 }]), productController.updateProduct);
 router.delete('/:id', productController.deleteProduct);
 
 // Variant Routes
