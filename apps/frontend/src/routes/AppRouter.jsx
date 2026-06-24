@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { ProtectedRoute, RoleRoute, PublicRoute } from './guards/AuthGuards.jsx';
 import { LoadingScreen } from '../components/ui/LoadingScreen.jsx';
 import { MainLayout } from '../layouts/MainLayout.jsx';
@@ -21,9 +21,12 @@ const AdminSellersPage = React.lazy(() => import('../features/admin/pages/AdminS
 const AdminAdsPage = React.lazy(() => import('../features/admin/pages/AdminAdsPage.jsx').then(m => ({ default: m.AdminAdsPage })));
 const AdminSettingsPage = React.lazy(() => import('../features/admin/pages/AdminSettingsPage.jsx').then(m => ({ default: m.AdminSettingsPage })));
 const AdminProductsPage = React.lazy(() => import('../features/admin/pages/AdminProductsPage.jsx').then(m => ({ default: m.AdminProductsPage })));
+const AdminAuditLogsPage = React.lazy(() => import('../features/admin/pages/AdminAuditLogsPage.jsx').then(m => ({ default: m.AdminAuditLogsPage })));
+const AdminIntegrationsPage = React.lazy(() => import('../features/admin/pages/AdminIntegrationsPage.jsx').then(m => ({ default: m.AdminIntegrationsPage })));
 
 // Lazy load marketplace pages
 const HomePage = React.lazy(() => import('../features/customer/pages/HomePage.jsx').then(m => ({ default: m.HomePage })));
+const CategoriesPage = React.lazy(() => import('../features/customer/pages/CategoriesPage.jsx').then(m => ({ default: m.CategoriesPage })));
 const ProductListingPage = React.lazy(() => import('../features/customer/pages/ProductListingPage.jsx').then(m => ({ default: m.ProductListingPage })));
 const ProductDetailsPage = React.lazy(() => import('../features/customer/pages/ProductDetailsPage.jsx').then(m => ({ default: m.ProductDetailsPage })));
 const AboutUsPage = React.lazy(() => import('../features/customer/pages/AboutUsPage.jsx').then(m => ({ default: m.AboutUsPage })));
@@ -32,18 +35,22 @@ const PrivacyPolicyPage = React.lazy(() => import('../features/customer/pages/Pr
 const TermsPage = React.lazy(() => import('../features/customer/pages/TermsPage.jsx').then(m => ({ default: m.TermsPage })));
 const FaqPage = React.lazy(() => import('../features/customer/pages/FaqPage.jsx').then(m => ({ default: m.FaqPage })));
 const CookiePolicyPage = React.lazy(() => import('../features/customer/pages/CookiePolicyPage.jsx').then(m => ({ default: m.CookiePolicyPage })));
+const ShippingPolicyPage = React.lazy(() => import('../features/customer/pages/ShippingPolicyPage.jsx').then(m => ({ default: m.ShippingPolicyPage })));
+const TrackOrder = React.lazy(() => import('../features/customer/pages/TrackOrder.jsx').then(m => ({ default: m.TrackOrder })));
+const SellerTermsPage = React.lazy(() => import('../features/customer/pages/SellerTermsPage.jsx').then(m => ({ default: m.SellerTermsPage })));
 const WishlistPage = React.lazy(() => import('../features/wishlist/pages/WishlistPage.jsx').then(m => ({ default: m.WishlistPage })));
 
 // Lazy load cart, checkout, and order pages
 const CartPage = React.lazy(() => import('../features/cart/pages/CartPage.jsx').then(m => ({ default: m.CartPage })));
 const CheckoutPage = React.lazy(() => import('../features/orders/pages/CheckoutPage.jsx').then(m => ({ default: m.CheckoutPage })));
 const OrderSuccessPage = React.lazy(() => import('../features/orders/pages/OrderSuccessPage.jsx').then(m => ({ default: m.OrderSuccessPage })));
+const OrdersPage = React.lazy(() => import('../features/orders/pages/OrdersPage.jsx').then(m => ({ default: m.OrdersPage })));
+const OrderDetailsPage = React.lazy(() => import('../features/orders/pages/OrderDetailsPage.jsx').then(m => ({ default: m.OrderDetailsPage })));
 
 // Lazy load profile/account pages
 const ProfilePage = React.lazy(() => import('../features/users/pages/ProfilePage.jsx').then(m => ({ default: m.ProfilePage })));
 const AddressesPage = React.lazy(() => import('../features/users/pages/AddressesPage.jsx').then(m => ({ default: m.AddressesPage })));
 
-const BecomeSellerPage = React.lazy(() => import('../features/sellers/pages/BecomeSellerPage.jsx').then(m => ({ default: m.BecomeSellerPage })));
 const SellerApplicationContainer = React.lazy(() => import('../features/sellers/pages/SellerApplicationContainer.jsx').then(m => ({ default: m.SellerApplicationContainer })));
 const ProductsDashboardPage = React.lazy(() => import('../features/sellers/pages/ProductsDashboardPage.jsx').then(m => ({ default: m.ProductsDashboardPage })));
 const CreateProductPage = React.lazy(() => import('../features/sellers/pages/CreateProductPage.jsx').then(m => ({ default: m.CreateProductPage })));
@@ -81,15 +88,20 @@ const router = createBrowserRouter([
     children: [
       // Public marketplace routes
       { path: '/', element: <S><HomePage /></S> },
+      { path: '/categories', element: <S><CategoriesPage /></S> },
       { path: '/products', element: <S><ProductListingPage /></S> },
       { path: '/products/:slug', element: <S><ProductDetailsPage /></S> },
-      { path: '/become-seller', element: <S><BecomeSellerPage /></S> },
       { path: '/about', element: <S><AboutUsPage /></S> },
       { path: '/contact', element: <S><ContactUsPage /></S> },
+      { path: '/help', element: <S><ContactUsPage /></S> },
       { path: '/privacy', element: <S><PrivacyPolicyPage /></S> },
       { path: '/terms', element: <S><TermsPage /></S> },
       { path: '/faq', element: <S><FaqPage /></S> },
+      { path: '/faqs', element: <S><FaqPage /></S> },
       { path: '/cookie-policy', element: <S><CookiePolicyPage /></S> },
+      { path: '/shipping-policy', element: <S><ShippingPolicyPage /></S> },
+      { path: '/track-order', element: <S><TrackOrder /></S> },
+      { path: '/seller-terms', element: <S><SellerTermsPage /></S> },
 
       // Protected customer routes (nested under MainLayout)
       {
@@ -98,6 +110,8 @@ const router = createBrowserRouter([
           { path: '/cart', element: <S><CartPage /></S> },
           { path: '/checkout', element: <S><CheckoutPage /></S> },
           { path: '/orders/success', element: <S><OrderSuccessPage /></S> },
+          { path: '/orders', element: <S><OrdersPage /></S> },
+          { path: '/orders/:id', element: <S><OrderDetailsPage /></S> },
           { path: '/profile', element: <S><ProfilePage /></S> },
           { path: '/addresses', element: <S><AddressesPage /></S> },
           { path: '/seller/application', element: <S><SellerApplicationContainer /></S> },
@@ -119,12 +133,12 @@ const router = createBrowserRouter([
             children: [
               { path: '/seller/dashboard', element: <S><SellerDashboardPage /></S> },
               { path: '/seller/products', element: <S><ProductsDashboardPage /></S> },
-              { path: '/seller/products/new', element: <S><CreateProductPage /></S> },
+              { path: '/seller/products/new', element: <Navigate to="/seller/products?add=true" replace /> },
               { path: '/seller/products/:id/edit', element: <S><EditProductPage /></S> },
               { path: '/seller/inventory', element: <S><InventoryDashboardPage /></S> },
               { path: '/seller/inventory/:variantId/history', element: <S><InventoryHistoryPage /></S> },
               { path: '/seller/orders', element: <S><SellerOrdersPage /></S> },
-              { path: '/seller/shop-profile', element: <S><SellerShopProfilePage /></S> },
+              { path: '/seller/shop-profile', element: <Navigate to="/seller/settings?tab=store-profile" replace /> },
               { path: '/seller/ads', element: <S><SellerAdsPage /></S> },
               { path: '/seller/analytics', element: <S><SellerAnalyticsPage /></S> },
               { path: '/seller/reviews', element: <S><SellerReviewsPage /></S> },
@@ -151,7 +165,9 @@ const router = createBrowserRouter([
               { path: '/admin/sellers', element: <S><AdminSellersPage /></S> },
               { path: '/admin/ads', element: <S><AdminAdsPage /></S> },
               { path: '/admin/products', element: <S><AdminProductsPage /></S> },
-              { path: '/admin/settings', element: <S><AdminSettingsPage /></S> }
+              { path: '/admin/settings', element: <S><AdminSettingsPage /></S> },
+              { path: '/admin/audit-logs', element: <S><AdminAuditLogsPage /></S> },
+              { path: '/admin/integrations', element: <S><AdminIntegrationsPage /></S> }
             ]
           }
         ]

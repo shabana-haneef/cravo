@@ -18,6 +18,23 @@ export const productRepository = {
       }
     });
   },
+  async findByIdWithDetails(id) {
+    return prisma.product.findUnique({
+      where: { id },
+      include: {
+        images: { orderBy: { sortOrder: 'asc' } },
+        variants: { where: { isActive: true }, include: { inventory: true } },
+        category: true,
+        shop: {
+          include: {
+            seller: {
+              include: { user: { include: { profile: true } } }
+            }
+          }
+        }
+      }
+    });
+  },
   async findBySlug(slug) {
     return prisma.product.findUnique({
       where: { slug },

@@ -18,7 +18,12 @@ export const RoleRoute = ({ allowedRoles }) => {
 
   if (!user || !allowedRoles.includes(user.role)) {
     // Eject to a safe route based on their actual role or home
-    if (user?.role === 'SELLER') return <Navigate to="/seller/dashboard" replace />;
+    if (user?.role === 'SELLER') {
+      if (user?.isFirstLogin) {
+        return <Navigate to="/" replace />;
+      }
+      return <Navigate to="/seller/dashboard" replace />;
+    }
     if (user?.role === 'ADMIN') return <Navigate to="/admin/dashboard" replace />;
     return <Navigate to="/" replace />;
   }
@@ -31,7 +36,12 @@ export const PublicRoute = () => {
 
   // If already logged in, redirect away from auth pages (login/register)
   if (isAuthenticated) {
-    if (user?.role === 'SELLER') return <Navigate to="/seller/dashboard" replace />;
+    if (user?.role === 'SELLER') {
+      if (user?.isFirstLogin) {
+        return <Navigate to="/" replace />;
+      }
+      return <Navigate to="/seller/dashboard" replace />;
+    }
     if (user?.role === 'ADMIN') return <Navigate to="/admin/dashboard" replace />;
     return <Navigate to="/" replace />;
   }

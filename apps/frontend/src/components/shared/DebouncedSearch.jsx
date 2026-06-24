@@ -31,7 +31,7 @@ export const DebouncedSearch = ({ onSearch, placeholder = 'Search...', className
       </div>
       <input
         type="text"
-        className={`block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white shadow-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#00B259] focus:border-[#00B259] sm:text-sm transition-shadow ${className}`}
+        className={`block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white shadow-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#154D21] focus:border-[#154D21] sm:text-sm transition-shadow ${className}`}
         placeholder={placeholder}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}

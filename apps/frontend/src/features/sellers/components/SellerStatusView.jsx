@@ -8,9 +8,10 @@ import {
 const DocumentPreview = ({ doc }) => {
   const isPdf = doc.fileUrl?.endsWith('.pdf') || doc.publicId?.includes('pdf');
   const typeLabel = {
-    ID_PROOF: 'ID Proof',
-    ADDRESS_PROOF: 'Address Proof',
-    SHOP_IMAGE: 'Shop Photo',
+     ID_PROOF: 'ID Proof',
+     ADDRESS_PROOF: 'Address Proof',
+     SHOP_IMAGE: 'Shop Photo',
+     FSSAI_LICENSE: 'FSSAI License',
   }[doc.type] || doc.type;
 
   return (

@@ -13,6 +13,17 @@ export const useLogin = () => {
   });
 };
 
+export const useGoogleLogin = () => {
+  const setAuth = useAuthStore((state) => state.setAuth);
+
+  return useMutation({
+    mutationFn: authApi.googleLogin,
+    onSuccess: (data) => {
+      setAuth(data.data.user, data.data.accessToken);
+    }
+  });
+};
+
 export const useRegister = () => {
   return useMutation({
     mutationFn: authApi.register

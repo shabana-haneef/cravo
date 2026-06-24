@@ -109,7 +109,7 @@ export const NotificationBell = React.memo(({ variant = 'admin' }) => {
 
       {/* Dropdown panel */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-[360px] bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-[360px] bg-white rounded-2xl shadow-2xl border border-gray-100 z-[100] overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <div className="flex items-center gap-2">
@@ -120,15 +120,24 @@ export const NotificationBell = React.memo(({ variant = 'admin' }) => {
                 </span>
               )}
             </div>
-            {unreadCount > 0 && (
+            <div className="flex items-center gap-3">
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllRead}
+                  className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-semibold transition-colors"
+                >
+                  <CheckCheck size={14} />
+                  Mark all read
+                </button>
+              )}
               <button
-                onClick={handleMarkAllRead}
-                className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-semibold transition-colors"
+                onClick={() => setIsOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+                aria-label="Close notifications"
               >
-                <CheckCheck size={14} />
-                Mark all read
+                <X size={16} />
               </button>
-            )}
+            </div>
           </div>
 
           {/* Notification list */}

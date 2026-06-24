@@ -6,7 +6,7 @@ export const productVariantController = {
   async addVariant(req, res, next) {
     try {
       const parsed = variantSchema.safeParse(req.body);
-      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
+      if (!parsed.success) return errorResponse(res, parsed.error?.errors?.[0]?.message || "Invalid variant data", 400);
 
       const variant = await productVariantService.addVariant(req.user.id, req.params.productId, parsed.data);
       return successResponse(res, 'Variant added', { variant }, 201);
@@ -15,7 +15,7 @@ export const productVariantController = {
   async updateVariant(req, res, next) {
     try {
       const parsed = updateVariantSchema.safeParse(req.body);
-      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
+      if (!parsed.success) return errorResponse(res, parsed.error?.errors?.[0]?.message || "Invalid variant data", 400);
 
       const variant = await productVariantService.updateVariant(req.user.id, req.params.productId, req.params.variantId, parsed.data);
       return successResponse(res, 'Variant updated', { variant });

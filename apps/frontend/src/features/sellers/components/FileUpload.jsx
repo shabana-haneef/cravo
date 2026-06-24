@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { Upload, X, FileText, Image, AlertCircle } from 'lucide-react';
 
 const ACCEPTED_TYPES = {
@@ -21,6 +21,19 @@ const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 export const FileUpload = ({ label, required = false, value, onChange, error }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [previewUrl, setPreviewUrl] = useState('');
+
+  useEffect(() => {
+    if (!value || !value.type.startsWith('image/')) {
+      setPreviewUrl('');
+      return;
+    }
+    const url = URL.createObjectURL(value);
+    setPreviewUrl(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [value]);
 
   const validate = (file) => {
     if (!ACCEPTED_TYPES[file.type]) {
@@ -78,7 +91,7 @@ export const FileUpload = ({ label, required = false, value, onChange, error }) 
         <div className="relative flex items-center gap-4 p-4 border-2 border-[#1E3A2B] rounded-xl bg-[#F0F8F3]">
           {value.type.startsWith('image/') ? (
             <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 shrink-0">
-              <img src={URL.createObjectURL(value)} alt="preview" className="w-full h-full object-cover" />
+              <img src={previewUrl} alt="preview" className="w-full h-full object-cover" />
             </div>
           ) : (
             <div className="w-16 h-16 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0">
@@ -103,7 +116,7 @@ export const FileUpload = ({ label, required = false, value, onChange, error }) 
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
-          className={`flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
+          className={`flex items-center gap-3 p-3 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
             isDragging
               ? 'border-[#1E3A2B] bg-[#F0F8F3] scale-[1.01]'
               : displayError
@@ -112,14 +125,14 @@ export const FileUpload = ({ label, required = false, value, onChange, error }) 
           }`}
         >
           <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.webp,.pdf" onChange={handleInputChange} />
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isDragging ? 'bg-[#1E3A2B] text-white' : 'bg-gray-200 text-gray-500'}`}>
-            {isDragging ? <Upload size={22} /> : <Image size={22} />}
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${isDragging ? 'bg-[#1E3A2B] text-white' : 'bg-gray-200 text-gray-500'}`}>
+            {isDragging ? <Upload size={18} /> : <Image size={18} />}
           </div>
-          <div className="text-center">
+          <div>
             <p className="text-sm font-semibold text-gray-700">
               {isDragging ? 'Drop file here' : 'Drop file here or click to upload'}
             </p>
-            <p className="text-xs text-gray-400 mt-1">JPG, PNG, WebP, PDF — max {MAX_SIZE_MB}MB</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">JPG, PNG, WebP, PDF — max {MAX_SIZE_MB}MB</p>
           </div>
         </label>
       )}

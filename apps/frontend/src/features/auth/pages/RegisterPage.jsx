@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema } from '../schemas/auth.schemas.js';
-import { useRegister } from '../hooks/useAuthQueries.js';
-import { Input } from '../../../components/ui/Input.jsx';
-import { Button } from '../../../components/ui/Button.jsx';
+import { useRegister, useGoogleLogin } from '../hooks/useAuthQueries.js';
+import { GoogleLogin } from '@react-oauth/google';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, ShieldCheck, Store, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, ShieldCheck, Store, CheckCircle2, Eye, EyeOff, Leaf } from 'lucide-react';
 import { toast } from 'sonner';
+import logoImg from '../../../logo.png';
 
 const getStrength = (password) => {
   let score = 0;
@@ -24,8 +24,8 @@ const PasswordStrengthMeter = ({ strength }) => {
       case 0: return ['bg-gray-200', 'bg-gray-200', 'bg-gray-200', 'bg-gray-200'];
       case 1: return ['bg-red-500', 'bg-gray-200', 'bg-gray-200', 'bg-gray-200'];
       case 2: return ['bg-yellow-500', 'bg-yellow-500', 'bg-gray-200', 'bg-gray-200'];
-      case 3: return ['bg-primary-400', 'bg-primary-400', 'bg-primary-400', 'bg-gray-200'];
-      case 4: return ['bg-green-500', 'bg-green-500', 'bg-green-500', 'bg-green-500'];
+      case 3: return ['bg-green-400', 'bg-green-400', 'bg-green-400', 'bg-gray-200'];
+      case 4: return ['bg-[#16a34a]', 'bg-[#16a34a]', 'bg-[#16a34a]', 'bg-[#16a34a]'];
       default: return ['bg-gray-200', 'bg-gray-200', 'bg-gray-200', 'bg-gray-200'];
     }
   };
@@ -45,13 +45,13 @@ const PasswordStrengthMeter = ({ strength }) => {
 
   return (
     <div className="mt-2">
-      <div className="flex gap-1 h-1.5">
+      <div className="flex gap-2 h-1.5">
         {colors.map((color, i) => (
           <div key={i} className={`flex-1 rounded-full ${color} transition-colors duration-300`} />
         ))}
       </div>
-      <div className="flex justify-between items-center mt-1.5">
-        <span className={`text-xs font-medium ${strength >= 3 ? 'text-green-600' : 'text-gray-500'}`}>
+      <div className="flex justify-between items-center mt-2">
+        <span className={`text-xs font-semibold ${strength >= 3 ? 'text-[#16a34a]' : 'text-gray-500'}`}>
           {getLabel()}
         </span>
         <span className="text-xs text-gray-400">Min 8 chars, 1 uppercase, 1 number</span>
@@ -63,6 +63,9 @@ const PasswordStrengthMeter = ({ strength }) => {
 export const RegisterPage = () => {
   const navigate = useNavigate();
   const { mutate: registerUser, isPending } = useRegister();
+  const { mutate: googleLogin } = useGoogleLogin();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm({
     resolver: zodResolver(registerSchema),
@@ -86,99 +89,219 @@ export const RegisterPage = () => {
     });
   };
 
+  const handleGoogleSuccess = (credentialResponse) => {
+    googleLogin(credentialResponse.credential, {
+      onSuccess: (res) => {
+        toast.success('Registration successful. Welcome to Cravo!');
+        const { role, isFirstLogin } = res.data.user;
+        if (role === 'SELLER') {
+          if (isFirstLogin) {
+            navigate('/');
+          } else {
+            navigate('/seller/dashboard');
+          }
+        }
+        else if (role === 'ADMIN') navigate('/admin/dashboard');
+        else navigate('/');
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.message || 'Google registration failed');
+      }
+    });
+  };
+
   return (
-    <div className="min-h-screen flex bg-primary-50">
-      {/* Left Side: Form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 lg:p-16">
-        <div className="w-full max-w-md space-y-8 bg-white p-8 sm:p-10 rounded-2xl shadow-xl border border-primary-100 relative">
-          
-          <div className="text-center">
-            <div className="lg:hidden flex justify-center mb-6">
-              <Link to="/">
-                <img src="/images/logo.jpeg" alt="Cravo Logo" className="h-20 w-auto object-contain mb-4 mix-blend-multiply" />
-              </Link>
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[#FAFBFA] select-none font-sans">
+
+      {/* LEFT SECTION (55% width on desktop) */}
+      <div className="relative lg:w-[55%] flex flex-col justify-between p-12 lg:py-16 lg:pl-28 lg:pr-16 xl:py-24 xl:pl-40 xl:pr-24 bg-[#FAFBFA] overflow-hidden shrink-0">
+        {/* Atmospheric Background Image Layer */}
+        <div className="absolute inset-0 z-0 select-none pointer-events-none">
+          <img
+            src="/login%20bg.png"
+            alt="CRAVO marketplace backdrop"
+            className="w-full h-full object-cover opacity-45 filter blur-[3px] contrast-[0.85] saturate-[0.9] brightness-[1.0]"
+          />
+          {/* Soft White Overlay blending smoothly */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FAFBFA]/50 to-[#FAFBFA]" />
+        </div>
+
+        {/* Header containing Logo */}
+        <header className="relative z-10 w-full flex justify-start">
+          <Link to="/" className="flex items-center gap-2">
+            <img src={logoImg} alt="Cravo Logo" className="h-48 w-[120] max-w-xs object-contain mix-blend-multiply" />
+          </Link>
+        </header>
+
+        {/* Main Slogan Area */}
+        <main className="relative z-10 my-auto py-16 lg:py-24 max-w-xl">
+          {/* Thin green accent line */}
+          <div className="w-12 h-[3px] bg-[#16a34a] rounded-full mb-8" />
+          <h1 className="text-4xl xl:text-5xl font-medium text-gray-900 leading-[1.2] tracking-tight">
+            Discover the taste <br /> of home, delivered.
+          </h1>
+          <p className="text-base text-gray-500 font-normal mt-6 leading-relaxed max-w-md">
+            Join thousands of food lovers connecting directly with local chefs and homegrown businesses in your neighborhood.
+          </p>
+        </main>
+
+        {/* Footer aligned bottom-left of left panel */}
+        <footer className="relative z-10 w-full flex justify-start">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full border border-gray-150 bg-white flex items-center justify-center text-[#16a34a] shadow-sm shrink-0">
+              <Leaf size={18} className="stroke-[2]" />
             </div>
-            <h2 className="mt-2 text-3xl font-extrabold text-gray-900 tracking-tight">Join the marketplace</h2>
-            <p className="mt-3 text-sm text-gray-600">
+            <div className="flex flex-col">
+              <p className="text-xs lg:text-sm font-semibold text-gray-600">
+                Good food. Local people. Stronger communities.
+              </p>
+              <p className="text-[10px] lg:text-xs text-gray-400 mt-1">
+                © 2025 Cravo • All rights reserved
+              </p>
+            </div>
+          </div>
+        </footer>
+      </div>
+
+      {/* RIGHT SECTION (45% width on desktop) */}
+      <div className="lg:w-[45%] flex-1 flex items-center justify-start p-8 lg:pl-12 xl:pl-16 bg-[#FAFBFA] relative z-10">
+        {/* Large premium floating card */}
+        <div className="w-full max-w-[580px] bg-white p-8 lg:p-14 xl:p-16 rounded-[24px] shadow-[0_8px_30px_rgba(0,0,0,0.015)] border border-gray-100 flex flex-col gap-6">
+
+          <div className="text-center">
+            {/* Circular CRAVO Store Icon */}
+            <div className="w-16 h-16 rounded-full bg-[#f0fdf4] text-[#16a34a] flex items-center justify-center mx-auto mb-6 shadow-[0_4px_12px_rgba(22,163,74,0.04)]">
+              <Store size={28} className="stroke-[2]" />
+            </div>
+            <h2 className="text-2xl lg:text-[26px] font-semibold text-gray-800 tracking-tight">Join the marketplace</h2>
+            <p className="mt-2 text-sm text-gray-500 font-normal">
               Already have an account?{' '}
-              <Link to="/login" className="font-semibold text-primary-600 hover:text-primary-500 transition-colors">
+              <Link to="/login" className="font-semibold text-[#16a34a] hover:text-[#15803d] hover:underline transition-colors duration-200">
                 Sign in here
               </Link>
             </p>
           </div>
 
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            <div className="space-y-5">
-              <Input
-                label="Email address"
-                icon={Mail}
-                placeholder="you@example.com"
-                error={errors.email?.message}
-                {...register('email')}
-              />
-              
-              <div>
-                <Input
-                  label="Password"
-                  type="password"
-                  icon={Lock}
-                  placeholder="••••••••"
-                  error={errors.password?.message}
-                  {...register('password')}
-                />
-                {passwordValue.length > 0 && <PasswordStrengthMeter strength={strength} />}
-              </div>
+          {/* Google button */}
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => {
+                toast.error('Google registration failed');
+              }}
+              useOneTap
+              theme="outline"
+              shape="rectangular"
+              width="384"
+              text="continue_with"
+            />
+          </div>
 
-              <Input
-                label="Confirm Password"
-                type="password"
-                icon={ShieldCheck}
-                placeholder="••••••••"
-                error={errors.confirmPassword?.message}
-                {...register('confirmPassword')}
-              />
+          {/* Divider */}
+          <div className="relative flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <span className="relative px-4 bg-white text-xs font-semibold text-gray-400">
+              Or register with email
+            </span>
+          </div>
+
+          <form className="flex flex-col gap-5" onSubmit={handleSubmit(onSubmit)}>
+            {/* Email */}
+            <div className="flex flex-col gap-1.5">
+              <label className="block text-xs font-semibold text-gray-600">Email address</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                  <Mail size={18} className="stroke-[1.5]" />
+                </div>
+                <input
+                  type="email"
+                  placeholder="nouri23@gmail.com"
+                  className={`w-full pl-12 pr-4 h-14 bg-white border ${errors.email ? 'border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-[#16a34a] focus:ring-2 focus:ring-[#16a34a]/10 focus:outline-none'} rounded-xl text-sm font-medium text-gray-700 transition-all duration-200 motion-reduce:transition-none`}
+                  {...register('email')}
+                />
+              </div>
+              {errors.email && (
+                <p className="mt-1 text-xs font-semibold text-red-500 flex items-center gap-2">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
-            <Button type="submit" className="w-full h-12 text-lg shadow-md" isLoading={isPending}>
-              Create Account
-            </Button>
-            
-            <p className="text-xs text-center text-gray-500 mt-4">
-              By creating an account, you agree to our Terms of Service and Privacy Policy.
-            </p>
+            {/* Password */}
+            <div className="flex flex-col gap-1.5">
+              <label className="block text-xs font-semibold text-gray-600">Password</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                  <Lock size={18} className="stroke-[1.5]" />
+                </div>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="•••••••••"
+                  className={`w-full pl-12 pr-12 h-14 bg-white border ${errors.password ? 'border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-[#16a34a] focus:ring-2 focus:ring-[#16a34a]/10 focus:outline-none'} rounded-xl text-sm font-medium text-gray-700 transition-all duration-200 motion-reduce:transition-none`}
+                  {...register('password')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
+                >
+                  {showPassword ? <EyeOff size={18} className="stroke-[1.5]" /> : <Eye size={18} className="stroke-[1.5]" />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="mt-1 text-xs font-semibold text-red-500 flex items-center gap-2">
+                  {errors.password.message}
+                </p>
+              )}
+              {passwordValue.length > 0 && <PasswordStrengthMeter strength={strength} />}
+            </div>
+
+            {/* Confirm Password */}
+            <div className="flex flex-col gap-1.5">
+              <label className="block text-xs font-semibold text-gray-600">Confirm Password</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                  <ShieldCheck size={18} className="stroke-[1.5]" />
+                </div>
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="•••••••••"
+                  className={`w-full pl-12 pr-12 h-14 bg-white border ${errors.confirmPassword ? 'border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-[#16a34a] focus:ring-2 focus:ring-[#16a34a]/10 focus:outline-none'} rounded-xl text-sm font-medium text-gray-700 transition-all duration-200 motion-reduce:transition-none`}
+                  {...register('confirmPassword')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
+                >
+                  {showConfirmPassword ? <EyeOff size={18} className="stroke-[1.5]" /> : <Eye size={18} className="stroke-[1.5]" />}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="mt-1 text-xs font-semibold text-red-500 flex items-center gap-2">
+                  {errors.confirmPassword.message}
+                </p>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isPending}
+              className="w-full h-14 bg-[#16a34a] hover:bg-[#15803d] text-white rounded-xl font-semibold text-sm transition-colors duration-200 motion-reduce:transition-none shadow-sm hover:shadow-md flex items-center justify-center gap-2 cursor-pointer mt-2"
+            >
+              {isPending ? (
+                <span className="animate-spin motion-reduce:animate-none rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
+              ) : (
+                'Create Account'
+              )}
+            </button>
           </form>
         </div>
       </div>
 
-      {/* Right Side: Image */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-primary-900 overflow-hidden">
-        <div className="absolute inset-0 bg-primary-900/20 z-10" />
-        <img 
-          src="/auth-bg.png" 
-          alt="Fresh artisanal food" 
-          className="absolute inset-0 w-full h-full object-cover transform scale-x-[-1]"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-primary-900/90 via-primary-900/40 to-transparent z-10" />
-        <div className="absolute bottom-0 right-0 p-12 z-20 text-white text-right">
-          <div className="flex flex-col items-end space-y-4 mb-6">
-            <div className="flex items-center text-primary-100">
-              <span className="font-medium mr-2">Support Local Growers</span>
-              <CheckCircle2 className="w-5 h-5 text-green-400" />
-            </div>
-            <div className="flex items-center text-primary-100">
-              <span className="font-medium mr-2">Authentic Homemade Food</span>
-              <CheckCircle2 className="w-5 h-5 text-green-400" />
-            </div>
-            <div className="flex items-center text-primary-100">
-              <span className="font-medium mr-2">Secure Payments</span>
-              <CheckCircle2 className="w-5 h-5 text-green-400" />
-            </div>
-          </div>
-          <h2 className="text-4xl font-extrabold mb-4 leading-tight">
-            Start your journey <br/> with us today.
-          </h2>
-        </div>
-      </div>
     </div>
   );
 };

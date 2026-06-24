@@ -10,4 +10,9 @@ export const sellerOrderApi = {
     const response = await api.patch(`/orders/seller/orders/${orderId}/status`, { status });
     return response.data;
   },
+
+  createShipment: async (orderId) => {
+    const response = await api.post(`/delhivery/create-shipment/${orderId}`);
+    return response.data;
+  },
 };

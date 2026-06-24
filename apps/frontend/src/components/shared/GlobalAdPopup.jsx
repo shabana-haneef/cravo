@@ -73,7 +73,7 @@ export const GlobalAdPopup = () => {
                 className="absolute inset-0 w-full h-full object-cover"
               />
             </AnimatePresence>
-            <div className="absolute top-3 left-3 z-10 px-2.5 py-1 bg-[#00B259] text-white text-[11px] font-bold rounded uppercase tracking-wider shadow-sm">
+            <div className="absolute top-3 left-3 z-10 px-2.5 py-1 bg-[#154D21] text-white text-[11px] font-bold rounded uppercase tracking-wider shadow-sm">
               Sponsored
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">

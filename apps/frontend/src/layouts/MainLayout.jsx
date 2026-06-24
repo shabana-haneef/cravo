@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, NavLink, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useAuthStore } from '../store/auth.store.js';
 import { useCartStore } from '../store/cart.store.js';
 import { useLogout } from '../features/auth/hooks/useAuthQueries.js';
@@ -8,6 +8,9 @@ import { ShoppingCart, User, LogOut, Store, Package, Box, ChevronDown, Search, H
 import { Button } from '../components/ui/Button.jsx';
 import { GlobalAdPopup } from '../components/shared/GlobalAdPopup.jsx';
 import { useWishlist } from '../features/wishlist/hooks/useWishlistQueries.js';
+import { Footer } from '../components/shared/Footer.jsx';
+import logoImg from '../logo.png';
+import { api } from '../lib/axios.js';
 
 export const MainLayout = () => {
   const { isAuthenticated, user } = useAuthStore();
@@ -20,6 +23,99 @@ export const MainLayout = () => {
   const isCustomer = isAuthenticated && user?.role === 'CUSTOMER';
   const { data: wishlist = [] } = useWishlist(isCustomer);
   const wishlistCount = wishlist.length;
+
+  // Search Suggestions State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const searchContainerRef = useRef(null);
+  const shouldReduceMotion = useReducedMotion();
+
+  // Sync input value with URL search parameter
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setSearchQuery(params.get('search') || '');
+  }, [location.search]);
+
+  // Click outside to dismiss suggestions dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Debounced suggestion fetching
+  useEffect(() => {
+    if (searchQuery.trim().length < 2) {
+      setSuggestions([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const delayDebounce = setTimeout(async () => {
+      setIsLoadingSuggestions(true);
+      try {
+        const response = await api.get('/products/suggestions', {
+          params: { q: searchQuery },
+          signal: controller.signal
+        });
+        setSuggestions(response.data?.data?.suggestions || []);
+      } catch (err) {
+        if (err.name !== 'CanceledError') {
+          console.error('Suggestions error:', err);
+        }
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(delayDebounce);
+      controller.abort();
+    };
+  }, [searchQuery]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setShowSuggestions(false);
+    if (searchQuery.trim()) {
+      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate('/products');
+    }
+  };
+
+  const handleSelectSuggestion = (suggestion) => {
+    setSearchQuery(suggestion.name);
+    setShowSuggestions(false);
+    navigate(`/products/${suggestion.slug}`);
+  };
+
+  const handleKeyDown = (e) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev + 1) % suggestions.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
+    } else if (e.key === 'Enter') {
+      if (activeIndex >= 0 && activeIndex < suggestions.length) {
+        e.preventDefault();
+        handleSelectSuggestion(suggestions[activeIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setShowSuggestions(false);
+    }
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -41,27 +137,131 @@ export const MainLayout = () => {
         <div className="max-w-[1536px] w-full px-4 sm:px-6 lg:px-8 mx-auto h-20 flex items-center justify-between gap-4">
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2">
-              <img src="/images/logo.jpeg" alt="Cravo Logo" className="h-12 w-auto object-contain rounded-xl mix-blend-multiply" />
+              <img src={logoImg} alt="Cravo Logo" className="h-32 w-80 object-contain rounded-xl mix-blend-multiply" />
             </Link>
-            
-            <nav className="hidden md:flex items-center gap-2 ml-4">
-              <Store size={18} className="text-[#00B259]" />
-              <NavLink to="/products" className="text-[14px] font-bold text-[#111827] hover:text-[#00B259] transition-colors">
-                Browse Market
+
+            <nav className="hidden md:flex items-center gap-6 ml-6">
+              <NavLink
+                to="/"
+                className={({ isActive }) =>
+                  `text-[14px] font-bold transition-colors ${isActive ? 'text-[#154D21]' : 'text-[#111827] hover:text-[#154D21]'}`
+                }
+                end
+              >
+                Home
+              </NavLink>
+              <NavLink
+                to="/products"
+                className={({ isActive }) =>
+                  `text-[14px] font-bold transition-colors ${isActive ? 'text-[#154D21]' : 'text-[#111827] hover:text-[#154D21]'}`
+                }
+              >
+                Shop
               </NavLink>
             </nav>
           </div>
 
           {/* Central Search Bar */}
-          <div className="hidden lg:flex flex-1 max-w-xl mx-8">
-            <div className="w-full flex items-center bg-[#F8FAF8] border border-gray-100 rounded-lg px-4 py-2.5 transition-colors focus-within:bg-white focus-within:border-[#00B259] focus-within:ring-2 focus-within:ring-[#00B259]/20 shadow-sm">
-              <input 
+          <div className="hidden lg:flex flex-1 max-w-xl mx-8 relative" ref={searchContainerRef}>
+            <form 
+              onSubmit={handleSearchSubmit} 
+              className="w-full flex items-center bg-[#F8FAF8] border border-gray-100 rounded-lg px-4 py-2.5 transition-colors focus-within:bg-white focus-within:border-[#154D21] focus-within:ring-2 focus-within:ring-[#154D21]/20 shadow-sm"
+            >
+              <input
                 type="text"
                 placeholder="Search for fresh vegetables, homemade cakes..."
                 className="w-full bg-transparent text-[13px] text-gray-800 placeholder-gray-400 outline-none"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowSuggestions(true);
+                  setActiveIndex(-1);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onKeyDown={handleKeyDown}
+                role="combobox"
+                aria-expanded={showSuggestions && (searchQuery.trim().length >= 2)}
+                aria-autocomplete="list"
+                aria-controls="search-suggestions-list"
               />
-              <Search size={18} className="text-gray-400 shrink-0 ml-2" />
-            </div>
+              <button 
+                type="submit" 
+                className="text-gray-400 hover:text-[#154D21] shrink-0 ml-2 transition-colors focus:outline-none"
+                aria-label="Submit Search"
+              >
+                <Search size={18} />
+              </button>
+            </form>
+
+            <AnimatePresence>
+              {showSuggestions && (searchQuery.trim().length >= 2) && (
+                <motion.div
+                  initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
+                  animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                  exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
+                  transition={{ duration: shouldReduceMotion ? 0 : 0.18 }}
+                  className="absolute left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden p-2"
+                >
+                  {isLoadingSuggestions ? (
+                    <div className="p-4 text-center text-[12px] text-gray-500 font-semibold flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-gray-300 border-t-[#154D21] rounded-full animate-spin"></div>
+                      Searching available products...
+                    </div>
+                  ) : suggestions.length > 0 ? (
+                    <div className="flex flex-col gap-2">
+                      <ul id="search-suggestions-list" role="listbox" className="space-y-2">
+                        {suggestions.map((suggestion, index) => {
+                          const isActive = index === activeIndex;
+                          return (
+                            <li key={suggestion.id} role="presentation">
+                              <button
+                                type="button"
+                                role="option"
+                                aria-selected={isActive}
+                                onClick={() => handleSelectSuggestion(suggestion)}
+                                className={`w-full text-left px-4 py-2 rounded-lg flex items-center justify-between transition-colors duration-150 ${
+                                  isActive 
+                                    ? 'bg-[#154D21]/10 text-[#154D21]' 
+                                    : 'hover:bg-[#154D21]/5 hover:text-[#154D21] text-gray-800'
+                                }`}
+                              >
+                                <div className="flex items-center gap-4">
+                                  <img 
+                                    src={suggestion.images?.[0]?.imageUrl || 'https://via.placeholder.com/40'} 
+                                    alt={suggestion.name} 
+                                    className="w-10 h-10 object-cover rounded-lg border border-gray-100 shrink-0"
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className="text-[13px] font-bold leading-tight">{suggestion.name}</span>
+                                    <span className="text-[11px] text-gray-400 font-semibold">{suggestion.category?.name}</span>
+                                  </div>
+                                </div>
+                                {suggestion.variants?.[0] && (
+                                  <span className="text-[12px] font-bold text-[#E67E22]">
+                                    ₹{suggestion.variants[0].price}
+                                  </span>
+                                )}
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      <button
+                        type="submit"
+                        onClick={handleSearchSubmit}
+                        className="w-full text-center py-2 text-[12px] font-bold text-[#154D21] hover:bg-[#154D21]/5 border-t border-gray-100 block transition-colors mt-2"
+                      >
+                        View all results for "{searchQuery}"
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-[13px] text-gray-500 font-semibold">
+                      No products found for "{searchQuery}"
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <div className="flex items-center gap-4 sm:gap-6">
@@ -107,7 +307,7 @@ export const MainLayout = () => {
                     <Store size={16} /> Sell on Cravo
                   </NavLink>
                 )}
-                
+
                 <Link
                   to="/profile"
                   className="hidden md:flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 font-semibold transition-colors"
@@ -152,75 +352,8 @@ export const MainLayout = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-100 mt-auto pt-16 pb-8 text-[13px]">
-        <div className="max-w-[1536px] w-full px-4 sm:px-6 lg:px-8 mx-auto flex flex-col md:flex-row justify-between gap-12 mb-16">
-          <div className="w-full md:w-[30%]">
-            <h3 className="font-bold text-[#111827] text-[15px] mb-3">Stay Updated with Cravo</h3>
-            <p className="text-gray-500 mb-5 text-xs">Subscribe to get updates on new products, offers, and more.</p>
-            <div className="flex bg-white border border-gray-200 rounded-lg overflow-hidden p-1 shadow-sm">
-              <input type="email" placeholder="Enter your email address" className="flex-1 outline-none px-3 text-gray-700 text-xs" />
-              <button className="bg-[#00B259] hover:bg-[#009B4E] text-white px-4 py-2 rounded-md font-semibold text-xs transition-colors">Subscribe</button>
-            </div>
-          </div>
-          
-          <div className="flex-1 flex flex-wrap justify-between gap-8 md:px-6">
-            <div>
-              <h4 className="font-bold text-[#111827] text-sm mb-4">Marketplace</h4>
-              <div className="flex flex-col gap-2.5 text-gray-500 text-xs font-medium">
-                <Link className="hover:text-[#00B259] transition-colors">All Products</Link>
-                <Link className="hover:text-[#00B259] transition-colors">Categories</Link>
-                <Link className="hover:text-[#00B259] transition-colors">Stores</Link>
-                <Link className="hover:text-[#00B259] transition-colors">Today's Deals</Link>
-              </div>
-            </div>
-            <div>
-              <h4 className="font-bold text-[#111827] text-sm mb-4">Company</h4>
-              <div className="flex flex-col gap-2.5 text-gray-500 text-xs font-medium">
-                <Link to="/about" className="hover:text-[#00B259] transition-colors">About Us</Link>
-                <Link to="/" className="hover:text-[#00B259] transition-colors">How It Works</Link>
-                <Link to="/" className="hover:text-[#00B259] transition-colors">Blog</Link>
-                <Link to="/contact" className="hover:text-[#00B259] transition-colors">Contact Us</Link>
-              </div>
-            </div>
-            <div>
-              <h4 className="font-bold text-[#111827] text-sm mb-4">Help</h4>
-              <div className="flex flex-col gap-2.5 text-gray-500 text-xs font-medium">
-                <Link to="/faq" className="hover:text-[#00B259] transition-colors">FAQs</Link>
-                <Link to="/" className="hover:text-[#00B259] transition-colors">Shipping & Delivery</Link>
-                <Link to="/" className="hover:text-[#00B259] transition-colors">Returns & Refunds</Link>
-                <Link to="/contact" className="hover:text-[#00B259] transition-colors">Support</Link>
-              </div>
-            </div>
-          </div>
+      <Footer />
 
-          <div className="w-full md:w-[15%]">
-            <h4 className="font-bold text-[#111827] text-sm mb-4">Connect</h4>
-            <div className="flex gap-2">
-              <button className="w-7 h-7 rounded-full bg-[#E8F5E9] text-[#00B259] flex items-center justify-center hover:bg-[#00B259] hover:text-white transition-colors">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
-              </button>
-              <button className="w-7 h-7 rounded-full bg-[#E8F5E9] text-[#00B259] flex items-center justify-center hover:bg-[#00B259] hover:text-white transition-colors">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-              </button>
-              <button className="w-7 h-7 rounded-full bg-[#E8F5E9] text-[#00B259] flex items-center justify-center hover:bg-[#00B259] hover:text-white transition-colors">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-              </button>
-              <button className="w-7 h-7 rounded-full bg-[#E8F5E9] text-[#00B259] flex items-center justify-center hover:bg-[#00B259] hover:text-white transition-colors">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="max-w-[1536px] w-full px-4 sm:px-6 lg:px-8 mx-auto flex flex-col md:flex-row justify-between items-center text-[11px] text-gray-400 border-t border-gray-100 pt-8 font-medium">
-          <p>© 2026 Cravo Marketplace. All rights reserved.</p>
-          <div className="flex gap-8 mt-4 md:mt-0">
-            <Link to="/privacy" className="hover:text-gray-600 transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-gray-600 transition-colors">Terms & Conditions</Link>
-            <Link to="/cookie-policy" className="hover:text-gray-600 transition-colors">Cookie Policy</Link>
-          </div>
-        </div>
-      </footer>
-      
       {/* Global Ad Popup */}
       <GlobalAdPopup />
     </div>

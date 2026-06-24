@@ -87,7 +87,7 @@ export const SellerLayout = () => {
                       Later
                     </button>
                     <MotionLink
-                      to="/seller/shop-profile"
+                      to="/seller/settings?tab=store-profile"
                       onClick={() => setShowBanner(false)}
                       animate={{
                         scale: [1, 1.04, 1],

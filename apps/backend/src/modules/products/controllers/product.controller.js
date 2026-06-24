@@ -7,7 +7,7 @@ export const productController = {
   async createProduct(req, res, next) {
     try {
       const parsed = productSchema.safeParse(req.body);
-      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
+      if (!parsed.success) return errorResponse(res, parsed.error?.errors?.[0]?.message || "Invalid product data", 400);
 
       const product = await productService.createProduct(req.user.id, parsed.data, req.files);
       logger.info({ userId: req.user.id, productId: product.id }, 'Product created');
@@ -34,7 +34,7 @@ export const productController = {
   async updateProduct(req, res, next) {
     try {
       const parsed = updateProductSchema.safeParse(req.body);
-      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
+      if (!parsed.success) return errorResponse(res, parsed.error?.errors?.[0]?.message || "Invalid product data", 400);
 
       const product = await productService.updateProduct(req.user.id, req.params.id, parsed.data, req.files);
       logger.info({ userId: req.user.id, productId: product.id }, 'Product updated');

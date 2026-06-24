@@ -8,7 +8,7 @@ import { Button } from '../../../components/ui/Button.jsx';
 import { Link } from 'react-router-dom';
 import {
   User, Mail, Phone, Calendar, Shield, CheckCircle2, Edit2,
-  MapPin, ChevronRight, Camera, ArrowLeft
+  MapPin, ChevronRight, Camera, ArrowLeft, Package
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -208,8 +208,20 @@ export const ProfilePage = () => {
         </div>
 
         {/* Quick Links */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50">
-          <Link to="/addresses" className="flex items-center justify-between p-5 hover:bg-gray-50 transition-colors rounded-t-2xl">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50 overflow-hidden">
+          <Link to="/orders" className="flex items-center justify-between p-5 hover:bg-gray-50 transition-colors">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-primary-50 rounded-full flex items-center justify-center">
+                <Package size={18} className="text-primary-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">My Orders</p>
+                <p className="text-xs text-gray-500">Track, cancel, or view details of your orders</p>
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-gray-400" />
+          </Link>
+          <Link to="/addresses" className="flex items-center justify-between p-5 hover:bg-gray-50 transition-colors">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 bg-primary-50 rounded-full flex items-center justify-center">
                 <MapPin size={18} className="text-primary-600" />

@@ -47,8 +47,18 @@ export const orderRepository = {
         skip,
         take: limit,
         include: {
-          shop: { select: { name: true } },
-          items: true
+          shop: { select: { name: true, slug: true } },
+          address: true,
+          items: {
+            include: {
+              product: {
+                include: {
+                  images: { orderBy: { sortOrder: 'asc' }, take: 1 }
+                }
+              },
+              productVariant: true
+            }
+          }
         }
       }),
       prisma.order.count({ where })
@@ -67,7 +77,17 @@ export const orderRepository = {
         take: limit,
         include: {
           customer: { select: { email: true, profile: { select: { fullName: true } } } },
-          items: true
+          address: true,
+          items: {
+            include: {
+              product: {
+                include: {
+                  images: { orderBy: { sortOrder: 'asc' }, take: 1 }
+                }
+              },
+              productVariant: true
+            }
+          }
         }
       }),
       prisma.order.count({ where })
