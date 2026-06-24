@@ -7,11 +7,22 @@ import { sellerRepository } from '../../sellers/repositories/seller.repository.j
 import { slugService } from '../../shops/services/slug.service.js';
 import { cloudinaryService } from '../../../shared/services/cloudinary.service.js';
 import { notificationService } from '../../notifications/services/notification.service.js';
+import { governanceSettingsService } from '../../admin/services/governanceSettings.service.js';
 import prisma from '../../../lib/prisma.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 
 export const productService = {
   async createProduct(userId, data, files) {
+    const govSettings = await governanceSettingsService.get();
+    if (!govSettings.allowNewProductSubmissions) {
+      throw new AppError("New product submissions are currently disabled.", 400);
+    }
+
+    const isDraft = data.status === 'DRAFT';
+    if (isDraft && !govSettings.allowProductDrafts) {
+      throw new AppError("Saving products as drafts is currently disabled.", 400);
+    }
+
     // 1. Validate Seller and Shop
     const seller = await sellerRepository.findByUserId(userId);
     if (!seller || seller.status !== 'APPROVED') throw new AppError("Only approved sellers can create products", 403);
@@ -65,7 +76,7 @@ export const productService = {
         labelImageUrl: labelUploadResult?.secure_url || null,
         labelImagePublicId: labelUploadResult?.public_id || null,
         isFeatured: data.isFeatured,
-        status: 'PENDING_APPROVAL'
+        status: isDraft ? 'DRAFT' : (govSettings.requireProductApproval ? 'PENDING_APPROVAL' : 'APPROVED')
       }, tx);
 
       // Create Images
@@ -140,8 +151,17 @@ export const productService = {
 
   async updateProduct(userId, productId, data, files) {
     const product = await this.getMyProductById(userId, productId);
+    const govSettings = await governanceSettingsService.get();
     
     let updates = { ...data };
+
+    if (updates.status === 'DRAFT' && !govSettings.allowProductDrafts) {
+      throw new AppError("Saving products as drafts is currently disabled.", 400);
+    }
+
+    if (govSettings.reapproveAfterProductUpdate && product.status === 'APPROVED' && updates.status !== 'DRAFT') {
+      updates.status = govSettings.requireProductApproval ? 'PENDING_APPROVAL' : 'APPROVED';
+    }
     
     const imageFiles = files?.images || [];
     const labelImageFile = files?.labelImage?.[0];
@@ -238,6 +258,11 @@ export const productService = {
 
   async getPublicProducts(filters, sort, page = 1, limit = 10) {
     return productRepository.searchPublicProducts(filters, sort, page, limit);
+  },
+
+  async getSuggestions(q) {
+    if (!q) return [];
+    return productRepository.getSuggestions(q);
   },
 
   async getPublicProduct(slugOrId) {

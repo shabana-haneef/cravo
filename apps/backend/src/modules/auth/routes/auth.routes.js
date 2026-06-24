@@ -22,6 +22,7 @@ router.post('/verify-email', authLimiter, authController.verifyEmail);
 router.post('/resend-otp', authLimiter, authController.resendOtp);
 
 router.post('/login', authLimiter, authController.login);
+router.post('/google', authLimiter, authController.googleAuth);
 router.post('/refresh-token', authController.refreshToken); 
 
 // ==========================================

@@ -1,6 +1,7 @@
 import { userRepository } from '../../users/repositories/user.repository.js';
 import { successResponse, errorResponse } from '../../../shared/responses/apiResponse.js';
 import { logger } from '../../../shared/services/logger.js';
+import { auditLogService } from '../services/auditLog.service.js';
 import prisma from '../../../lib/prisma.js';
 import { z } from 'zod';
 
@@ -88,6 +89,16 @@ export const adminUserController = {
 
       logger.info({ adminId: req.user.id, targetUserId: user.id, newStatus: user.status }, 'User status updated by admin with seller/shop cascade');
       
+      await auditLogService.log({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: targetStatus === 'SUSPENDED' ? 'USER_SUSPENSION' : targetStatus === 'ACTIVE' ? 'USER_ACTIVATION' : 'USER_STATUS_CHANGE',
+        targetType: 'USER',
+        targetId: user.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+
       const { passwordHash, ...safeUser } = user;
       return successResponse(res, 'User status updated successfully', { user: safeUser });
     } catch (error) {

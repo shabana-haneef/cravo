@@ -7,11 +7,16 @@ import { emailService } from './email.service.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 import { env } from '../../../config/env.js';
 import crypto from 'crypto';
+import { OAuth2Client } from 'google-auth-library';
+import { profileRepository } from '../../users/repositories/profile.repository.js';
+import prisma from '../../../lib/prisma.js';
 
 // Utility to quickly hash refresh tokens for DB storage without bcrypt overhead
 const hashRefreshToken = (token) => {
   return crypto.createHash('sha256').update(token).digest('hex');
 };
+
+const googleClient = new OAuth2Client(env.GOOGLE_CLIENT_ID);
 
 export const authService = {
   // ==========================================
@@ -132,6 +137,10 @@ export const authService = {
     const user = await userRepository.findByEmail(email);
     if (!user) throw new AppError("Invalid credentials", 401);
 
+    if (!user.passwordHash) {
+      throw new AppError("Invalid credentials", 401);
+    }
+
     const isMatch = await comparePassword(password, user.passwordHash);
     if (!isMatch) throw new AppError("Invalid credentials", 401);
 
@@ -139,6 +148,7 @@ export const authService = {
     if (user.status === 'INACTIVE') throw new AppError("Your account is inactive", 403);
     if (!user.isEmailVerified) throw new AppError("Please verify your email address to continue", 403);
 
+    const isFirstLogin = !user.lastLoginAt;
     await userRepository.update(user.id, { lastLoginAt: new Date() });
 
     const payload = { id: user.id, role: user.role };
@@ -161,7 +171,8 @@ export const authService = {
         email: user.email,
         role: user.role,
         status: user.status,
-        isEmailVerified: user.isEmailVerified
+        isEmailVerified: user.isEmailVerified,
+        isFirstLogin
       },
       accessToken,
       refreshToken
@@ -230,6 +241,127 @@ export const authService = {
       role: user.role,
       status: user.status,
       isEmailVerified: user.isEmailVerified
+    };
+  },
+
+  // ==========================================
+  // Google Authentication Flow
+  // ==========================================
+
+  async continueWithGoogle(idToken) {
+    if (!idToken) throw new AppError("Google token is required", 400);
+
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: idToken,
+        audience: env.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } catch (error) {
+      throw new AppError("Invalid Google token", 401);
+    }
+
+    if (!payload.email_verified) {
+      throw new AppError("Google email is not verified", 403);
+    }
+
+    let user = await userRepository.findByEmail(payload.email);
+    
+    if (user) {
+      // Account linking
+      if (!user.googleId) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { googleId: payload.sub }
+        });
+        
+        await prisma.auditLog.create({
+          data: {
+            actionType: "ACCOUNT_LINKED_GOOGLE",
+            actorId: user.id,
+            actorEmail: user.email,
+            actorRole: user.role,
+            targetType: "User",
+            targetId: user.id,
+            ipAddress: "System",
+            userAgent: "GoogleAuthService",
+          }
+        });
+      }
+      
+      if (user.status === 'SUSPENDED') throw new AppError("Your account has been suspended", 403);
+      if (user.status === 'INACTIVE') throw new AppError("Your account is inactive", 403);
+    } else {
+      // New user creation
+      user = await prisma.user.create({
+        data: {
+          email: payload.email,
+          passwordHash: null,
+          role: 'CUSTOMER',
+          status: 'ACTIVE',
+          googleId: payload.sub,
+          isEmailVerified: true
+        }
+      });
+      
+      await prisma.auditLog.create({
+        data: {
+          actionType: "GOOGLE_REGISTRATION",
+          actorId: user.id,
+          actorEmail: user.email,
+          actorRole: user.role,
+          targetType: "User",
+          targetId: user.id,
+          ipAddress: "System",
+          userAgent: "GoogleAuthService",
+        }
+      });
+    }
+
+    // Safe Profile Management
+    const existingProfile = await profileRepository.findByUserId(user.id);
+    if (!existingProfile) {
+      await profileRepository.upsertProfile(user.id, {
+        fullName: payload.name || payload.given_name,
+        avatar: payload.picture
+      });
+    } else if (!existingProfile.avatar && payload.picture) {
+      // Update avatar only if appropriate (missing)
+      await profileRepository.upsertProfile(user.id, {
+        ...existingProfile,
+        avatar: payload.picture
+      });
+    }
+
+    const isFirstLogin = !user.lastLoginAt;
+    await userRepository.update(user.id, { lastLoginAt: new Date() });
+
+    const tokenPayload = { id: user.id, role: user.role };
+    const accessToken = generateAccessToken(tokenPayload);
+    const refreshToken = generateRefreshToken(tokenPayload);
+
+    const tokenHash = hashRefreshToken(refreshToken);
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await refreshTokenRepository.create({
+      userId: user.id,
+      tokenHash,
+      expiresAt
+    });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        isEmailVerified: user.isEmailVerified,
+        isFirstLogin
+      },
+      accessToken,
+      refreshToken
     };
   }
 };

@@ -2,6 +2,7 @@ import { verifyToken } from '../utils/jwt.js';
 import { env } from '../../config/env.js';
 import { AppError } from '../errors/AppError.js';
 import { userRepository } from '../../modules/users/repositories/user.repository.js';
+import { governanceSettingsService } from '../../modules/admin/services/governanceSettings.service.js';
 
 /**
  * Protect middleware
@@ -33,15 +34,17 @@ export const protect = async (req, res, next) => {
     }
 
     // Mandatory Security Checks
-    if (user.status === 'SUSPENDED') {
+    const govSettings = await governanceSettingsService.get();
+    
+    if (govSettings.blockSuspendedUsers && user.status === 'SUSPENDED') {
       throw new AppError('Your account has been suspended. Contact support.', 403);
     }
     
     if (user.status === 'INACTIVE') {
       throw new AppError('Your account is inactive.', 403);
     }
-
-    if (!user.isEmailVerified) {
+ 
+    if (govSettings.requireEmailVerification && !user.isEmailVerified) {
       throw new AppError('Please verify your email address to continue.', 403);
     }
 

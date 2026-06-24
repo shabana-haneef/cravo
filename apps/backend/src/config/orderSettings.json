@@ -1,0 +1,38 @@
+{
+  "autoCancelUnconfirmedMins": 45,
+  "autoCompleteDeliveredDays": 7,
+  "allowCustomerCancellation": true,
+  "customerCancellationWindowMins": 30,
+  "allowedTransitions": {
+    "PLACED": [
+      "CONFIRMED",
+      "CANCELLED"
+    ],
+    "CONFIRMED": [
+      "PREPARING"
+    ],
+    "PREPARING": [
+      "READY_FOR_PICKUP",
+      "OUT_FOR_DELIVERY"
+    ],
+    "READY_FOR_PICKUP": [
+      "DELIVERED"
+    ],
+    "OUT_FOR_DELIVERY": [
+      "DELIVERED"
+    ]
+  },
+  "minOrderValue": 70,
+  "maxOrderValue": 50000,
+  "maxItemsPerOrder": 100,
+  "maxQtyPerProduct": 20,
+  "requireVerifiedEmail": false,
+  "requireActiveAddress": false,
+  "blockSuspendedUsers": true,
+  "allowGuestOrders": false,
+  "autoExpireSellerAcceptanceMins": 60,
+  "sellerAcceptanceAction": "CANCEL",
+  "allowRefundRequests": true,
+  "refundRequestWindowDays": 7,
+  "requireAdminRefundApproval": true
+}

@@ -16,8 +16,11 @@ import deliveryRoutes from "../../modules/delivery/routes/delivery.routes.js";
 import wishlistRoutes from "../../modules/wishlist/routes/wishlist.routes.js";
 import { adminAdRoutes, sellerAdRoutes, publicAdRoutes } from "../../modules/advertisements/routes/ad.routes.js";
 import notificationRoutes from "../../modules/notifications/routes/notification.routes.js";
+import delhiveryRoutes from "../delhivery.routes.js";
+import campaignRoutes from "../../modules/campaigns/routes/campaign.routes.js";
 
 const router = Router();
+
 
 // -------------------------------------------------------------
 // USER / PUBLIC ROUTES
@@ -46,5 +49,7 @@ router.use("/deliveries", deliveryRoutes);
 router.use("/admin/ads", adminAdRoutes);
 router.use("/sellers/ads", sellerAdRoutes);
 router.use("/notifications", notificationRoutes);
+router.use("/delhivery", delhiveryRoutes);
+router.use("/campaigns", campaignRoutes);
 
 export default router;

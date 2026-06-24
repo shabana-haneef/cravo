@@ -15,7 +15,14 @@ export const createShopSchema = z.object({
   isDeliveryEnabled: z.coerce.boolean().default(true),
 });
 
-export const updateShopSchema = createShopSchema.partial();
+export const updateShopSchema = createShopSchema.partial().extend({
+  pickupLocationName: z.string().max(100).optional().nullable(),
+  pickupAddress: z.string().max(255).optional().nullable(),
+  pickupCity: z.string().max(100).optional().nullable(),
+  pickupState: z.string().max(100).optional().nullable(),
+  pickupPincode: z.string().regex(/^[1-9][0-9]{5}$/, "Must be a valid 6-digit PIN code").optional().nullable(),
+  pickupPhone: z.string().regex(/^\+?[1-9]\d{1,14}$/, "Must be a valid phone number").optional().nullable(),
+});
 
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/; // HH:MM 24-hour format
 

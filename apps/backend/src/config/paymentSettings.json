@@ -1,0 +1,22 @@
+{
+  "enableRazorpay": true,
+  "enableCod": true,
+  "maxCodAmount": 1,
+  "minOrderAmount": 50,
+  "maxOrderAmount": 50000,
+  "maxSingleTransactionAmount": 50000,
+  "enableRefundRequests": true,
+  "refundRequestWindowDays": 7,
+  "requireAdminRefundApproval": true,
+  "autoRefundProcessing": false,
+  "commissionType": "Percentage",
+  "commissionValue": 10,
+  "applyCommissionOn": "Product Total",
+  "enableSellerPayouts": true,
+  "minPayoutThreshold": 500,
+  "payoutReleaseDelayDays": 7,
+  "autoPayoutProcessing": false,
+  "maxFailedPaymentAttempts": 5,
+  "manualReviewThreshold": 10000,
+  "blockExcessiveFailedAttempts": true
+}

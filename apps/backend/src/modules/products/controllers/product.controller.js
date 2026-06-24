@@ -52,12 +52,20 @@ export const productController = {
 
   async getPublicProducts(req, res, next) {
     try {
-      const { category, shop, minPrice, maxPrice, sort } = req.query;
+      const { category, shop, minPrice, maxPrice, sort, search } = req.query;
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
-      const filters = { category, shop, minPrice, maxPrice };
+      const filters = { category, shop, minPrice, maxPrice, search };
       const result = await productService.getPublicProducts(filters, sort, page, limit);
       return successResponse(res, 'Products retrieved', { products: result.data, meta: result.meta });
+    } catch (error) { next(error); }
+  },
+
+  async getSuggestions(req, res, next) {
+    try {
+      const { q } = req.query;
+      const suggestions = await productService.getSuggestions(q);
+      return successResponse(res, 'Suggestions retrieved', { suggestions });
     } catch (error) { next(error); }
   },
 

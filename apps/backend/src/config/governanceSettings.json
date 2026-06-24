@@ -1,0 +1,13 @@
+{
+  "requireSellerApproval": true,
+  "requireSellerDocumentVerification": true,
+  "allowSellerReapplication": true,
+  "requireProductApproval": true,
+  "reapproveAfterProductUpdate": true,
+  "allowProductDrafts": true,
+  "requireEmailVerification": true,
+  "blockSuspendedUsers": true,
+  "allowNewCustomerRegistrations": true,
+  "allowNewSellerApplications": true,
+  "allowNewProductSubmissions": true
+}

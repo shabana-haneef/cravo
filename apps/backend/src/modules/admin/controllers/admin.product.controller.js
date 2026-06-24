@@ -1,6 +1,7 @@
 import { productService } from '../../products/services/product.service.js';
 import { successResponse, errorResponse } from '../../../shared/responses/apiResponse.js';
 import { logger } from '../../../shared/services/logger.js';
+import { auditLogService } from '../services/auditLog.service.js';
 import { z } from 'zod';
 
 export const adminProductController = {
@@ -16,6 +17,17 @@ export const adminProductController = {
     try {
       const product = await productService.approveProduct(req.params.id);
       logger.info({ adminId: req.user.id, productId: product.id }, 'Product approved');
+      
+      await auditLogService.log({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'PRODUCT_APPROVAL',
+        targetType: 'PRODUCT',
+        targetId: product.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+
       return successResponse(res, 'Product approved', { product });
     } catch (error) { next(error); }
   },
@@ -28,6 +40,17 @@ export const adminProductController = {
 
       const product = await productService.rejectProduct(req.params.id, parsed.data.reason);
       logger.info({ adminId: req.user.id, productId: product.id }, 'Product rejected');
+      
+      await auditLogService.log({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'PRODUCT_REJECTION',
+        targetType: 'PRODUCT',
+        targetId: product.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+
       return successResponse(res, 'Product rejected', { product });
     } catch (error) { next(error); }
   }

@@ -9,6 +9,7 @@ import {
   resetPasswordSchema
 } from '../validators/auth.validation.js';
 import { successResponse, errorResponse } from '../../../shared/responses/apiResponse.js';
+import { governanceSettingsService } from '../../admin/services/governanceSettings.service.js';
 import { logger } from '../../../shared/services/logger.js';
 
 const cookieOptions = {
@@ -22,6 +23,11 @@ export const authController = {
   // ... Registration Flow ...
   async register(req, res, next) {
     try {
+      const govSettings = await governanceSettingsService.get();
+      if (!govSettings.allowNewCustomerRegistrations) {
+        return errorResponse(res, "New customer registrations are currently disabled.", 400);
+      }
+
       const parsed = registerSchema.safeParse(req.body);
       if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
 
@@ -155,6 +161,23 @@ export const authController = {
       return successResponse(res, 'Login successful', { user, accessToken });
     } catch (error) {
       logger.error({ email: req.body?.email, error: error.message }, 'Login failed');
+      next(error);
+    }
+  },
+
+  async googleAuth(req, res, next) {
+    try {
+      const { token } = req.body;
+      if (!token) return errorResponse(res, "Google token is required", 400);
+
+      const { user, accessToken, refreshToken } = await authService.continueWithGoogle(token);
+
+      logger.info({ userId: user.id }, 'User logged in via Google successfully');
+
+      res.cookie('refreshToken', refreshToken, cookieOptions);
+      return successResponse(res, 'Login successful', { user, accessToken });
+    } catch (error) {
+      logger.error({ error: error.message }, 'Google authentication failed');
       next(error);
     }
   },
