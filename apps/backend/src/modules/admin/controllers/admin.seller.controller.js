@@ -1,6 +1,7 @@
 import { sellerService } from '../../sellers/services/seller.service.js';
 import { successResponse, errorResponse } from '../../../shared/responses/apiResponse.js';
 import { logger } from '../../../shared/services/logger.js';
+import { auditLogService } from '../services/auditLog.service.js';
 import { z } from 'zod';
 
 const rejectSchema = z.object({
@@ -32,6 +33,16 @@ export const adminSellerController = {
       const application = await sellerService.approveApplication(req.params.id);
       logger.info({ adminId: req.user.id, sellerId: application.id }, 'Seller application approved');
       
+      await auditLogService.log({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'SELLER_APPROVAL',
+        targetType: 'SELLER',
+        targetId: application.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+
       return successResponse(res, 'Application approved successfully', { application });
     } catch (error) {
       next(error);
@@ -46,6 +57,16 @@ export const adminSellerController = {
       const application = await sellerService.rejectApplication(req.params.id, parsed.data.reason);
       logger.info({ adminId: req.user.id, sellerId: application.id }, 'Seller application rejected');
       
+      await auditLogService.log({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'SELLER_REJECTION',
+        targetType: 'SELLER',
+        targetId: application.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+
       return successResponse(res, 'Application rejected successfully', { application });
     } catch (error) {
       next(error);

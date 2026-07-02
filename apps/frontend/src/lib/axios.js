@@ -40,11 +40,11 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // If error is 401, not a retry attempt, and not the login/refresh endpoint itself
+    const isAuthRoute = originalRequest.url && (originalRequest.url.endsWith('/auth/refresh-token') || originalRequest.url.endsWith('/auth/login'));
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      originalRequest.url !== '/auth/refresh-token' &&
-      originalRequest.url !== '/auth/login'
+      !isAuthRoute
     ) {
       if (isRefreshing) {
         // Queue the request until refresh completes

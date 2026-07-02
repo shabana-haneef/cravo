@@ -5,6 +5,7 @@ import compression from "compression";
 import cookieParser from "cookie-parser";
 import { rateLimit } from "express-rate-limit";
 import routes from "./routes/v1/index.js";
+import delhiveryRoutes from "./routes/delhivery.routes.js";
 
 import { notFound } from "./shared/middleware/notFound.middleware.js";
 import { errorHandler } from "./shared/middleware/error.middleware.js";
@@ -60,6 +61,12 @@ app.use(
   "/api/v1",
   generalLimiter,
   routes
+);
+
+app.use(
+  "/api/delhivery",
+  generalLimiter,
+  delhiveryRoutes
 );
 
 app.use(notFound);

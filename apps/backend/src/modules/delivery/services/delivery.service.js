@@ -2,12 +2,19 @@ import { deliveryRepository } from '../repositories/delivery.repository.js';
 import { deliveryTrackingRepository } from '../repositories/deliveryTracking.repository.js';
 import { delhiveryService } from './delhivery.service.js';
 import { orderRepository } from '../../orders/repositories/order.repository.js';
+import { deliverySettingsService } from '../../admin/services/deliverySettings.service.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 import { logger } from '../../../shared/services/logger.js';
 import prisma from '../../../lib/prisma.js';
 
 export const deliveryService = {
   async initiateDelivery(orderId) {
+    const settings = await deliverySettingsService.get();
+    if (!settings.autoCreateShipment) {
+      logger.info({ orderId }, 'Auto create shipment is disabled. Skipping Delhivery shipment creation.');
+      return;
+    }
+
     const order = await orderRepository.findById(orderId);
     if (!order) throw new AppError('Order not found', 404);
     

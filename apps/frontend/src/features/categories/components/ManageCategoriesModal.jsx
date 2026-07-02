@@ -36,14 +36,24 @@ export const ManageCategoriesModal = ({ isOpen, onClose }) => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this category?')) {
-      try {
-        await deleteMut.mutateAsync(id);
-        toast.success('Category deleted');
-      } catch (err) {
-        toast.error('Failed to delete');
-      }
-    }
+    toast('Delete this category? This action cannot be undone.', {
+      duration: 8000,
+      action: {
+        label: 'Yes, Delete',
+        onClick: async () => {
+          try {
+            await deleteMut.mutateAsync(id);
+            toast.success('Category deleted');
+          } catch (err) {
+            toast.error('Failed to delete');
+          }
+        },
+      },
+      cancel: {
+        label: 'Cancel',
+        onClick: () => {},
+      },
+    });
   };
 
   return (

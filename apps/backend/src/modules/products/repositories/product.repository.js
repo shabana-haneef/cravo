@@ -104,6 +104,13 @@ export const productRepository = {
     if (filters.shop) {
       where.shop = { slug: filters.shop };
     }
+    if (filters.search) {
+      where.OR = [
+        { name: { contains: filters.search, mode: 'insensitive' } },
+        { shortDescription: { contains: filters.search, mode: 'insensitive' } },
+        { description: { contains: filters.search, mode: 'insensitive' } }
+      ];
+    }
     
     if (filters.minPrice || filters.maxPrice) {
       where.variants = {
@@ -136,5 +143,25 @@ export const productRepository = {
     ]);
 
     return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  },
+  async getSuggestions(q) {
+    return prisma.product.findMany({
+      where: {
+        status: 'APPROVED',
+        shop: {
+          status: 'ACTIVE'
+        },
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { category: { name: { contains: q, mode: 'insensitive' } } }
+        ]
+      },
+      take: 8,
+      include: {
+        category: true,
+        images: { orderBy: { sortOrder: 'asc' }, take: 1 },
+        variants: { where: { isActive: true }, take: 1 }
+      }
+    });
   }
 };

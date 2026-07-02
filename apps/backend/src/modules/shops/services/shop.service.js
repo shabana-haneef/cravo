@@ -80,7 +80,15 @@ export const shopService = {
     const shop = await shopRepository.findBySellerId(seller.id);
     if (!shop) throw new AppError("Shop not found", 404);
 
-    return shop;
+    return {
+      ...shop,
+      pickupLocationName: seller.pickupLocationName || '',
+      pickupAddress: seller.pickupAddress || '',
+      pickupCity: seller.pickupCity || '',
+      pickupState: seller.pickupState || '',
+      pickupPincode: seller.pickupPincode || '',
+      pickupPhone: seller.pickupPhone || ''
+    };
   },
 
   async updateShop(userId, data, files) {
@@ -91,6 +99,23 @@ export const shopService = {
     if (!shop) throw new AppError("Shop not found", 404);
 
     let updates = { ...data };
+
+    // Handle seller pickup details separately
+    const sellerPickupUpdates = {};
+    const pickupFields = ['pickupLocationName', 'pickupAddress', 'pickupCity', 'pickupState', 'pickupPincode', 'pickupPhone'];
+    pickupFields.forEach(field => {
+      if (updates[field] !== undefined) {
+        sellerPickupUpdates[field] = updates[field];
+        delete updates[field];
+      }
+    });
+
+    if (Object.keys(sellerPickupUpdates).length > 0) {
+      await prisma.seller.update({
+        where: { id: seller.id },
+        data: sellerPickupUpdates
+      });
+    }
 
     const uploadTasks = [];
     if (files?.logo && files.logo[0]) {

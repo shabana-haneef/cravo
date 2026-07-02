@@ -13,9 +13,12 @@ export const AdminHeader = () => {
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
           <input 
             type="text" 
-            placeholder="Search users, sellers, or settings..." 
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-transparent focus:border-indigo-100 focus:bg-white rounded-xl text-sm outline-none transition-all focus:ring-4 focus:ring-indigo-50"
+            placeholder="Search users, sellers, products, orders..." 
+            className="w-full pl-10 pr-12 py-2.5 bg-gray-50 border border-transparent focus:border-indigo-100 focus:bg-white rounded-xl text-sm outline-none transition-all focus:ring-4 focus:ring-indigo-50"
           />
+          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-semibold text-gray-400 bg-white border border-gray-200 rounded shadow-sm select-none">
+            ⌘K
+          </kbd>
         </div>
       </div>
 

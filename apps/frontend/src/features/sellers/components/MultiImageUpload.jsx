@@ -148,7 +148,7 @@ export const MultiImageUpload = ({ value = [], onChange, error }) => {
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
-          className={`flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
+          className={`flex items-center gap-3 p-3 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
             isDragging
               ? 'border-[#1E3A2B] bg-[#F0F8F3] scale-[1.01]'
               : displayError
@@ -157,15 +157,14 @@ export const MultiImageUpload = ({ value = [], onChange, error }) => {
           }`}
         >
           <input type="file" multiple className="hidden" accept=".jpg,.jpeg,.png,.webp" onChange={handleInputChange} />
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isDragging ? 'bg-[#1E3A2B] text-white' : 'bg-gray-200 text-gray-500'}`}>
-            {isDragging ? <Upload size={22} /> : <ImageIcon size={22} />}
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${isDragging ? 'bg-[#1E3A2B] text-white' : 'bg-gray-200 text-gray-500'}`}>
+            {isDragging ? <Upload size={18} /> : <ImageIcon size={18} />}
           </div>
-          <div className="text-center">
+          <div>
             <p className="text-sm font-semibold text-gray-700">
               {isDragging ? 'Drop images here' : 'Click or drag images to upload'}
             </p>
-            <p className="text-xs text-gray-400 mt-1">JPG, PNG, WebP — max {MAX_SIZE_MB}MB per image</p>
-            <p className="text-xs font-medium text-[#1E3A2B] mt-1">{value.length} / {MAX_IMAGES} uploaded</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">JPG, PNG, WebP — max {MAX_SIZE_MB}MB · {value.length}/{MAX_IMAGES} uploaded</p>
           </div>
         </label>
       )}

@@ -10,7 +10,7 @@ import {
   ScrollReveal, StaggerReveal, StaggerItem, HoverCard, TapButton,
   fadeUp, fadeIn, slideLeft, slideRight, scaleIn
 } from '../../../components/shared/Motion.jsx';
-import { ArrowRight, ShoppingBag, Search, CheckCircle2, Leaf, Truck, ShieldCheck, RefreshCcw } from 'lucide-react';
+import { ArrowRight, ShoppingBag, Search, CheckCircle2, Leaf, Truck, ShieldCheck, RefreshCcw, ChevronDown, Users } from 'lucide-react';
 
 export const HomePage = () => {
   const { data: catData, isLoading: catLoading, isError: catError, refetch: refetchCat } = useCategories();
@@ -27,7 +27,7 @@ export const HomePage = () => {
     <div className="flex flex-col gap-16 w-full">
 
       {/* ── Hero ── */}
-      <section className="relative w-[100vw] h-[calc(100vh-80px)] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] -mt-8 overflow-hidden flex flex-col items-center justify-center p-8 bg-black">
+      <section id="hero" className="relative w-[100vw] h-[calc(100vh-80px)] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] -mt-8 overflow-hidden flex flex-col items-center justify-center p-8 bg-black">
         {/* Parallax BG */}
         <motion.img
           src="/images/herobg.png"
@@ -73,7 +73,7 @@ export const HomePage = () => {
               Explore Products
             </Link>
             <Link 
-              to="/become-seller" 
+              to="/seller/application" 
               className="px-8 py-3.5 border border-white/30 bg-[#2D2724]/40 hover:bg-[#2D2724]/60 text-white font-bold rounded-full transition-colors text-sm tracking-wide shadow-md"
             >
               Start Selling
@@ -155,11 +155,11 @@ export const HomePage = () => {
       {/* ── New Arrivals ── */}
       <section>
         <ScrollReveal variant={fadeUp} className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold text-[#111827] flex items-center tracking-tight">
-            <ShoppingBag size={24} className="mr-3 text-[#154D21] stroke-[2.5]" /> New Arrivals
+          <h2 className="text-[22px] font-bold text-gray-900 flex items-center tracking-tight">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#154D21] mr-3"></span> New Arrivals
           </h2>
-          <Link to="/products" className="text-[#154D21] hover:text-[#103B19] font-semibold flex items-center text-xs tracking-wider uppercase">
-            View All <ArrowRight size={14} className="ml-1" />
+          <Link to="/products" className="text-gray-600 hover:text-gray-900 font-medium flex items-center text-sm">
+            View All <ArrowRight size={16} className="ml-1.5" />
           </Link>
         </ScrollReveal>
 
@@ -179,108 +179,58 @@ export const HomePage = () => {
             }
           </StaggerReveal>
         )}
+        
+        {/* Load More Button */}
+        <div className="mt-10 flex justify-center">
+          <button className="flex items-center gap-2 px-6 py-2.5 bg-white border border-gray-200 rounded-full text-[13px] font-bold text-gray-800 hover:bg-gray-50 transition-colors shadow-sm">
+            Load More <ChevronDown size={16} className="text-gray-500" />
+          </button>
+        </div>
       </section>
 
-      {/* ── Support Banner ── */}
-      <ScrollReveal variant={slideLeft}>
-        <section className="bg-[#F3FAF5] rounded-[24px] p-8 sm:p-12 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
-          {/* BG Gradients */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-[#E8F5E9]/50 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-[#E8F5E9]/50 to-transparent rounded-full blur-3xl translate-y-1/2 -translate-x-1/3" />
 
-          {/* Floating SVG Leaves */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[24px]">
-            <motion.svg animate={{ y: [0, -10, 0], rotate: [0, 4, 0] }} transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-              viewBox="0 0 100 100" fill="#88C057" className="absolute right-24 top-6 w-6 h-6 opacity-80 blur-[2px]">
-              <path d="M 0 100 C 0 0, 100 0, 100 0 C 100 100, 0 100, 0 100 Z" />
-            </motion.svg>
-            <motion.svg animate={{ y: [0, -7, 0], rotate: [0, -5, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-              viewBox="0 0 100 100" fill="#88C057" className="absolute right-36 top-16 w-5 h-5 opacity-70 blur-[1px]">
-              <path d="M 0 100 C 0 0, 100 0, 100 0 C 100 100, 0 100, 0 100 Z" />
-            </motion.svg>
-            <motion.svg animate={{ y: [0, -12, 0], rotate: [0, 6, 0] }} transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-              viewBox="0 0 100 100" fill="#88C057" className="absolute -right-4 top-20 w-20 h-20 opacity-80 blur-[4px]">
-              <path d="M 0 100 C 0 0, 100 0, 100 0 C 100 100, 0 100, 0 100 Z" />
-            </motion.svg>
-            <motion.svg animate={{ y: [0, -9, 0], rotate: [0, -3, 0] }} transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
-              viewBox="0 0 100 100" fill="#6B9F36" className="absolute right-12 bottom-6 w-16 h-16 opacity-90 blur-[3px]">
-              <path d="M 0 100 C 0 0, 100 0, 100 0 C 100 100, 0 100, 0 100 Z" />
-            </motion.svg>
-          </div>
-
-          <div className="relative z-10 flex flex-col md:flex-row items-center gap-10 w-full md:w-auto">
-            <motion.div
-              className="hidden md:block w-44 h-44 rounded-full overflow-hidden shrink-0 shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/50"
-              whileHover={{ scale: 1.06 }}
-              transition={{ type: 'spring', stiffness: 280, damping: 20 }}
-            >
-              <img src="https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=500&q=80" alt="Grocery" className="w-full h-full object-cover" />
-            </motion.div>
-            <div className="text-left max-w-lg">
-              <h2 className="text-[28px] sm:text-[32px] font-extrabold text-[#0B1527] mb-3 tracking-tight leading-tight">Support Local Businesses</h2>
-              <p className="text-[#5B6B79] mb-6 leading-relaxed text-[14px]">
-                Cravo connects you directly with passionate home-chefs, farmers, and boutique stores in your neighborhood.
-              </p>
-              <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} className="inline-block">
-                <Link to="/seller/application" className="inline-flex items-center px-5 py-2.5 bg-[#154D21] text-white font-bold rounded-full hover:bg-[#103B19] transition-colors shadow-sm text-[13px]">
-                  Join the Community <ArrowRight size={16} className="ml-1.5" />
-                </Link>
-              </motion.div>
-            </div>
-          </div>
-
-          <div className="relative z-10 flex items-center gap-4 shrink-0 mr-12">
-            <div className="flex -space-x-3">
-              {[
-                'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&q=80',
-                'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80',
-                'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&q=80',
-                'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80',
-              ].map((src, i) => (
-                <motion.img
-                  key={i}
-                  src={src}
-                  alt="Seller"
-                  className="w-12 h-12 rounded-full border-[3px] border-[#F3FAF5] shadow-sm object-cover"
-                  style={{ zIndex: 40 - i * 10 }}
-                  whileHover={{ y: -4, zIndex: 50 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                />
-              ))}
-            </div>
-            <div className="text-left ml-1">
-              <span className="text-[13px] font-bold text-[#1E293B] block">Join 1000+</span>
-              <span className="text-[13px] font-medium text-[#64748B] block">local sellers</span>
-            </div>
-          </div>
-        </section>
-      </ScrollReveal>
 
       {/* ── Features Bar ── */}
-      <StaggerReveal className="pt-8 border-t border-gray-100/80 mb-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 px-4">
-          {[
-            { icon: Leaf, label: '100% Organic', sub: 'Certified organic produce' },
-            { icon: Truck, label: 'Fast Delivery', sub: 'Quick and safe delivery' },
-            { icon: ShieldCheck, label: 'Secure Payment', sub: '100% secure checkout' },
-            { icon: RefreshCcw, label: 'Easy Returns', sub: 'Hassle-free returns' },
-          ].map(({ icon: Icon, label, sub }) => (
-            <StaggerItem key={label}>
-              <motion.div
-                className="flex items-center justify-center gap-3"
-                whileHover={{ scale: 1.04 }}
-                transition={{ type: 'spring', stiffness: 350, damping: 22 }}
-              >
-                <Icon size={24} className="text-[#154D21] shrink-0 stroke-[2]" />
-                <div>
-                  <p className="text-[14px] font-extrabold text-[#111827]">{label}</p>
-                  <p className="text-[11px] font-medium text-gray-500 mt-0.5">{sub}</p>
-                </div>
-              </motion.div>
-            </StaggerItem>
-          ))}
+      <StaggerReveal className="mb-8">
+        <div className="bg-white rounded-[20px] shadow-sm border border-gray-100 py-8 px-6 sm:px-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
+            {[
+              { icon: Leaf, label: '100% Organic', sub: 'Certified organic products' },
+              { icon: Truck, label: 'Fast Delivery', sub: 'Quick and safe delivery' },
+              { icon: ShieldCheck, label: 'Secure Payment', sub: '100% secure checkout' },
+              { icon: RefreshCcw, label: 'Easy Returns', sub: 'Hassle free returns' },
+            ].map(({ icon: Icon, label, sub }) => (
+              <StaggerItem key={label}>
+                <motion.div
+                  className="flex items-center justify-center gap-4 md:justify-start lg:justify-center"
+                  whileHover={{ scale: 1.04 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 22 }}
+                >
+                  <Icon size={28} className="text-[#154D21] shrink-0 stroke-[1.5]" />
+                  <div>
+                    <p className="text-[14px] font-extrabold text-gray-900">{label}</p>
+                    <p className="text-[12px] font-medium text-gray-500 mt-0.5">{sub}</p>
+                  </div>
+                </motion.div>
+              </StaggerItem>
+            ))}
+          </div>
         </div>
       </StaggerReveal>
+
+      {/* Floating Join Community Button */}
+      <div className="fixed bottom-8 right-8 z-50 flex flex-col items-center gap-2 group">
+        <div className="bg-[#333333] text-white text-[12px] font-semibold px-3 py-1.5 rounded-[8px] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-md translate-y-2 pointer-events-none">
+          Join Community
+          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#333333]"></div>
+        </div>
+        <Link 
+          to="/seller/application" 
+          className="w-14 h-14 bg-[#154D21] hover:bg-[#103B19] text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-all"
+        >
+          <Users size={24} className="stroke-[2.5]" /> 
+        </Link>
+      </div>
     </div>
   );
 };

@@ -16,6 +16,7 @@ import {
   ShoppingBag
 } from 'lucide-react';
 import { useLogout } from '../../auth/hooks/useAuthQueries.js';
+import logoImg from '../../../logo.png';
 
 const navGroups = [
   {
@@ -43,7 +44,6 @@ const navGroups = [
   {
     label: 'SHOP',
     items: [
-      { name: 'Shop Profile', path: '/seller/shop-profile', icon: <Store size={18} /> },
       { name: 'Settings', path: '/seller/settings', icon: <Settings size={18} /> },
     ]
   }
@@ -54,10 +54,10 @@ export const SellerSidebar = () => {
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
 
   return (
-    <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0 transition-all duration-300 z-20`}>
+    <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0 transition-all duration-300 motion-reduce:transition-none z-20`}>
       <div className={`p-6 flex items-center justify-center border-b border-gray-100/50 h-20`}>
         <div className="flex items-center gap-3 overflow-hidden">
-          <img src="/images/logo.jpeg" alt="Cravo Logo" className="h-8 w-auto object-contain rounded-md mix-blend-multiply" />
+          <img src={logoImg} alt="Cravo Logo" className="h-8 w-auto object-contain rounded-md mix-blend-multiply" />
           {!isCollapsed && <span className="font-bold text-gray-900 text-lg tracking-tight whitespace-nowrap">Seller</span>}
         </div>
       </div>
@@ -104,33 +104,35 @@ export const SellerSidebar = () => {
         </div>
       </div>
 
-      <div className="p-4 border-t border-gray-100/50 flex flex-col gap-2">
+      <div className={`p-4 ${isCollapsed ? 'px-2' : 'px-4'} border-t border-gray-100/50 flex flex-col gap-2`}>
         <NavLink
           to="/"
           title={isCollapsed ? 'Browse Marketplace' : undefined}
-          className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2.5 rounded-xl text-sm font-medium transition-all text-[#16a34a] hover:bg-[#f0fdf4] hover:text-[#15803d]`}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2.5 rounded-xl text-sm font-medium transition-all motion-reduce:transition-none text-[#16a34a] hover:bg-[#f0fdf4] hover:text-[#15803d]`}
         >
           <ShoppingBag size={18} />
           {!isCollapsed && <span>Browse Marketplace</span>}
         </NavLink>
 
-        <button
-          onClick={() => logout()}
-          disabled={isLoggingOut}
-          title={isCollapsed ? 'Logout' : undefined}
-          className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2.5 rounded-xl text-sm font-medium transition-all text-red-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-50`}
-        >
-          <LogOut size={18} />
-          {!isCollapsed && <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>}
-        </button>
+        <div className={`flex flex-row items-center justify-center gap-1.5`}>
+          <button
+            onClick={() => logout()}
+            disabled={isLoggingOut}
+            title={isCollapsed ? 'Logout' : undefined}
+            className={`${isCollapsed ? 'w-7 h-7 justify-center' : 'flex-1 gap-3 px-3 py-2.5'} flex items-center rounded-lg text-sm font-medium transition-all motion-reduce:transition-none text-red-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-50`}
+          >
+            <LogOut size={16} />
+            {!isCollapsed && <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>}
+          </button>
 
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          title={isCollapsed ? 'Expand' : 'Collapse'}
-          className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-end px-3'} py-2 rounded-xl text-sm font-medium transition-all text-gray-400 hover:bg-gray-100 hover:text-gray-600`}
-        >
-          {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-        </button>
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            title={isCollapsed ? 'Expand' : 'Collapse'}
+            className={`${isCollapsed ? 'w-7 h-7' : 'w-10 h-10'} flex items-center justify-center rounded-lg text-sm font-medium transition-all motion-reduce:transition-none text-gray-400 hover:bg-gray-100 hover:text-gray-600 shrink-0`}
+          >
+            {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        </div>
       </div>
 
     </aside>

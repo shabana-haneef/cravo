@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Loader2, Save, ArrowLeft, ArrowRight, Check, X } from 'lucide-react';
+import { Loader2, Save, ArrowLeft, ArrowRight, Check, X, Upload } from 'lucide-react';
 import { MultiImageUpload } from './MultiImageUpload.jsx';
 import { VariantsManager } from './VariantsManager.jsx';
 import { useCategories, useCreateCategory } from '../../categories/hooks/useCategoryQueries.js';
@@ -63,9 +63,11 @@ const schema = z.object({
 });
 
 const STEPS = [
-  { id: 0, title: 'Basic Info', fields: ['name', 'categoryId', 'shortDescription', 'description', 'features', 'tags', 'ingredients'] },
-  { id: 1, title: 'Images', fields: [] },
-  { id: 2, title: 'Variants', fields: ['variants'] },
+  { id: 0, title: 'Basics', fields: ['name', 'categoryId'] },
+  { id: 1, title: 'Details', fields: ['shortDescription', 'description'] },
+  { id: 2, title: 'Specs', fields: ['features', 'tags', 'ingredients'] },
+  { id: 3, title: 'Images', fields: [] },
+  { id: 4, title: 'Variants', fields: ['variants'] },
 ];
 
 export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
@@ -141,7 +143,7 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
 
   const nextStep = async () => {
     // Validate images step manually
-    if (currentStep === 1) {
+    if (currentStep === 3) {
       const newFiles = selectedImages.filter(img => img instanceof File);
       if (!isEditing && newFiles.length === 0) {
         setImageError('At least one product image is required');
@@ -172,7 +174,7 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
     const newFiles = selectedImages.filter(img => img instanceof File);
     if (!isEditing && newFiles.length === 0) {
       setImageError('At least one product image is required');
-      setCurrentStep(1); // go back to images step
+      setCurrentStep(3); // go back to images step
       toast.error('Please select at least one product image.');
       return;
     }
@@ -280,7 +282,7 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto pb-16">
+    <div className="w-full mx-auto pb-8">
       <div className="flex items-center gap-4 mb-6">
         <button type="button" onClick={handleCancel} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
           <ArrowLeft size={20} className="text-gray-600" />
@@ -329,7 +331,7 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
             <h2 className="text-base font-bold text-gray-800">Basic Information</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 gap-5">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Product Name *</label>
                 <input
@@ -356,9 +358,9 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
               </div>
 
               {categoryId === 'OTHER' && (
-                <div className="col-span-1 md:col-span-2 bg-emerald-50/40 border border-emerald-100 rounded-xl p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="bg-emerald-50/40 border border-emerald-100 rounded-xl p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                   <h3 className="text-sm font-bold text-[#1E3A2B]">New Category Details</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Category Name *</label>
                       <input
@@ -393,84 +395,100 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
                 </div>
               )}
             </div>
-
-            <div>
-              <div className="flex justify-between items-end mb-1">
-                <label className="block text-sm font-semibold text-gray-700">Short Description</label>
-                <span className={`text-xs font-medium ${watchShortDesc.length > 500 ? 'text-red-500' : 'text-gray-400'}`}>
-                  {watchShortDesc.length}/500
-                </span>
-              </div>
-              <input
-                {...register('shortDescription')}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#1E3A2B] focus:ring-1 focus:ring-[#1E3A2B]/30 outline-none"
-                placeholder="Brief summary for listings..."
-              />
-              {errors.shortDescription && <p className="text-xs text-red-500 mt-1">{errors.shortDescription.message}</p>}
-            </div>
-
-            <div>
-              <div className="flex justify-between items-end mb-1">
-                <label className="block text-sm font-semibold text-gray-700">Full Description</label>
-                <span className={`text-xs font-medium ${watchDesc.length > 5000 ? 'text-red-500' : 'text-gray-400'}`}>
-                  {watchDesc.length}/5000
-                </span>
-              </div>
-              <textarea
-                {...register('description')}
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#1E3A2B] focus:ring-1 focus:ring-[#1E3A2B]/30 outline-none resize-y"
-                placeholder="Detailed description of your product..."
-              />
-              {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description.message}</p>}
-            </div>
-
-            <Controller
-              control={control}
-              name="features"
-              render={({ field }) => (
-                <ArrayInput 
-                  label="Features (Bullet Points)" 
-                  placeholder="e.g. 100% Organic, Freshly picked..."
-                  values={field.value}
-                  onChange={field.onChange}
-                />
-              )}
-            />
-
-            <div>
-              <div className="flex justify-between items-end mb-1">
-                <label className="block text-sm font-semibold text-gray-700">Ingredients *</label>
-                <span className={`text-xs font-medium ${watchIngredients.length > 2000 ? 'text-red-500' : 'text-gray-400'}`}>
-                  {watchIngredients.length}/2000
-                </span>
-              </div>
-              <textarea
-                {...register('ingredients')}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#1E3A2B] focus:ring-1 focus:ring-[#1E3A2B]/30 outline-none resize-y"
-                placeholder="List all ingredients used in this product for food safety..."
-              />
-              {errors.ingredients && <p className="text-xs text-red-500 mt-1">{errors.ingredients.message}</p>}
-            </div>
-
-            <Controller
-              control={control}
-              name="tags"
-              render={({ field }) => (
-                <ArrayInput 
-                  label="Tags" 
-                  placeholder="e.g. organic, vegetables, local..."
-                  values={field.value}
-                  onChange={field.onChange}
-                />
-              )}
-            />
           </div>
         </div>
 
-        {/* Step 1: Images — managed via local state, NOT via react-hook-form */}
+        {/* Step 1: Descriptions */}
         <div className={currentStep === 1 ? 'block animate-in fade-in slide-in-from-right-4 duration-300' : 'hidden'}>
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
+            <h2 className="text-base font-bold text-gray-800">Descriptions</h2>
+            <div className="grid grid-cols-1 gap-5">
+              <div>
+                <div className="flex justify-between items-end mb-1">
+                  <label className="block text-sm font-semibold text-gray-700">Short Description</label>
+                  <span className={`text-xs font-medium ${watchShortDesc.length > 500 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {watchShortDesc.length}/500
+                  </span>
+                </div>
+                <input
+                  {...register('shortDescription')}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#1E3A2B] focus:ring-1 focus:ring-[#1E3A2B]/30 outline-none"
+                  placeholder="Brief summary for listings..."
+                />
+                {errors.shortDescription && <p className="text-xs text-red-500 mt-1">{errors.shortDescription.message}</p>}
+              </div>
+
+              <div>
+                <div className="flex justify-between items-end mb-1">
+                  <label className="block text-sm font-semibold text-gray-700">Full Description</label>
+                  <span className={`text-xs font-medium ${watchDesc.length > 5000 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {watchDesc.length}/5000
+                  </span>
+                </div>
+                <textarea
+                  {...register('description')}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#1E3A2B] focus:ring-1 focus:ring-[#1E3A2B]/30 outline-none resize-y"
+                  placeholder="Detailed description of your product..."
+                />
+                {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description.message}</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Step 2: Details & Ingredients */}
+        <div className={currentStep === 2 ? 'block animate-in fade-in slide-in-from-right-4 duration-300' : 'hidden'}>
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
+            <h2 className="text-base font-bold text-gray-800">Details & Ingredients</h2>
+            <div className="grid grid-cols-1 gap-5">
+              <Controller
+                control={control}
+                name="features"
+                render={({ field }) => (
+                  <ArrayInput 
+                    label="Features (Bullet Points)" 
+                    placeholder="e.g. 100% Organic, Freshly picked..."
+                    values={field.value}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+
+              <div>
+                <div className="flex justify-between items-end mb-1">
+                  <label className="block text-sm font-semibold text-gray-700">Ingredients *</label>
+                  <span className={`text-xs font-medium ${watchIngredients.length > 2000 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {watchIngredients.length}/2000
+                  </span>
+                </div>
+                <textarea
+                  {...register('ingredients')}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#1E3A2B] focus:ring-1 focus:ring-[#1E3A2B]/30 outline-none resize-y"
+                  placeholder="List all ingredients used in this product for food safety..."
+                />
+                {errors.ingredients && <p className="text-xs text-red-500 mt-1">{errors.ingredients.message}</p>}
+              </div>
+
+              <Controller
+                control={control}
+                name="tags"
+                render={({ field }) => (
+                  <ArrayInput 
+                    label="Tags" 
+                    placeholder="e.g. organic, vegetables, local..."
+                    values={field.value}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Step 3: Images — managed via local state, NOT via react-hook-form */}
+        <div className={currentStep === 3 ? 'block animate-in fade-in slide-in-from-right-4 duration-300' : 'hidden'}>
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <h2 className="text-base font-bold text-gray-800 mb-1">Product Images</h2>
             <p className="text-xs text-gray-500 mb-4">First image will be the cover. You can upload up to 10 images.</p>
@@ -504,9 +522,14 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
                     </button>
                   </div>
                 ) : null}
-                <label className="flex-1 border-2 border-dashed border-gray-200 hover:border-[#1E3A2B]/50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer bg-gray-50/50 transition-colors">
-                  <span className="text-sm font-semibold text-[#1E3A2B]">Click to upload label image</span>
-                  <span className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</span>
+                <label className="flex-1 border-2 border-dashed border-gray-200 hover:border-[#1E3A2B]/50 rounded-xl p-3 flex items-center gap-3 cursor-pointer bg-gray-50/50 transition-colors">
+                  <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center shrink-0 text-gray-500">
+                    <Upload size={16} />
+                  </div>
+                  <div>
+                    <span className="text-sm font-semibold text-[#1E3A2B]">Click to upload label image</span>
+                    <span className="block text-[11px] text-gray-400 mt-0.5">PNG, JPG up to 5MB</span>
+                  </div>
                   <input 
                     type="file" 
                     className="hidden" 
@@ -521,8 +544,8 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
           </div>
         </div>
 
-        {/* Step 2: Variants */}
-        <div className={currentStep === 2 ? 'block animate-in fade-in slide-in-from-right-4 duration-300' : 'hidden'}>
+        {/* Step 4: Variants */}
+        <div className={currentStep === 4 ? 'block animate-in fade-in slide-in-from-right-4 duration-300' : 'hidden'}>
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <VariantsManager control={control} register={register} errors={errors} />
             {errors.variants?.root && <p className="text-xs text-red-500 mt-2">{errors.variants.root.message}</p>}
