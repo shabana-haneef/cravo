@@ -23,13 +23,3 @@ export const useUpdateOrderStatus = () => {
     },
   });
 };
-
-export const useCreateShipment = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: sellerOrderApi.createShipment,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: SELLER_ORDERS_KEY });
-    },
-  });
-};

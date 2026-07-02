@@ -9,7 +9,6 @@ const router = Router();
 
 // Public Routes
 router.get('/', productController.getPublicProducts);
-router.get('/suggestions', productController.getSuggestions);
 router.get('/:slug', productController.getPublicProduct);
 
 // Protected Routes (Sellers Only)

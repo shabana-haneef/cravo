@@ -1,8 +1,8 @@
 import { api } from '../../../lib/axios.js';
 
 export const orderApi = {
-  getPreview: async (params) => {
-    const response = await api.get('/orders/checkout/preview', { params });
+  getPreview: async () => {
+    const response = await api.get('/orders/checkout/preview');
     return response.data;
   },
 

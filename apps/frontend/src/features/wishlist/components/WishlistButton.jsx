@@ -38,7 +38,7 @@ export const WishlistButton = ({ productId, className = "" }) => {
         if (res?.data?.wishlisted) {
           toast.success('Added to wishlist');
         } else {
-          toast.error('Removed from wishlist');
+          toast.success('Removed from wishlist');
         }
       },
       onError: () => {

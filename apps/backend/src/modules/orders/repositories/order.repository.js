@@ -9,32 +9,13 @@ export const orderRepository = {
     return prisma.order.findUnique({
       where: { id: orderId },
       include: {
-        items: {
-          include: {
-            product: {
-              include: {
-                images: { orderBy: { sortOrder: 'asc' }, take: 1 }
-              }
-            },
-            productVariant: true
-          }
-        },
+        items: true,
         payments: true,
         shop: {
           select: {
             name: true,
             slug: true,
-            seller: {
-              select: {
-                userId: true,
-                pickupLocationName: true,
-                pickupAddress: true,
-                pickupCity: true,
-                pickupState: true,
-                pickupPincode: true,
-                pickupPhone: true
-              }
-            }
+            seller: { select: { userId: true } }
           }
         },
         address: true

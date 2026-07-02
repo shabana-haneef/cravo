@@ -10,8 +10,7 @@ router.use(protect);
 router.post('/apply', upload.fields([
   { name: 'idProof', maxCount: 1 },
   { name: 'addressProof', maxCount: 1 },
-  { name: 'shopImage', maxCount: 1 },
-  { name: 'fssaiLicense', maxCount: 1 }
+  { name: 'shopImage', maxCount: 1 }
 ]), sellerController.apply);
 
 router.get('/application', sellerController.getApplication);

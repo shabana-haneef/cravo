@@ -1,6 +1,5 @@
 import prisma from '../../../lib/prisma.js';
 import { successResponse } from '../../../shared/responses/apiResponse.js';
-import { auditLogService } from '../services/auditLog.service.js';
 
 // In-memory settings for demo purposes (since no Settings table exists in Prisma)
 let mockSettings = {
@@ -70,13 +69,7 @@ export const adminDashboardController = {
 
   async getSettings(req, res, next) {
     try {
-      const isSmtpConnected = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_dummy_key_for_dev';
-      return successResponse(res, 'Settings retrieved', { 
-        settings: {
-          ...mockSettings,
-          smtpConnected: !!isSmtpConnected
-        } 
-      });
+      return successResponse(res, 'Settings retrieved', { settings: mockSettings });
     } catch (error) {
       next(error);
     }
@@ -88,16 +81,6 @@ export const adminDashboardController = {
       if (platformName) mockSettings.platformName = platformName;
       if (supportEmail) mockSettings.supportEmail = supportEmail;
       
-      await auditLogService.log({
-        adminId: req.user.id,
-        adminEmail: req.user.email,
-        action: 'SETTINGS_UPDATE',
-        targetType: 'PLATFORM_SETTINGS',
-        targetId: 'GLOBAL',
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent']
-      });
-
       return successResponse(res, 'Settings updated successfully', { settings: mockSettings });
     } catch (error) {
       next(error);

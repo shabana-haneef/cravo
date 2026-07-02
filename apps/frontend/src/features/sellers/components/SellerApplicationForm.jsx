@@ -12,7 +12,6 @@ const schema = z.object({
   idProof: z.any().refine((f) => f instanceof File, 'ID Proof is required.'),
   addressProof: z.any().refine((f) => f instanceof File, 'Address Proof is required.'),
   shopImage: z.any().optional(),
-  fssaiLicense: z.any().optional(),
 });
 
 export const SellerApplicationForm = () => {
@@ -31,7 +30,6 @@ export const SellerApplicationForm = () => {
       idProof: null,
       addressProof: null,
       shopImage: null,
-      fssaiLicense: null,
     },
   });
 
@@ -41,7 +39,6 @@ export const SellerApplicationForm = () => {
     formData.append('idProof', data.idProof);
     formData.append('addressProof', data.addressProof);
     if (data.shopImage instanceof File) formData.append('shopImage', data.shopImage);
-    if (data.fssaiLicense instanceof File) formData.append('fssaiLicense', data.fssaiLicense);
 
     apply(formData, {
       onSuccess: () => {
@@ -140,19 +137,6 @@ export const SellerApplicationForm = () => {
                   value={field.value}
                   onChange={field.onChange}
                   error={errors.shopImage?.message}
-                />
-              )}
-            />
-
-            <Controller
-              name="fssaiLicense"
-              control={control}
-              render={({ field }) => (
-                <FileUpload
-                  label="FSSAI License"
-                  value={field.value}
-                  onChange={field.onChange}
-                  error={errors.fssaiLicense?.message}
                 />
               )}
             />

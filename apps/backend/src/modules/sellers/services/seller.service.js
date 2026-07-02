@@ -3,7 +3,6 @@ import { sellerDocumentRepository } from '../repositories/sellerDocument.reposit
 import { userRepository } from '../../users/repositories/user.repository.js';
 import { cloudinaryService } from '../../../shared/services/cloudinary.service.js';
 import { notificationService } from '../../notifications/services/notification.service.js';
-import { governanceSettingsService } from '../../admin/services/governanceSettings.service.js';
 import prisma from '../../../lib/prisma.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 
@@ -12,47 +11,27 @@ export const sellerService = {
    * Applies a user to be a seller
    */
   async applyAsSeller(userId, data, files) {
-    const govSettings = await governanceSettingsService.get();
-    if (!govSettings.allowNewSellerApplications) {
-      throw new AppError("New seller applications are currently disabled.", 400);
-    }
-
     const existing = await sellerRepository.findByUserId(userId);
     if (existing) {
-      if (existing.status === 'REJECTED') {
-        if (!govSettings.allowSellerReapplication) {
-          throw new AppError("Seller reapplication is disabled.", 400);
-        }
-        await prisma.$transaction(async (tx) => {
-          await tx.sellerDocument.deleteMany({ where: { sellerId: existing.id } });
-          await tx.seller.delete({ where: { id: existing.id } });
-        });
-      } else {
-        throw new AppError("You have already submitted a seller application.", 400);
-      }
+      throw new AppError("You have already submitted a seller application.", 400);
     }
 
-    const requiresDocs = govSettings.requireSellerDocumentVerification;
-    if (requiresDocs && (!files.idProof || !files.addressProof)) {
+    if (!files.idProof || !files.addressProof) {
       throw new AppError("ID Proof and Address Proof are required.", 400);
     }
 
     // Process files sequentially to Cloudinary
     const uploadTasks = [];
     
-    if (files.idProof) {
-      uploadTasks.push(
-        cloudinaryService.uploadBuffer(files.idProof[0].buffer, 'cravo/sellers/documents/id')
-          .then(res => ({ type: 'ID_PROOF', fileUrl: res.secure_url, publicId: res.public_id }))
-      );
-    }
+    uploadTasks.push(
+      cloudinaryService.uploadBuffer(files.idProof[0].buffer, 'cravo/sellers/documents/id')
+        .then(res => ({ type: 'ID_PROOF', fileUrl: res.secure_url, publicId: res.public_id }))
+    );
     
-    if (files.addressProof) {
-      uploadTasks.push(
-        cloudinaryService.uploadBuffer(files.addressProof[0].buffer, 'cravo/sellers/documents/address')
-          .then(res => ({ type: 'ADDRESS_PROOF', fileUrl: res.secure_url, publicId: res.public_id }))
-      );
-    }
+    uploadTasks.push(
+      cloudinaryService.uploadBuffer(files.addressProof[0].buffer, 'cravo/sellers/documents/address')
+        .then(res => ({ type: 'ADDRESS_PROOF', fileUrl: res.secure_url, publicId: res.public_id }))
+    );
 
     if (files.shopImage && files.shopImage[0]) {
       uploadTasks.push(
@@ -61,37 +40,22 @@ export const sellerService = {
       );
     }
 
-    if (files.fssaiLicense && files.fssaiLicense[0]) {
-      uploadTasks.push(
-        cloudinaryService.uploadBuffer(files.fssaiLicense[0].buffer, 'cravo/sellers/documents/fssai')
-          .then(res => ({ type: 'FSSAI_LICENSE', fileUrl: res.secure_url, publicId: res.public_id }))
-      );
-    }
-
     const uploadedDocs = await Promise.all(uploadTasks);
 
     // Save transactionally
-    const initialStatus = govSettings.requireSellerApproval ? 'PENDING' : 'APPROVED';
-
     return prisma.$transaction(async (tx) => {
       const seller = await sellerRepository.create({
         userId,
         bio: data.bio || null,
-        status: initialStatus,
-        approvedAt: initialStatus === 'APPROVED' ? new Date() : null
+        status: 'PENDING'
       }, tx);
 
-      if (uploadedDocs.length > 0) {
-        const docsToInsert = uploadedDocs.map(doc => ({
-          ...doc,
-          sellerId: seller.id
-        }));
-        await sellerDocumentRepository.createMany(docsToInsert, tx);
-      }
+      const docsToInsert = uploadedDocs.map(doc => ({
+        ...doc,
+        sellerId: seller.id
+      }));
 
-      if (initialStatus === 'APPROVED') {
-        await userRepository.update(userId, { role: 'SELLER' }, tx);
-      }
+      await sellerDocumentRepository.createMany(docsToInsert, tx);
       
       return seller;
     });

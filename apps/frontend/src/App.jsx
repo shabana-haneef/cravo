@@ -30,8 +30,7 @@ function App() {
     const initAuth = async () => {
       try {
         const { data } = await api.get('/auth/me');
-        const currentToken = useAuthStore.getState().accessToken;
-        setAuth(data.data.user, currentToken);
+        setAuth(data.data.user, null);
       } catch (error) {
         clearAuth();
       } finally {

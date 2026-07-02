@@ -10,9 +10,7 @@ import {
   ChevronLeft,
   LogOut,
   ShieldCheck,
-  Package,
-  FileText,
-  Boxes
+  Package
 } from 'lucide-react';
 import { useLogout } from '../../auth/hooks/useAuthQueries.js';
 
@@ -36,8 +34,6 @@ const navGroups = [
     label: 'SYSTEM',
     items: [
       { name: 'Settings', path: '/admin/settings', icon: <Settings size={18} /> },
-      { name: 'Audit Logs', path: '/admin/audit-logs', icon: <FileText size={18} /> },
-      { name: 'Integrations', path: '/admin/integrations', icon: <Boxes size={18} /> },
     ]
   }
 ];
@@ -47,7 +43,7 @@ export const AdminSidebar = () => {
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
 
   return (
-    <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-[#111827] text-white border-r border-gray-800 flex flex-col h-screen sticky top-0 transition-all duration-300 motion-reduce:transition-none z-20`}>
+    <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-[#111827] text-white border-r border-gray-800 flex flex-col h-screen sticky top-0 transition-all duration-300 z-20`}>
       <div className={`p-6 flex items-center justify-center border-b border-gray-800 h-20`}>
         <div className="flex items-center gap-3 overflow-hidden">
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold shrink-0 shadow-sm">
@@ -99,23 +95,23 @@ export const AdminSidebar = () => {
         </div>
       </div>
 
-      <div className={`p-4 ${isCollapsed ? 'px-2' : 'px-4'} border-t border-gray-800 flex flex-row items-center justify-center gap-1.5`}>
+      <div className="p-4 border-t border-gray-800 flex flex-col gap-2">
         <button
           onClick={() => logout()}
           disabled={isLoggingOut}
           title={isCollapsed ? 'Logout' : undefined}
-          className={`${isCollapsed ? 'w-7 h-7 justify-center' : 'flex-1 gap-3 px-3 py-2.5'} flex items-center rounded-lg text-sm font-medium transition-all motion-reduce:transition-none text-red-400 hover:bg-red-500/10 hover:text-red-300 disabled:opacity-50`}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2.5 rounded-xl text-sm font-medium transition-all text-red-400 hover:bg-red-500/10 hover:text-red-300 disabled:opacity-50`}
         >
-          <LogOut size={16} />
+          <LogOut size={18} />
           {!isCollapsed && <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>}
         </button>
 
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           title={isCollapsed ? 'Expand' : 'Collapse'}
-          className={`${isCollapsed ? 'w-7 h-7' : 'w-10 h-10'} flex items-center justify-center rounded-lg text-sm font-medium transition-all motion-reduce:transition-none text-gray-500 hover:bg-gray-800 hover:text-gray-300 shrink-0`}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-end px-3'} py-2 rounded-xl text-sm font-medium transition-all text-gray-500 hover:bg-gray-800 hover:text-gray-300`}
         >
-          {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
       </div>
     </aside>

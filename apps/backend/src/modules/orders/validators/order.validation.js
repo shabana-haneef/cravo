@@ -1,10 +1,7 @@
 import { z } from 'zod';
 
 export const checkoutSchema = z.object({
-  addressId: z.string().cuid("Invalid address ID"),
-  buyNow: z.boolean().optional(),
-  variantId: z.string().optional(),
-  quantity: z.number().int().positive().optional()
+  addressId: z.string().cuid("Invalid address ID")
 });
 
 export const verifyPaymentSchema = z.object({

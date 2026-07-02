@@ -113,7 +113,7 @@ export const CartPage = () => {
                       <Link to={`/products/${item.productSlug || item.productId}`} className="text-[18px] sm:text-[20px] font-medium text-gray-900 hover:text-orange-600 transition-colors leading-snug line-clamp-2">
                         {item.productName}
                       </Link>
-                      <div className="text-[18px] sm:text-[20px] font-bold text-[#154D21] shrink-0 text-right">
+                      <div className="text-[18px] sm:text-[20px] font-bold text-gray-900 shrink-0 text-right">
                         ₹{item.unitPrice.toFixed(2)}
                       </div>
                     </div>
@@ -172,7 +172,7 @@ export const CartPage = () => {
             {/* Subtotal row at bottom of items list like Amazon */}
             <div className="px-6 py-5 flex justify-end text-[18px] border-t border-gray-200 bg-gray-50/50">
               <span className="text-gray-900">
-                Subtotal ({activeTotalItems} item{activeTotalItems !== 1 ? 's' : ''}): <span className="font-bold text-[#154D21]">₹{activeSubtotal.toFixed(2)}</span>
+                Subtotal ({activeTotalItems} item{activeTotalItems !== 1 ? 's' : ''}): <span className="font-bold">₹{activeSubtotal.toFixed(2)}</span>
               </span>
             </div>
 
@@ -209,21 +209,21 @@ export const CartPage = () => {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-500">Sub Total</span>
-                <span className="font-semibold text-[#154D21]">₹{activeSubtotal.toFixed(2)}</span>
+                <span className="font-semibold text-gray-900">₹{activeSubtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-500">Shipping</span>
-                <span className="font-semibold text-[#154D21]">₹0.00</span>
+                <span className="font-semibold text-gray-900">₹0.00</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-500">Taxes</span>
-                <span className="font-semibold text-[#154D21]">₹0.00</span>
+                <span className="font-semibold text-gray-900">₹0.00</span>
               </div>
             </div>
 
             <div className="flex justify-between items-center mb-8">
               <span className="text-[16px] font-medium text-gray-500">Total</span>
-              <span className="text-[20px] font-bold text-[#154D21]">₹{activeSubtotal.toFixed(2)}</span>
+              <span className="text-[20px] font-bold text-gray-900">₹{activeSubtotal.toFixed(2)}</span>
             </div>
 
             <button 

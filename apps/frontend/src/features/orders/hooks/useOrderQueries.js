@@ -8,10 +8,10 @@ export const ORDER_KEYS = {
   order: (id) => ['order', id],
 };
 
-export const useCheckoutPreview = (params) => {
+export const useCheckoutPreview = () => {
   return useQuery({
-    queryKey: [...ORDER_KEYS.preview, params],
-    queryFn: () => orderApi.getPreview(params),
+    queryKey: ORDER_KEYS.preview,
+    queryFn: orderApi.getPreview,
     retry: false, // Don't retry on empty cart
   });
 };
@@ -47,9 +47,8 @@ export const useCancelOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: orderApi.cancelOrder,
-    onSuccess: (data, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ORDER_KEYS.myOrders });
-      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.order(variables) });
     },
   });
 };

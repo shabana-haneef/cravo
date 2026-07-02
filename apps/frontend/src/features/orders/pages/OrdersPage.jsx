@@ -15,6 +15,7 @@ export const OrdersPage = () => {
   const { mutate: cancelOrder, isPending: isCancelling } = useCancelOrder();
   const { mutate: addToCart, isPending: isAdding } = useAddToCart();
 
+  const [activeTab, setActiveTab] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterQuery, setFilterQuery] = useState('');
 
@@ -42,7 +43,31 @@ export const OrdersPage = () => {
     );
   }
 
-  const tabFilteredOrders = orders;
+  // Filter orders by active tab
+  const getTabFilteredOrders = () => {
+    return orders.filter(order => {
+      if (activeTab === 'All') return true;
+      if (activeTab === 'Preparing') {
+        return ['PLACED', 'CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP'].includes(order.status);
+      }
+      if (activeTab === 'Shipped') {
+        // Shipped translates to READY_FOR_PICKUP or OUT_FOR_DELIVERY in progress
+        return ['READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'].includes(order.status);
+      }
+      if (activeTab === 'Out for Delivery') {
+        return order.status === 'OUT_FOR_DELIVERY';
+      }
+      if (activeTab === 'Delivered') {
+        return order.status === 'DELIVERED';
+      }
+      if (activeTab === 'Cancelled') {
+        return ['CANCELLED', 'REFUNDED'].includes(order.status);
+      }
+      return true;
+    });
+  };
+
+  const tabFilteredOrders = getTabFilteredOrders();
 
   // Search filter
   const filteredOrders = tabFilteredOrders.filter(order => {
@@ -81,20 +106,16 @@ export const OrdersPage = () => {
   };
 
   const handleCancelOrder = (orderId, orderNumber) => {
-    toast(`Cancel order #${orderNumber}?`, {
-      duration: 8000,
-      action: {
-        label: 'Yes, Cancel',
-        onClick: () => cancelOrder(orderId, {
-          onSuccess: () => toast.success(`Order #${orderNumber} has been cancelled successfully.`),
-          onError: (err) => toast.error(err.response?.data?.message || 'Failed to cancel order.'),
-        }),
-      },
-      cancel: {
-        label: 'Keep Order',
-        onClick: () => {},
-      },
-    });
+    if (window.confirm(`Are you sure you want to cancel order #${orderNumber}?`)) {
+      cancelOrder(orderId, {
+        onSuccess: () => {
+          toast.success(`Order #${orderNumber} has been cancelled successfully.`);
+        },
+        onError: (err) => {
+          toast.error(err.response?.data?.message || 'Failed to cancel order.');
+        }
+      });
+    }
   };
 
   const getStatusText = (status) => {
@@ -156,6 +177,28 @@ export const OrdersPage = () => {
         </form>
       </div>
 
+      {/* Filter Tabs */}
+      <div className="border-b border-gray-200 mb-8 overflow-x-auto flex scrollbar-none">
+        <div className="flex gap-6 sm:gap-8 min-w-max pb-3">
+          {['All', 'Preparing', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => {
+                setActiveTab(tab);
+                setSearchQuery('');
+                setFilterQuery('');
+              }}
+              className={`text-[14px] font-medium transition-all cursor-pointer relative pb-1 ${
+                activeTab === tab 
+                  ? 'text-orange-600 font-semibold after:absolute after:bottom-[-13px] after:left-0 after:w-full after:h-[3px] after:bg-orange-500 after:rounded-t'
+                  : 'text-[#007185] hover:text-[#c45500] hover:underline'
+              }`}
+            >
+              {tab === 'All' ? 'All Orders' : tab}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Orders List */}
       {filteredOrders.length === 0 ? (
@@ -178,7 +221,7 @@ export const OrdersPage = () => {
           </Link>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {filteredOrders.map(order => {
             const formattedDate = new Date(order.createdAt).toLocaleDateString('en-IN', {
               day: 'numeric',
@@ -186,64 +229,142 @@ export const OrdersPage = () => {
               year: 'numeric'
             });
 
-            // Get first item to show in preview
-            const mainItem = order.items[0];
-            const pImage = mainItem?.product?.images?.[0]?.imageUrl || 'https://via.placeholder.com/150';
-            const extraItemsCount = order.items.length - 1;
-
-            const isOrderCancelled = order.status === 'CANCELLED' || order.status === 'REFUNDED';
+            const canCancel = ['PENDING_PAYMENT', 'PLACED'].includes(order.status);
 
             return (
-              <div 
-                key={order.id} 
-                onClick={() => {
-                  if (isOrderCancelled) {
-                    toast.error('This order has been cancelled.');
-                    return;
-                  }
-                  navigate(`/orders/${order.id}`);
-                }}
-                className={`bg-white border border-gray-200 rounded-xl overflow-hidden shadow-xs flex flex-col ${
-                  isOrderCancelled 
-                    ? 'cursor-not-allowed opacity-75' 
-                    : 'cursor-pointer hover:shadow-md transition-shadow'
-                }`}
-              >
+              <div key={order.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-xs flex flex-col">
                 
                 {/* Order Card Header */}
-                <div className="bg-gray-50 border-b border-gray-100 px-4 py-3 flex justify-between items-center text-xs">
-                  <div className="flex gap-4">
+                <div className="bg-[#F0F2F2] border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-wrap justify-between items-center text-xs text-gray-600 gap-4">
+                  <div className="flex flex-wrap gap-x-8 gap-y-2">
+                    {/* Order Date */}
                     <div>
-                      <p className="text-gray-500 font-medium">Order Placed</p>
-                      <p className="font-semibold text-gray-800">{formattedDate}</p>
+                      <p className="uppercase text-[10px] font-bold text-gray-500 tracking-wider">Order Placed</p>
+                      <p className="font-semibold text-gray-800 text-[13px] mt-0.5">{formattedDate}</p>
                     </div>
+
+                    {/* Total Amount */}
                     <div>
-                      <p className="text-gray-500 font-medium">Total</p>
-                      <p className="font-semibold text-[#154D21]">₹{order.grandTotal.toFixed(2)}</p>
+                      <p className="uppercase text-[10px] font-bold text-gray-500 tracking-wider">Total</p>
+                      <p className="font-semibold text-gray-800 text-[13px] mt-0.5">₹{order.grandTotal.toFixed(2)}</p>
+                    </div>
+
+                    {/* Ship/Dispatch To */}
+                    <div>
+                      <p className="uppercase text-[10px] font-bold text-gray-500 tracking-wider">Ship To</p>
+                      <p className="font-semibold text-[#007185] hover:text-[#c45500] hover:underline cursor-pointer text-[13px] mt-0.5 relative group">
+                        {order.address?.fullName || 'Customer'}
+                        
+                        {/* Address tooltip */}
+                        {order.address && (
+                          <span className="absolute left-0 top-6 hidden group-hover:block bg-white text-gray-800 border border-gray-200 rounded p-3 shadow-md z-30 min-w-[200px] leading-relaxed">
+                            <span className="font-bold text-gray-900 block mb-1">{order.address.fullName}</span>
+                            <span>{order.address.street}</span><br />
+                            <span>{order.address.city}, {order.address.postalCode}</span><br />
+                            <span>{order.address.country}</span>
+                          </span>
+                        )}
+                      </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-gray-500 font-medium">Order # {order.orderNumber}</p>
-                    <p className={`font-bold mt-0.5 ${getStatusColor(order.status)}`}>
-                      {getStatusText(order.status)}
-                    </p>
+
+                  {/* Order ID / Actions */}
+                  <div className="text-right flex flex-col items-end gap-1">
+                    <p className="uppercase text-[10px] font-bold text-gray-500 tracking-wider">Order # {order.orderNumber}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[#007185] hover:text-[#c45500] hover:underline cursor-pointer text-[13px]">
+                        View order details
+                      </span>
+                      <span className="text-gray-300">|</span>
+                      <span className="text-[#007185] hover:text-[#c45500] hover:underline cursor-pointer text-[13px]">
+                        Invoice
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Order Card Body */}
-                <div className="p-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-[#F6F9F6] border border-gray-100 rounded-lg p-1 shrink-0">
-                      <img src={pImage} alt="Product" className="w-full h-full object-contain mix-blend-multiply" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-900 line-clamp-1">{mainItem?.product?.name || 'Product'}</h4>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {mainItem?.productVariant?.name || 'Standard'} {extraItemsCount > 0 ? `+ ${extraItemsCount} more items` : ''}
-                      </p>
-                    </div>
+                <div className="p-4 sm:p-6 flex flex-col gap-6">
+                  {/* Status Indicator */}
+                  <div>
+                    <h3 className={`text-[17px] font-bold ${getStatusColor(order.status)}`}>
+                      {getStatusText(order.status)}
+                    </h3>
+                    <p className="text-gray-500 text-xs mt-1">
+                      {order.status === 'DELIVERED' ? 'Thank you for shopping with us!' : 'Order is confirmed and being processed.'}
+                    </p>
                   </div>
-                  <ChevronDown size={20} className="text-gray-400 -rotate-90 shrink-0" />
+
+                  {/* Order Items */}
+                  <div className="divide-y divide-gray-100">
+                    {order.items.map(item => {
+                      const pImage = item.product?.images?.[0]?.imageUrl || 'https://via.placeholder.com/150';
+                      const pSlug = item.product?.slug || item.productId;
+
+                      return (
+                        <div key={item.id} className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                          <div className="flex gap-4 min-w-0">
+                            {/* Product Image */}
+                            <Link to={`/products/${pSlug}`} className="w-16 h-16 sm:w-20 sm:h-20 bg-white border border-gray-200 rounded-lg overflow-hidden flex items-center justify-center p-1.5 shrink-0 shadow-xs hover:opacity-95 transition-opacity">
+                              <img src={pImage} alt={item.product?.name || 'Product'} className="max-w-full max-h-full object-contain" />
+                            </Link>
+                            
+                            {/* Details */}
+                            <div className="min-w-0 flex flex-col">
+                              <Link 
+                                to={`/products/${pSlug}`} 
+                                className="text-sm font-semibold text-[#007185] hover:text-[#c45500] hover:underline line-clamp-2 leading-snug"
+                              >
+                                {item.product?.name || 'Product Details'}
+                              </Link>
+                              
+                              <p className="text-[12px] text-gray-500 mt-1">
+                                Sold by: <span className="font-semibold text-gray-700">{order.shop?.name || 'Cravo Seller'}</span>
+                              </p>
+                              <p className="text-[12px] text-gray-600 mt-0.5">
+                                Qty: <span className="font-bold text-gray-900">{item.quantity}</span>
+                              </p>
+                              {item.productVariant?.name && (
+                                <p className="text-[12px] text-gray-600">
+                                  Variant: <span className="font-bold text-gray-900">{item.productVariant.name}</span>
+                                </p>
+                              )}
+
+                              {/* Buy Again button on mobile/desktop */}
+                              <div className="mt-2.5">
+                                <button
+                                  onClick={() => handleBuyAgain(item.productId, item.productVariantId, item.productVariant?.name, item.product?.name)}
+                                  disabled={isAdding}
+                                  className="h-[28px] px-3.5 bg-[#F0F2F2] border border-[#D5D9D9] hover:bg-[#E3E6E6] text-gray-900 text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                                >
+                                  Buy it again
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Item Price */}
+                          <div className="text-[15px] font-bold text-gray-900 self-end sm:self-center shrink-0">
+                            ₹{(item.unitPrice * item.quantity).toFixed(2)}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Actions Bar */}
+                  {canCancel && (
+                    <div className="flex justify-start border-t border-gray-100 pt-4 mt-2">
+                      <button
+                        onClick={() => handleCancelOrder(order.id, order.orderNumber)}
+                        disabled={isCancelling}
+                        className="px-5 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-full transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
+                      >
+                        Cancel order
+                      </button>
+                    </div>
+                  )}
+
                 </div>
               </div>
             );
