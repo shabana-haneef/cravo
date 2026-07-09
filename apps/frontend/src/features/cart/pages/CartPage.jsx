@@ -7,6 +7,7 @@ import {
   ShieldCheck, Truck, BadgeCheck, Receipt, Lock,
   Leaf, HeadphonesIcon, RefreshCcw
 } from 'lucide-react';
+import { optimizeImage } from '../../../lib/cloudinary.js';
 
 const CartSkeleton = () => (
   <div className="max-w-7xl mx-auto pb-12 pt-10 px-4 sm:px-6 lg:px-8 animate-pulse space-y-8">
@@ -100,7 +101,7 @@ export const CartPage = () => {
                     />
                     <div className="w-[180px] h-[180px] bg-white flex items-center justify-center p-2 rounded-xl overflow-hidden">
                       {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.productName} className="max-w-full max-h-full object-contain" />
+                        <img src={optimizeImage(item.imageUrl, 200)} alt={item.productName} className="max-w-full max-h-full object-contain" />
                       ) : (
                         <ShoppingCart className="w-12 h-12 text-gray-300" />
                       )}

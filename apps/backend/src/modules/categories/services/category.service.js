@@ -2,6 +2,7 @@ import { categoryRepository } from '../repositories/category.repository.js';
 import { slugService } from '../../shops/services/slug.service.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 import { cloudinaryService } from '../../../shared/services/cloudinary.service.js';
+import { productRepository } from '../../products/repositories/product.repository.js';
 import prisma from '../../../lib/prisma.js';
 
 const DEFAULT_CATEGORIES = [
@@ -64,7 +65,7 @@ export const categoryService = {
       for (const cat of allCats) {
         const isDefault = DEFAULT_CATEGORIES.some(dc => slugService.slugify(dc.name) === cat.slug);
         if (!isDefault) {
-          const productsCount = await prisma.product.count({ where: { categoryId: cat.id } });
+          const productsCount = await productRepository.countByCategory(cat.id);
           if (productsCount === 0) {
             await categoryRepository.delete(cat.id);
           }

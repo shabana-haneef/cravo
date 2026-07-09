@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useCategories } from '../../categories/hooks/useCategoryQueries.js';
 import { ErrorState } from '../../../components/shared/ErrorState.jsx';
 import { Search, ArrowLeft } from 'lucide-react';
 import { StaggerReveal, StaggerItem, scaleIn } from '../../../components/shared/Motion.jsx';
+import { optimizeImage } from '../../../lib/cloudinary.js';
+import { SEO } from '../../../components/shared/SEO.jsx';
 
 export const CategoriesPage = () => {
   const { data: catData, isLoading, isError, refetch } = useCategories();
@@ -13,9 +15,9 @@ export const CategoriesPage = () => {
   const categories = catData?.data?.categories || [];
 
   // Filter categories by search query
-  const filteredCategories = categories.filter(category =>
+  const filteredCategories = useMemo(() => categories.filter(category =>
     category.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ), [categories, searchQuery]);
 
   if (isError) {
     return (
@@ -25,8 +27,43 @@ export const CategoriesPage = () => {
     );
   }
 
+  // JSON-LD Schemas
+  const schemas = [
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "All Categories",
+      "description": "Browse all categories on Cravo Marketplace. Shop for fresh produce, electronics, and home essentials.",
+      "url": "https://cravo.com/categories"
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://cravo.com/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Categories",
+          "item": "https://cravo.com/categories"
+        }
+      ]
+    }
+  ];
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+      <SEO 
+        title="All Categories"
+        description="Browse all categories on Cravo Marketplace. Shop for fresh produce, electronics, and home essentials."
+        url={window.location.href}
+        schema={schemas}
+      />
       
       {/* Back button & Header area */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
@@ -80,9 +117,13 @@ export const CategoriesPage = () => {
                   {/* Rounded image with borders and shadow */}
                   <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-[3px] border-white shadow-md flex items-center justify-center p-0.5 bg-gray-50 relative group-hover:scale-[1.03] transition-transform duration-300">
                     <img 
-                      src={category.imageUrl || '/grocery-bag.png'} 
-                      alt={category.name} 
+                      src={optimizeImage(category.imageUrl, 300) || '/grocery-bag.png'} 
+                      alt={`${category.name} Category`} 
+                      title={`Shop for ${category.name}`}
                       className="w-full h-full object-cover rounded-full" 
+                      loading="lazy"
+                      width="112"
+                      height="112"
                     />
                   </div>
                   

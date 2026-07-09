@@ -10,6 +10,26 @@ export const productVariantRepository = {
   async findById(id) {
     return prisma.productVariant.findUnique({ where: { id } });
   },
+  async findByIdWithProduct(id) {
+    return prisma.productVariant.findUnique({
+      where: { id },
+      include: { product: true }
+    });
+  },
+  async findByIdWithFullProductDetails(id) {
+    return prisma.productVariant.findUnique({
+      where: { id },
+      include: {
+        product: {
+          include: {
+            images: { orderBy: { sortOrder: 'asc' }, take: 1 },
+            category: true,
+            shop: true
+          }
+        }
+      }
+    });
+  },
   async update(id, data, tx = prisma) {
     return tx.productVariant.update({ where: { id }, data });
   },

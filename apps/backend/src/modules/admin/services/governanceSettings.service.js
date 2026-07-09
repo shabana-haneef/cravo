@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { logger } from '../../../shared/services/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,6 +22,22 @@ const DEFAULT_SETTINGS = {
   allowNewProductSubmissions: true
 };
 
+import { z } from 'zod';
+
+const governanceSettingsSchema = z.object({
+  requireSellerApproval: z.boolean(),
+  requireSellerDocumentVerification: z.boolean(),
+  allowSellerReapplication: z.boolean(),
+  requireProductApproval: z.boolean(),
+  reapproveAfterProductUpdate: z.boolean(),
+  allowProductDrafts: z.boolean(),
+  requireEmailVerification: z.boolean(),
+  blockSuspendedUsers: z.boolean(),
+  allowNewCustomerRegistrations: z.boolean(),
+  allowNewSellerApplications: z.boolean(),
+  allowNewProductSubmissions: z.boolean()
+}).strict();
+
 export const governanceSettingsService = {
   async get() {
     try {
@@ -31,37 +48,35 @@ export const governanceSettingsService = {
         await this.save(DEFAULT_SETTINGS);
         return DEFAULT_SETTINGS;
       }
-      console.error('Failed to read governance settings file:', error);
+      logger.error({ err: error }, 'Failed to read governance settings file');
       return DEFAULT_SETTINGS;
     }
   },
 
   async save(settings) {
     try {
+      const parsed = governanceSettingsSchema.parse(settings);
       const dir = path.dirname(SETTINGS_FILE);
       await fs.mkdir(dir, { recursive: true });
-      await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
-      return settings;
+      await fs.writeFile(SETTINGS_FILE, JSON.stringify(parsed, null, 2), 'utf-8');
+      return parsed;
     } catch (error) {
-      console.error('Failed to save governance settings file:', error);
+      logger.error({ err: error }, 'Failed to save governance settings file');
       throw error;
     }
   },
 
   validate(settings) {
-    // All parameters are booleans, so simple check
-    const errors = [];
-    const fields = Object.keys(DEFAULT_SETTINGS);
-
-    for (const field of fields) {
-      if (typeof settings[field] !== 'boolean') {
-        errors.push(`Field '${field}' must be a boolean value.`);
-      }
+    const parsed = governanceSettingsSchema.safeParse(settings);
+    if (!parsed.success) {
+      return {
+        isValid: false,
+        errors: parsed.error.errors.map(e => e.message)
+      };
     }
-
     return {
-      isValid: errors.length === 0,
-      errors
+      isValid: true,
+      errors: []
     };
   }
 };

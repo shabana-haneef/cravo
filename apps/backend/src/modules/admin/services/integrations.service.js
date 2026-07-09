@@ -2,6 +2,7 @@ import prisma from '../../../lib/prisma.js';
 import { redis } from '../../../config/redis.js';
 import axios from 'axios';
 import { v2 as cloudinary } from 'cloudinary';
+import { logger } from '../../../shared/services/logger.js';
 
 // Simple in-memory cache for health results (30 seconds)
 let diagnosticsCache = null;
@@ -21,7 +22,7 @@ export const integrationsService = {
         }
       });
     } catch (e) {
-      console.error('Failed to write integration log:', e);
+      logger.error({ err: e }, 'Failed to write integration log');
     }
   },
 

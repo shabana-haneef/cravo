@@ -9,6 +9,7 @@ import { env } from '../../../config/env.js';
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { profileRepository } from '../../users/repositories/profile.repository.js';
+import { auditLogService } from '../../admin/services/auditLog.service.js';
 import prisma from '../../../lib/prisma.js';
 
 // Utility to quickly hash refresh tokens for DB storage without bcrypt overhead
@@ -271,13 +272,9 @@ export const authService = {
     if (user) {
       // Account linking
       if (!user.googleId) {
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: { googleId: payload.sub }
-        });
+        user = await userRepository.update(user.id, { googleId: payload.sub });
         
-        await prisma.auditLog.create({
-          data: {
+        await auditLogService.log({
             actionType: "ACCOUNT_LINKED_GOOGLE",
             actorId: user.id,
             actorEmail: user.email,
@@ -286,7 +283,6 @@ export const authService = {
             targetId: user.id,
             ipAddress: "System",
             userAgent: "GoogleAuthService",
-          }
         });
       }
       
@@ -294,19 +290,16 @@ export const authService = {
       if (user.status === 'INACTIVE') throw new AppError("Your account is inactive", 403);
     } else {
       // New user creation
-      user = await prisma.user.create({
-        data: {
-          email: payload.email,
-          passwordHash: null,
-          role: 'CUSTOMER',
-          status: 'ACTIVE',
-          googleId: payload.sub,
-          isEmailVerified: true
-        }
+      user = await userRepository.create({
+        email: payload.email,
+        passwordHash: null,
+        role: 'CUSTOMER',
+        status: 'ACTIVE',
+        googleId: payload.sub,
+        isEmailVerified: true
       });
       
-      await prisma.auditLog.create({
-        data: {
+      await auditLogService.log({
           actionType: "GOOGLE_REGISTRATION",
           actorId: user.id,
           actorEmail: user.email,
@@ -315,7 +308,6 @@ export const authService = {
           targetId: user.id,
           ipAddress: "System",
           userAgent: "GoogleAuthService",
-        }
       });
     }
 

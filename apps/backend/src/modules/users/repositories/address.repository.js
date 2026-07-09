@@ -14,6 +14,7 @@ export const addressRepository = {
   async findByUserId(userId) {
     return prisma.address.findMany({
       where: { userId },
+      take: 20, // Hard limit to prevent unbounded array DoS
       orderBy: [
         { isDefault: 'desc' },
         { createdAt: 'desc' }

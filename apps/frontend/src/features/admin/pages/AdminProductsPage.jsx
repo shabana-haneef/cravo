@@ -186,17 +186,35 @@ const ReviewModal = React.memo(({ product, onClose, onApprove, onReject }) => {
                     <span className="font-medium text-gray-900">{product.category?.name || '—'}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-gray-500">Weight:</span>
+                    <span className="font-medium text-gray-900">
+                      {product.variants?.length > 0
+                        ? [...new Set(product.variants.map(v => v.weight).filter(Boolean))].map(w => `${w}g`).join(', ') || '—'
+                        : '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-gray-500">Status:</span>
                     {STATUS_BADGE[product.status]}
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Submitted:</span>
-                    <span className="font-medium text-gray-900">{new Date(product.createdAt).toLocaleDateString()}</span>
+                    <span className="font-medium text-gray-900">
+                      {new Date(product.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
                   </div>
                   {lowestVariant && (
                     <div className="flex justify-between">
                       <span className="text-gray-500">Price from:</span>
                       <span className="font-semibold text-gray-900">₹{lowestVariant.price.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {product.labelImageUrl && (
+                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
+                      <span className="text-gray-500">Label/Back Image:</span>
+                      <a href={product.labelImageUrl} target="_blank" rel="noreferrer" className="block w-12 h-12 rounded border border-gray-300 overflow-hidden hover:opacity-80 transition-opacity">
+                        <img src={product.labelImageUrl} alt="Label" className="w-full h-full object-cover" />
+                      </a>
                     </div>
                   )}
                 </div>

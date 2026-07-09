@@ -2,11 +2,11 @@ import { v2 as cloudinary } from 'cloudinary';
 import { env } from '../../config/env.js';
 import streamifier from 'streamifier';
 
-// Initialize with fallback dummy values for local dev to prevent crashes
+// Initialize with validated keys from env
 cloudinary.config({
-  cloud_name: env.CLOUDINARY_CLOUD_NAME || 'dummy_cloud',
-  api_key: env.CLOUDINARY_API_KEY || 'dummy_key',
-  api_secret: env.CLOUDINARY_API_SECRET || 'dummy_secret',
+  cloud_name: env.CLOUDINARY_CLOUD_NAME,
+  api_key: env.CLOUDINARY_API_KEY,
+  api_secret: env.CLOUDINARY_API_SECRET,
 });
 
 export const cloudinaryService = {
@@ -18,13 +18,6 @@ export const cloudinaryService = {
    */
   uploadBuffer(buffer, folder) {
     return new Promise((resolve, reject) => {
-      // In local dev without real keys, just mock the success so we don't block workflow
-      if (env.CLOUDINARY_CLOUD_NAME === 'dummy_cloud' || !env.CLOUDINARY_CLOUD_NAME) {
-        return resolve({
-          secure_url: `https://dummyimage.com/600x400/000/fff&text=Dummy+Upload`,
-          public_id: `dummy_${Date.now()}`
-        });
-      }
 
       const uploadStream = cloudinary.uploader.upload_stream(
         { folder, resource_type: 'auto' },

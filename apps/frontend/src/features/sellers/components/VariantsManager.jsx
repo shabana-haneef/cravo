@@ -2,7 +2,7 @@ import React from 'react';
 import { useFieldArray } from 'react-hook-form';
 import { Plus, Trash2, Tag, Layers } from 'lucide-react';
 
-export const VariantsManager = ({ control, register, errors }) => {
+export const VariantsManager = ({ control, register, errors, watch, setValue }) => {
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'variants',
@@ -50,54 +50,83 @@ export const VariantsManager = ({ control, register, errors }) => {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="flex flex-col gap-4">
                 {/* Variant Name */}
-                <div className="lg:col-span-2">
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Variant Name (e.g., 500g, Large)</label>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Variant Label (What customers see, e.g. "500g Pack")</label>
                   <input
                     {...register(`variants.${index}.variantName`)}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#1E3A2B] focus:ring-1 focus:ring-[#1E3A2B]/30 outline-none"
-                    placeholder="e.g. 1 Kg"
+                    placeholder="e.g. 500g Pack"
                   />
                   {variantErrors.variantName && <p className="text-xs text-red-500 mt-1">{variantErrors.variantName.message}</p>}
                 </div>
 
-                {/* Price */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Price (₹)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    {...register(`variants.${index}.price`)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#1E3A2B] focus:ring-1 focus:ring-[#1E3A2B]/30 outline-none"
-                    placeholder="0.00"
-                  />
-                  {variantErrors.price && <p className="text-xs text-red-500 mt-1">{variantErrors.price.message}</p>}
+                {/* Price Row */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Price */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Price (₹)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      {...register(`variants.${index}.price`)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#1E3A2B] focus:ring-1 focus:ring-[#1E3A2B]/30 outline-none"
+                      placeholder="0.00"
+                    />
+                    {variantErrors.price && <p className="text-xs text-red-500 mt-1">{variantErrors.price.message}</p>}
+                  </div>
+
+                  {/* Compare at Price */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Compare at Price (₹)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      {...register(`variants.${index}.compareAtPrice`)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#1E3A2B] focus:ring-1 focus:ring-[#1E3A2B]/30 outline-none"
+                      placeholder="Optional"
+                    />
+                    {variantErrors.compareAtPrice && <p className="text-xs text-red-500 mt-1">{variantErrors.compareAtPrice.message}</p>}
+                  </div>
                 </div>
 
-                {/* Compare at Price */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Compare at Price (₹)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    {...register(`variants.${index}.compareAtPrice`)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#1E3A2B] focus:ring-1 focus:ring-[#1E3A2B]/30 outline-none"
-                    placeholder="Optional"
-                  />
-                  {variantErrors.compareAtPrice && <p className="text-xs text-red-500 mt-1">{variantErrors.compareAtPrice.message}</p>}
-                </div>
+                {/* Stock & Weight Row */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Initial Stock */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Available Stock</label>
+                    <input
+                      type="number"
+                      {...register(`variants.${index}.initialStock`)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#1E3A2B] focus:ring-1 focus:ring-[#1E3A2B]/30 outline-none"
+                      placeholder="0"
+                    />
+                    {variantErrors.initialStock && <p className="text-xs text-red-500 mt-1">{variantErrors.initialStock.message}</p>}
+                  </div>
 
-                {/* Initial Stock */}
-                <div className="lg:col-span-2">
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Available Stock (Quantity)</label>
-                  <input
-                    type="number"
-                    {...register(`variants.${index}.initialStock`)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#1E3A2B] focus:ring-1 focus:ring-[#1E3A2B]/30 outline-none"
-                    placeholder="0"
-                  />
-                  {variantErrors.initialStock && <p className="text-xs text-red-500 mt-1">{variantErrors.initialStock.message}</p>}
+                  {/* Weight */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Actual Weight (in grams)</label>
+                    <input
+                      type="number"
+                      {...register(`variants.${index}.weight`, {
+                        onChange: (e) => {
+                          if (watch && setValue) {
+                            const val = e.target.value;
+                            const currentName = watch(`variants.${index}.variantName`);
+                            if (!currentName && val) {
+                              setValue(`variants.${index}.variantName`, `${val}g`, { shouldValidate: true });
+                            }
+                          }
+                        }
+                      })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#1E3A2B] focus:ring-1 focus:ring-[#1E3A2B]/30 outline-none"
+                      placeholder="e.g. 500"
+                    />
+                    <p className="text-[11px] text-gray-500 mt-1">Number only (used by Delhivery).</p>
+                    {variantErrors.weight && <p className="text-xs text-red-500 mt-1">{variantErrors.weight.message}</p>}
+                  </div>
                 </div>
               </div>
             </div>

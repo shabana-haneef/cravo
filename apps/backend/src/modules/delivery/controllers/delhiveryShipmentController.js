@@ -1,7 +1,7 @@
 import { delhiveryShipmentService } from '../services/delhiveryShipmentService.js';
-import prisma from '../lib/prisma.js';
-import { logger } from '../shared/services/logger.js';
-import { AppError } from '../shared/errors/AppError.js';
+import prisma from '../../../lib/prisma.js';
+import { logger } from '../../../shared/services/logger.js';
+import { AppError } from '../../../shared/errors/AppError.js';
 
 export const delhiveryShipmentController = {
   async createShipment(req, res, next) {
@@ -117,6 +117,18 @@ export const delhiveryShipmentController = {
         };
         const updatedLogs = [...currentLogs, newLogEntry];
 
+        // Dual-Write to Relational Table
+        await tx.orderShipmentLog.create({
+          data: {
+            orderId,
+            event: newLogEntry.event,
+            timestamp: new Date(newLogEntry.timestamp),
+            awbNumber: newLogEntry.awbNumber,
+            shipmentId: newLogEntry.shipmentId,
+            remarks: newLogEntry.remarks
+          }
+        });
+
         return tx.order.update({
           where: { id: orderId },
           data: {
@@ -154,9 +166,21 @@ export const delhiveryShipmentController = {
               error: error.message || 'Unknown Error'
             };
             const updatedLogs = [...currentLogs, errorLogEntry];
-            await prisma.order.update({
-              where: { id: orderId },
-              data: { shipmentLogs: updatedLogs }
+            
+            await prisma.$transaction(async (tx) => {
+              await tx.orderShipmentLog.create({
+                data: {
+                  orderId,
+                  event: errorLogEntry.event,
+                  timestamp: new Date(errorLogEntry.timestamp),
+                  error: errorLogEntry.error
+                }
+              });
+              
+              await tx.order.update({
+                where: { id: orderId },
+                data: { shipmentLogs: updatedLogs }
+              });
             });
           }
         }

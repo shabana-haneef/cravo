@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { 
@@ -40,38 +40,48 @@ export const ProductsDashboardPage = () => {
   }, [searchParams, setSearchParams]);
 
   // Map backend products
-  const products = (prodData?.products || []).map(p => ({
-    id: p.id,
-    name: p.name,
-    sku: p.variants?.[0]?.sku || 'N/A',
-    category: p.category || { name: 'Uncategorized' },
-    status: p.status,
-    variants: p.variants || [],
-    totalStock: p.variants?.reduce((sum, v) => sum + (v.inventory?.availableStock || 0), 0) || 0,
-    price: p.variants?.[0]?.price || 0,
-    image: p.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1560806887-1e4cd0b6fac6?auto=format&fit=crop&q=80&w=150'
-  }));
+  const products = useMemo(() => {
+    return (prodData?.products || []).map(p => ({
+      id: p.id,
+      name: p.name,
+      sku: p.variants?.[0]?.sku || 'N/A',
+      category: p.category || { name: 'Uncategorized' },
+      status: p.status,
+      variants: p.variants || [],
+      totalStock: p.variants?.reduce((sum, v) => sum + (v.inventory?.availableStock || 0), 0) || 0,
+      price: p.variants?.[0]?.price || 0,
+      image: p.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1560806887-1e4cd0b6fac6?auto=format&fit=crop&q=80&w=150'
+    }));
+  }, [prodData?.products]);
 
-  const total = products.length;
-  const approved = products.filter(p => p.status === 'APPROVED').length;
-  const pending = products.filter(p => p.status === 'PENDING' || p.status === 'PENDING_APPROVAL').length;
-  const rejected = products.filter(p => p.status === 'REJECTED').length;
+  const stats = useMemo(() => {
+    return {
+      total: products.length,
+      approved: products.filter(p => p.status === 'APPROVED').length,
+      pending: products.filter(p => p.status === 'PENDING' || p.status === 'PENDING_APPROVAL').length,
+      rejected: products.filter(p => p.status === 'REJECTED').length
+    };
+  }, [products]);
 
-  const filteredProducts = products.filter(p => {
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      const nameMatch = p.name.toLowerCase().includes(term);
-      const skuMatch = p.sku.toLowerCase().includes(term);
-      if (!nameMatch && !skuMatch) return false;
-    }
-    if (filterCategory !== 'ALL') {
-      if (p.category?.id !== filterCategory && p.category?.slug !== filterCategory) return false;
-    }
-    if (filterStatus !== 'ALL') {
-      if (p.status !== filterStatus) return false;
-    }
-    return true;
-  });
+  const { total, approved, pending, rejected } = stats;
+
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => {
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const nameMatch = p.name.toLowerCase().includes(term);
+        const skuMatch = p.sku.toLowerCase().includes(term);
+        if (!nameMatch && !skuMatch) return false;
+      }
+      if (filterCategory !== 'ALL') {
+        if (p.category?.id !== filterCategory && p.category?.slug !== filterCategory) return false;
+      }
+      if (filterStatus !== 'ALL') {
+        if (p.status !== filterStatus) return false;
+      }
+      return true;
+    });
+  }, [products, searchTerm, filterCategory, filterStatus]);
 
   const visibleProducts = showAllRows ? filteredProducts : filteredProducts.slice(0, 4);
 
@@ -332,6 +342,13 @@ export const ProductsDashboardPage = () => {
                       <span className="text-gray-900 font-semibold">₹{product.price}</span>
                     </td>
                     <td className="px-6 py-4 text-right flex justify-end gap-2">
+                      <Link
+                        to={`/seller/products/${product.id}/edit`}
+                        className="p-1.5 text-gray-400 hover:text-[#1E3A2B] hover:bg-[#f0fdf4] rounded transition-colors"
+                        title="Edit Product"
+                      >
+                        <Edit2 size={16} />
+                      </Link>
                       <button
                         onClick={() => handleDeleteClick(product.id)}
                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"

@@ -4,7 +4,8 @@ export const checkoutSchema = z.object({
   addressId: z.string().cuid("Invalid address ID"),
   buyNow: z.boolean().optional(),
   variantId: z.string().optional(),
-  quantity: z.number().int().positive().optional()
+  quantity: z.number().int().positive().optional(),
+  unselectedItemIds: z.array(z.string()).optional()
 });
 
 export const verifyPaymentSchema = z.object({

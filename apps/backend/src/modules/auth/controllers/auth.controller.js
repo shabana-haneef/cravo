@@ -11,6 +11,7 @@ import {
 import { successResponse, errorResponse } from '../../../shared/responses/apiResponse.js';
 import { governanceSettingsService } from '../../admin/services/governanceSettings.service.js';
 import { logger } from '../../../shared/services/logger.js';
+import { z } from 'zod';
 
 const cookieOptions = {
   httpOnly: true,
@@ -167,9 +168,13 @@ export const authController = {
 
   async googleAuth(req, res, next) {
     try {
-      const { token } = req.body;
-      if (!token) return errorResponse(res, "Google token is required", 400);
+      const googleAuthSchema = z.object({
+        token: z.string().min(1, "Google token is required")
+      });
+      const parsed = googleAuthSchema.safeParse(req.body);
+      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
 
+      const { token } = parsed.data;
       const { user, accessToken, refreshToken } = await authService.continueWithGoogle(token);
 
       logger.info({ userId: user.id }, 'User logged in via Google successfully');
@@ -184,8 +189,12 @@ export const authController = {
 
   async refreshToken(req, res, next) {
     try {
-      let token = req.cookies?.refreshToken || req.body?.refreshToken;
-      if (!token) return errorResponse(res, "Refresh token is required", 401);
+      const parsed = refreshTokenSchema.safeParse({ refreshToken: req.cookies?.refreshToken || req.body?.refreshToken });
+      if (!parsed.success || !parsed.data.refreshToken) {
+        return errorResponse(res, "Refresh token is required", 401);
+      }
+      
+      const { refreshToken: token } = parsed.data;
 
       const { accessToken, refreshToken } = await authService.refreshToken(token);
 
@@ -201,8 +210,12 @@ export const authController = {
 
   async logout(req, res, next) {
     try {
-      let token = req.cookies?.refreshToken || req.body?.refreshToken;
-      await authService.logout(token);
+      const parsed = refreshTokenSchema.safeParse({ refreshToken: req.cookies?.refreshToken || req.body?.refreshToken });
+      const token = parsed.success ? parsed.data.refreshToken : undefined;
+      
+      if (token) {
+        await authService.logout(token);
+      }
       res.clearCookie('refreshToken');
       
       logger.info('User logged out successfully');

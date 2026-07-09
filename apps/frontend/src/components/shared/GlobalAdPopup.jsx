@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ExternalLink } from 'lucide-react';
 import { api } from '../../lib/axios.js';
+import { optimizeImage } from '../../lib/cloudinary.js';
 
 export const GlobalAdPopup = () => {
   const [activeAds, setActiveAds] = useState([]);
@@ -64,7 +65,7 @@ export const GlobalAdPopup = () => {
             <AnimatePresence mode="wait">
               <motion.img
                 key={currentAd.id}
-                src={currentAd.imageUrl}
+                src={optimizeImage(currentAd.imageUrl, 500)}
                 alt={currentAd.title}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

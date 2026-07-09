@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { logger } from '../shared/services/logger.js';
-import { AppError } from '../shared/errors/AppError.js';
-import { redis } from '../config/redis.js';
+import { logger } from '../../../shared/services/logger.js';
+import { AppError } from '../../../shared/errors/AppError.js';
+import { redis } from '../../../config/redis.js';
 
 // Dynamic helpers — read process.env at call time (after dotenv has loaded)
 const getToken = () => process.env.DELHIVERY_API_TOKEN || process.env.DELHIVERY_API_KEY;
@@ -72,7 +72,8 @@ export const delhiveryService = {
    */
   async checkServiceability(pincode) {
     if (!getToken()) {
-      throw new AppError('Delhivery API token is not configured in backend.', 500);
+      logger.warn('Delhivery API token is not configured. Bypassing serviceability check for local testing.');
+      return { success: true, deliverable: true, pincode, fallback: true };
     }
     const delhiveryClient = createDelhiveryClient();
 
@@ -134,7 +135,6 @@ export const delhiveryService = {
         logger.warn({ err: err.message }, 'Failed to write to Redis cache.');
       }
 
-      // 5. Save to local fallback cache
       memoryCache.set(pincode, {
         timestamp: Date.now(),
         data: result
@@ -146,5 +146,48 @@ export const delhiveryService = {
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to verify serviceability with Delhivery API', 500);
     }
+  },
+
+  /**
+   * Phase 3: Shipping Rate Calculator
+   * Calculates live shipping rates from Delhivery API.
+   * Falls back to a safe default if API fails.
+   * @param {string} originPincode
+   * @param {string} destPincode
+   * @param {number} weightGrams
+   * @param {number} fallbackDefaultCharge
+   * @returns {Promise<number>}
+   */
+  async calculateShippingCharge(originPincode, destPincode, weightGrams, fallbackDefaultCharge = 50) {
+    if (!getToken()) {
+      logger.warn('Delhivery API token is not configured. Falling back to default delivery charge.');
+      return fallbackDefaultCharge;
+    }
+
+    const delhiveryClient = createDelhiveryClient();
+    try {
+      // Delhivery Rate Calculator API: GET /api/kinko/v1/invoice/charges/.json
+      const response = await delhiveryClient.get('/api/kinko/v1/invoice/charges/.json', {
+        params: {
+          md: 'S', // S for Surface, E for Express
+          ss: 'Delivered',
+          o_pin: originPincode,
+          d_pin: destPincode,
+          cgm: weightGrams
+        }
+      });
+
+      if (response.data && response.data.length > 0 && response.data[0].total_amount) {
+        return Math.ceil(response.data[0].total_amount);
+      }
+      
+      logger.warn({ data: response.data }, 'Delhivery rate API returned unexpected format. Falling back to default charge.');
+      return fallbackDefaultCharge;
+
+    } catch (error) {
+      logger.error({ message: error.message, originPincode, destPincode, weightGrams }, 'Delhivery rate calculation failed. Falling back to default charge.');
+      return fallbackDefaultCharge;
+    }
   }
 };
+

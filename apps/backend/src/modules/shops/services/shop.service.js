@@ -111,10 +111,7 @@ export const shopService = {
     });
 
     if (Object.keys(sellerPickupUpdates).length > 0) {
-      await prisma.seller.update({
-        where: { id: seller.id },
-        data: sellerPickupUpdates
-      });
+      await sellerRepository.update(seller.id, sellerPickupUpdates);
     }
 
     const uploadTasks = [];

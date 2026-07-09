@@ -89,14 +89,10 @@ export const adminUserController = {
 
       logger.info({ adminId: req.user.id, targetUserId: user.id, newStatus: user.status }, 'User status updated by admin with seller/shop cascade');
       
-      await auditLogService.log({
-        adminId: req.user.id,
-        adminEmail: req.user.email,
-        action: targetStatus === 'SUSPENDED' ? 'USER_SUSPENSION' : targetStatus === 'ACTIVE' ? 'USER_ACTIVATION' : 'USER_STATUS_CHANGE',
+      await auditLogService.logFromRequest(req, {
+        actionType: targetStatus === 'SUSPENDED' ? 'USER_SUSPENSION' : targetStatus === 'ACTIVE' ? 'USER_ACTIVATION' : 'USER_STATUS_CHANGE',
         targetType: 'USER',
-        targetId: user.id,
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent']
+        targetId: user.id
       });
 
       const { passwordHash, ...safeUser } = user;

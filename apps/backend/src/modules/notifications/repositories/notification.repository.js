@@ -5,7 +5,8 @@ export const notificationRepository = {
     return prisma.notification.create({ data });
   },
 
-  async findByUserId(userId, page = 1, limit = 20) {
+  async findByUserId(userId, page = 1, requestedLimit = 20) {
+    const limit = Math.min(Number(requestedLimit) || 20, 100);
     const skip = (page - 1) * limit;
     const where = { userId };
 

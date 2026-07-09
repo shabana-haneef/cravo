@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { logger } from '../../../shared/services/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +38,41 @@ const DEFAULT_SETTINGS = {
   maxAddressModificationWindowMins: 30
 };
 
+import { z } from 'zod';
+
+const deliverySettingsSchema = z.object({
+  enableDeliveryOrders: z.boolean(),
+  enablePickupOrders: z.boolean(),
+  enableScheduledDeliveries: z.boolean(),
+  restrictOutsideKerala: z.boolean(),
+  allowFutureStateExpansion: z.boolean(),
+  enableDeliveryCharges: z.boolean(),
+  defaultDeliveryCharge: z.number().min(0, 'Default Delivery Charge must be between ₹0 and ₹1000.').max(1000),
+  freeDeliveryThreshold: z.number().min(0, 'Free Delivery Threshold must be a non-negative number.'),
+  allowPromotionalFreeDelivery: z.boolean(),
+  expectedDispatchTime: z.string(),
+  standardDeliveryTime: z.string(),
+  remoteAreaDeliveryTime: z.string(),
+  displayEstimatesToCustomers: z.boolean(),
+  defaultSellerPrepTime: z.string(),
+  maxSellerPrepTime: z.string(),
+  autoCancelUnfulfilledOrders: z.boolean(),
+  autoCancelWindowDays: z.number().min(1, 'Auto Cancel Window must be at least 1 day.').optional(),
+  autoCreateShipment: z.boolean(),
+  autoSyncTracking: z.boolean(),
+  trackingSyncIntervalMins: z.number().min(5, 'Tracking Sync Interval must be between 5 minutes and 24 hours (1440 minutes).').max(1440),
+  enablePickupVerification: z.boolean(),
+  requirePickupOtp: z.boolean(),
+  pickupExpiryWindowHours: z.number().min(1, 'Pickup Expiry Window must be at least 1 hour.'),
+  requireVerifiedAddress: z.boolean(),
+  requireDefaultAddress: z.boolean(),
+  allowAddressChanges: z.boolean(),
+  maxAddressModificationWindowMins: z.number().min(1, 'Maximum Address Modification Window must be at least 1 minute.').optional()
+}).strict()
+.refine(data => data.freeDeliveryThreshold > data.defaultDeliveryCharge, {
+  message: "Free Delivery Threshold must be greater than the Default Delivery Charge."
+});
+
 export const deliverySettingsService = {
   async get() {
     try {
@@ -47,64 +83,36 @@ export const deliverySettingsService = {
         await this.save(DEFAULT_SETTINGS);
         return DEFAULT_SETTINGS;
       }
-      console.error('Failed to read delivery settings file:', error);
+      logger.error({ err: error }, 'Failed to read delivery settings file');
       return DEFAULT_SETTINGS;
     }
   },
 
   async save(settings) {
     try {
+      // Validate and parse through Zod to drop arbitrary keys and enforce types
+      const parsed = deliverySettingsSchema.parse(settings);
       const dir = path.dirname(SETTINGS_FILE);
       await fs.mkdir(dir, { recursive: true });
-      await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
-      return settings;
+      await fs.writeFile(SETTINGS_FILE, JSON.stringify(parsed, null, 2), 'utf-8');
+      return parsed;
     } catch (error) {
-      console.error('Failed to save delivery settings file:', error);
+      logger.error({ err: error }, 'Failed to save delivery settings file');
       throw error;
     }
   },
 
   validate(settings) {
-    const errors = [];
-
-    // Delivery charges and thresholds
-    if (typeof settings.defaultDeliveryCharge !== 'number' || settings.defaultDeliveryCharge < 0 || settings.defaultDeliveryCharge > 1000) {
-      errors.push('Default Delivery Charge must be between ₹0 and ₹1000.');
+    const parsed = deliverySettingsSchema.safeParse(settings);
+    if (!parsed.success) {
+      return {
+        isValid: false,
+        errors: parsed.error.errors.map(e => e.message)
+      };
     }
-
-    if (typeof settings.freeDeliveryThreshold !== 'number' || settings.freeDeliveryThreshold < 0) {
-      errors.push('Free Delivery Threshold must be a non-negative number.');
-    }
-
-    if (settings.freeDeliveryThreshold <= settings.defaultDeliveryCharge) {
-      errors.push('Free Delivery Threshold must be greater than the Default Delivery Charge.');
-    }
-
-    // Tracking Sync Interval (5 Minutes - 24 Hours)
-    if (typeof settings.trackingSyncIntervalMins !== 'number' || settings.trackingSyncIntervalMins < 5 || settings.trackingSyncIntervalMins > 1440) {
-      errors.push('Tracking Sync Interval must be between 5 minutes and 24 hours (1440 minutes).');
-    }
-
-    // Prepare prep/cancellation times are positive numbers where applicable
-    if (settings.autoCancelUnfulfilledOrders) {
-      if (typeof settings.autoCancelWindowDays !== 'number' || settings.autoCancelWindowDays < 1) {
-        errors.push('Auto Cancel Window must be at least 1 day.');
-      }
-    }
-
-    if (settings.allowAddressChanges) {
-      if (typeof settings.maxAddressModificationWindowMins !== 'number' || settings.maxAddressModificationWindowMins < 1) {
-        errors.push('Maximum Address Modification Window must be at least 1 minute.');
-      }
-    }
-
-    if (typeof settings.pickupExpiryWindowHours !== 'number' || settings.pickupExpiryWindowHours < 1) {
-      errors.push('Pickup Expiry Window must be at least 1 hour.');
-    }
-
     return {
-      isValid: errors.length === 0,
-      errors
+      isValid: true,
+      errors: []
     };
   }
 };

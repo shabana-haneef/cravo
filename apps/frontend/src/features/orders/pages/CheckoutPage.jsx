@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { api } from '../../../lib/axios.js';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -162,7 +162,14 @@ export const CheckoutPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [serviceability, setServiceability] = useState({ checked: false, deliverable: false, checking: false, error: null });
 
-  const previewParams = buyNow ? { buyNow: true, variantId, quantity } : {};
+  const location = useLocation();
+  const unselectedItemIds = location.state?.unselectedItemIds || [];
+
+  const previewParams = {
+    ...(buyNow ? { buyNow: true, variantId, quantity } : {}),
+    ...(selectedAddressId ? { addressId: selectedAddressId } : {}),
+    ...(unselectedItemIds.length > 0 ? { unselectedItemIds: unselectedItemIds.join(',') } : {})
+  };
   const { 
     data: previewResponse, 
     isLoading: loadingPreview,
@@ -246,7 +253,8 @@ export const CheckoutPage = () => {
 
     const orderPayload = {
       addressId: selectedAddressId,
-      ...(buyNow ? { buyNow: true, variantId, quantity } : {})
+      ...(buyNow ? { buyNow: true, variantId, quantity } : {}),
+      ...(unselectedItemIds.length > 0 ? { unselectedItemIds } : {})
     };
 
     createOrder(orderPayload, {
@@ -509,7 +517,13 @@ export const CheckoutPage = () => {
               <div className="flex justify-between text-gray-600">
                 <span>Delivery Charges</span>
                 <span className="font-medium text-[#154D21]">
-                  {deliverySummary?.deliveryCharge === 0 ? 'FREE' : `₹${deliverySummary?.deliveryCharge?.toFixed(2)}`}
+                  {deliverySummary?.deliveryCharge === null ? (
+                    <span className="text-sm font-normal text-gray-400">Calculated after address selection</span>
+                  ) : deliverySummary?.deliveryCharge === 0 ? (
+                    'FREE'
+                  ) : (
+                    `₹${deliverySummary?.deliveryCharge?.toFixed(2)}`
+                  )}
                 </span>
               </div>
             </div>

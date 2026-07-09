@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { logger } from '../../../shared/services/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,6 +36,39 @@ const DEFAULT_SETTINGS = {
   blockOrdersWithInsufficientStock: true
 };
 
+import { z } from 'zod';
+
+const inventorySettingsSchema = z.object({
+  enableLowStockAlerts: z.boolean(),
+  defaultLowStockThreshold: z.number().min(1, 'Default Low Stock Threshold must be between 1 and 1000.').max(1000),
+  criticalStockThreshold: z.number().min(0, 'Critical Stock Threshold must be a non-negative number.'),
+  enableStockReservation: z.boolean(),
+  reservationExpiryTime: z.number().min(1, 'Reservation Expiry Time must be between 1 and 1440 minutes.').max(1440),
+  autoReleaseExpiredReservations: z.boolean(),
+  allowPurchaseWhenOutOfStock: z.boolean(),
+  showOutOfStockProducts: z.boolean(),
+  hideProductsAfterStockReachesZero: z.boolean(),
+  allowSellerInventoryUpdates: z.boolean(),
+  requireInventoryChangeLogging: z.boolean(),
+  requireReasonForManualAdjustment: z.boolean(),
+  trackVariantInventorySeparately: z.boolean(),
+  preventOversellingVariants: z.boolean(),
+  requireVariantStockBeforeListing: z.boolean(),
+  enableLowStockNotifications: z.boolean(),
+  enableCriticalStockNotifications: z.boolean(),
+  notificationFrequency: z.enum(['Instant', 'Daily', 'Weekly'], { errorMap: () => ({ message: "Notification Frequency must be one of: 'Instant', 'Daily', 'Weekly'." }) }),
+  enableInventoryLogs: z.boolean(),
+  logRetentionPeriod: z.number().min(1, 'Log Retention Period must be a positive number.'),
+  validateStockBeforePaymentVerification: z.boolean(),
+  // Hardcoded rules
+  preventNegativeStock: z.boolean().optional(),
+  preventOverselling: z.boolean().optional(),
+  blockOrdersWithInsufficientStock: z.boolean().optional()
+}).strict()
+.refine(data => data.criticalStockThreshold < data.defaultLowStockThreshold, {
+  message: "Critical Stock Threshold must be lower than low stock threshold."
+});
+
 export const inventorySettingsService = {
   async get() {
     try {
@@ -53,18 +87,19 @@ export const inventorySettingsService = {
         await this.save(DEFAULT_SETTINGS);
         return DEFAULT_SETTINGS;
       }
-      console.error('Failed to read inventory settings file:', error);
+      logger.error({ err: error }, 'Failed to read inventory settings file');
       return DEFAULT_SETTINGS;
     }
   },
 
   async save(settings) {
     try {
+      const parsed = inventorySettingsSchema.parse(settings);
       const dir = path.dirname(SETTINGS_FILE);
       await fs.mkdir(dir, { recursive: true });
       // Enforce hardcoded rules upon save
       const finalSettings = {
-        ...settings,
+        ...parsed,
         preventNegativeStock: true,
         preventOverselling: true,
         blockOrdersWithInsufficientStock: true
@@ -72,103 +107,22 @@ export const inventorySettingsService = {
       await fs.writeFile(SETTINGS_FILE, JSON.stringify(finalSettings, null, 2), 'utf-8');
       return finalSettings;
     } catch (error) {
-      console.error('Failed to save inventory settings file:', error);
+      logger.error({ err: error }, 'Failed to save inventory settings file');
       throw error;
     }
   },
 
   validate(settings) {
-    const errors = [];
-
-    // Low Stock Configuration
-    if (typeof settings.enableLowStockAlerts !== 'boolean') {
-      errors.push("Field 'enableLowStockAlerts' must be a boolean.");
+    const parsed = inventorySettingsSchema.safeParse(settings);
+    if (!parsed.success) {
+      return {
+        isValid: false,
+        errors: parsed.error.errors.map(e => e.message)
+      };
     }
-    const defaultLowStockThreshold = Number(settings.defaultLowStockThreshold);
-    if (isNaN(defaultLowStockThreshold) || defaultLowStockThreshold < 1 || defaultLowStockThreshold > 1000) {
-      errors.push("Default Low Stock Threshold must be between 1 and 1000.");
-    }
-    const criticalStockThreshold = Number(settings.criticalStockThreshold);
-    if (isNaN(criticalStockThreshold) || criticalStockThreshold < 0) {
-      errors.push("Critical Stock Threshold must be a non-negative number.");
-    }
-    if (criticalStockThreshold >= defaultLowStockThreshold) {
-      errors.push("Critical Stock Threshold must be lower than low stock threshold.");
-    }
-
-    // Reservation Rules
-    if (typeof settings.enableStockReservation !== 'boolean') {
-      errors.push("Field 'enableStockReservation' must be a boolean.");
-    }
-    const reservationExpiryTime = Number(settings.reservationExpiryTime);
-    if (isNaN(reservationExpiryTime) || reservationExpiryTime < 1 || reservationExpiryTime > 1440) {
-      errors.push("Reservation Expiry Time must be between 1 and 1440 minutes.");
-    }
-    if (typeof settings.autoReleaseExpiredReservations !== 'boolean') {
-      errors.push("Field 'autoReleaseExpiredReservations' must be a boolean.");
-    }
-
-    // Out of Stock Rules
-    if (typeof settings.allowPurchaseWhenOutOfStock !== 'boolean') {
-      errors.push("Field 'allowPurchaseWhenOutOfStock' must be a boolean.");
-    }
-    if (typeof settings.showOutOfStockProducts !== 'boolean') {
-      errors.push("Field 'showOutOfStockProducts' must be a boolean.");
-    }
-    if (typeof settings.hideProductsAfterStockReachesZero !== 'boolean') {
-      errors.push("Field 'hideProductsAfterStockReachesZero' must be a boolean.");
-    }
-
-    // Seller Controls
-    if (typeof settings.allowSellerInventoryUpdates !== 'boolean') {
-      errors.push("Field 'allowSellerInventoryUpdates' must be a boolean.");
-    }
-    if (typeof settings.requireInventoryChangeLogging !== 'boolean') {
-      errors.push("Field 'requireInventoryChangeLogging' must be a boolean.");
-    }
-    if (typeof settings.requireReasonForManualAdjustment !== 'boolean') {
-      errors.push("Field 'requireReasonForManualAdjustment' must be a boolean.");
-    }
-
-    // Variant Settings
-    if (typeof settings.trackVariantInventorySeparately !== 'boolean') {
-      errors.push("Field 'trackVariantInventorySeparately' must be a boolean.");
-    }
-    if (typeof settings.preventOversellingVariants !== 'boolean') {
-      errors.push("Field 'preventOversellingVariants' must be a boolean.");
-    }
-    if (typeof settings.requireVariantStockBeforeListing !== 'boolean') {
-      errors.push("Field 'requireVariantStockBeforeListing' must be a boolean.");
-    }
-
-    // Alerts
-    if (typeof settings.enableLowStockNotifications !== 'boolean') {
-      errors.push("Field 'enableLowStockNotifications' must be a boolean.");
-    }
-    if (typeof settings.enableCriticalStockNotifications !== 'boolean') {
-      errors.push("Field 'enableCriticalStockNotifications' must be a boolean.");
-    }
-    if (!['Instant', 'Daily', 'Weekly'].includes(settings.notificationFrequency)) {
-      errors.push("Notification Frequency must be one of: 'Instant', 'Daily', 'Weekly'.");
-    }
-
-    // Transaction Logs
-    if (typeof settings.enableInventoryLogs !== 'boolean') {
-      errors.push("Field 'enableInventoryLogs' must be a boolean.");
-    }
-    const logRetentionPeriod = Number(settings.logRetentionPeriod);
-    if (isNaN(logRetentionPeriod) || logRetentionPeriod <= 0) {
-      errors.push("Log Retention Period must be a positive number.");
-    }
-
-    // Protection
-    if (typeof settings.validateStockBeforePaymentVerification !== 'boolean') {
-      errors.push("Field 'validateStockBeforePaymentVerification' must be a boolean.");
-    }
-
     return {
-      isValid: errors.length === 0,
-      errors
+      isValid: true,
+      errors: []
     };
   }
 };

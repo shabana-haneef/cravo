@@ -1,9 +1,9 @@
 import { Resend } from "resend";
+import { env } from "../../../config/env.js";
+import { AppError } from "../../../shared/errors/AppError.js";
+import { logger } from "../../../shared/services/logger.js";
 
-// Prevent server crash in local dev if RESEND_API_KEY is not set.
-// A valid key must be added to .env for emails to actually send.
-const resendApiKey = process.env.RESEND_API_KEY || 're_dummy_key_for_dev';
-const resend = new Resend(resendApiKey);
+const resend = new Resend(env.RESEND_API_KEY);
 
 export const emailService = {
   /**
@@ -11,8 +11,7 @@ export const emailService = {
    */
   async sendVerificationEmail(to, otp) {
     try {
-      console.log(`\n=========================================\n[DEV MODE] OTP for ${to}: ${otp}\n=========================================\n`);
-      await resend.emails.send({
+      const { error } = await resend.emails.send({
         from: "Cravo Security <security@cravo.example.com>", // Replace with your verified domain
         to,
         subject: "Verify your Cravo account",
@@ -27,8 +26,12 @@ export const emailService = {
           </div>
         `,
       });
+      if (error) {
+        throw new Error(error.message);
+      }
     } catch (error) {
-      console.error("Failed to send verification email via Resend:", error.message);
+      logger.error({ err: error }, "Failed to send verification email via Resend");
+      throw new AppError("Failed to send verification email. Please try again later.", 500);
     }
   },
 
@@ -37,8 +40,7 @@ export const emailService = {
    */
   async sendPasswordResetEmail(to, otp) {
     try {
-      console.log(`\n=========================================\n[DEV MODE] Password Reset OTP for ${to}: ${otp}\n=========================================\n`);
-      await resend.emails.send({
+      const { error } = await resend.emails.send({
         from: "Cravo Security <security@cravo.example.com>", // Replace with your verified domain
         to,
         subject: "Reset your Cravo password",
@@ -53,9 +55,12 @@ export const emailService = {
           </div>
         `,
       });
+      if (error) {
+        throw new Error(error.message);
+      }
     } catch (error) {
-      // Do not throw the error to prevent leaking implementation details to client
-      console.error("Failed to send password reset email via Resend:", error.message);
+      logger.error({ err: error }, "Failed to send password reset email via Resend");
+      throw new AppError("Failed to send password reset email. Please try again later.", 500);
     }
   }
 };

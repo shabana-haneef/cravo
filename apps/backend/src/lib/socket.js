@@ -1,7 +1,9 @@
 import { Server } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
 import { verifyToken } from '../shared/utils/jwt.js';
 import { env } from '../config/env.js';
 import { logger } from '../shared/services/logger.js';
+import { pubClient, subClient } from '../config/redis.js';
 
 let io = null;
 
@@ -31,7 +33,8 @@ export const initSocket = (httpServer) => {
       origin: true,
       credentials: true
     },
-    transports: ['polling', 'websocket']
+    transports: ['websocket'],
+    adapter: createAdapter(pubClient, subClient)
   });
 
   io.use((socket, next) => {

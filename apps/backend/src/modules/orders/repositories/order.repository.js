@@ -56,7 +56,8 @@ export const orderRepository = {
     });
   },
 
-  async findCustomerOrders(customerId, page = 1, limit = 20) {
+  async findCustomerOrders(customerId, page = 1, requestedLimit = 20) {
+    const limit = Math.min(Number(requestedLimit) || 20, 100);
     const skip = (page - 1) * limit;
     const where = { customerId };
     const [data, total] = await Promise.all([
@@ -71,11 +72,22 @@ export const orderRepository = {
           items: {
             include: {
               product: {
-                include: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
                   images: { orderBy: { sortOrder: 'asc' }, take: 1 }
                 }
               },
-              productVariant: true
+              productVariant: {
+                select: {
+                  id: true,
+                  name: true,
+                  sku: true,
+                  price: true,
+                  weight: true
+                }
+              }
             }
           }
         }
@@ -85,7 +97,8 @@ export const orderRepository = {
     return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   },
 
-  async findSellerOrders(shopId, page = 1, limit = 20) {
+  async findSellerOrders(shopId, page = 1, requestedLimit = 20) {
+    const limit = Math.min(Number(requestedLimit) || 20, 100);
     const skip = (page - 1) * limit;
     const where = { shopId };
     const [data, total] = await Promise.all([
@@ -100,11 +113,22 @@ export const orderRepository = {
           items: {
             include: {
               product: {
-                include: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
                   images: { orderBy: { sortOrder: 'asc' }, take: 1 }
                 }
               },
-              productVariant: true
+              productVariant: {
+                select: {
+                  id: true,
+                  name: true,
+                  sku: true,
+                  price: true,
+                  weight: true
+                }
+              }
             }
           }
         }

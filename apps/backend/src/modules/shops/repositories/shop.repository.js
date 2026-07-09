@@ -19,6 +19,23 @@ export const shopRepository = {
     });
   },
 
+  async findByUserId(userId) {
+    return prisma.shop.findFirst({
+      where: {
+        seller: {
+          userId: userId
+        }
+      }
+    });
+  },
+
+  async findByIdWithSeller(id) {
+    return prisma.shop.findUnique({
+      where: { id },
+      include: { seller: true }
+    });
+  },
+
   async findBySlug(slug) {
     return prisma.shop.findUnique({
       where: { slug },

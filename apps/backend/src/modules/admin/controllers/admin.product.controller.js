@@ -18,14 +18,10 @@ export const adminProductController = {
       const product = await productService.approveProduct(req.params.id);
       logger.info({ adminId: req.user.id, productId: product.id }, 'Product approved');
       
-      await auditLogService.log({
-        adminId: req.user.id,
-        adminEmail: req.user.email,
-        action: 'PRODUCT_APPROVAL',
+      await auditLogService.logFromRequest(req, {
+        actionType: 'PRODUCT_APPROVAL',
         targetType: 'PRODUCT',
-        targetId: product.id,
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent']
+        targetId: product.id
       });
 
       return successResponse(res, 'Product approved', { product });
@@ -41,14 +37,10 @@ export const adminProductController = {
       const product = await productService.rejectProduct(req.params.id, parsed.data.reason);
       logger.info({ adminId: req.user.id, productId: product.id }, 'Product rejected');
       
-      await auditLogService.log({
-        adminId: req.user.id,
-        adminEmail: req.user.email,
-        action: 'PRODUCT_REJECTION',
+      await auditLogService.logFromRequest(req, {
+        actionType: 'PRODUCT_REJECTION',
         targetType: 'PRODUCT',
-        targetId: product.id,
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent']
+        targetId: product.id
       });
 
       return successResponse(res, 'Product rejected', { product });

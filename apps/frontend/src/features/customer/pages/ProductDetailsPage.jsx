@@ -6,10 +6,12 @@ import { DetailsSkeleton } from '../../../components/shared/Skeletons.jsx';
 import { ErrorState } from '../../../components/shared/ErrorState.jsx';
 import { ProductCard } from '../../../components/shared/ProductCard.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
+import { optimizeImage } from '../../../lib/cloudinary.js';
 import { ChevronLeft, ChevronRight, Star, Heart, Minus, Plus, AlertCircle, Leaf, CheckCircle2, Truck, ShieldCheck, RefreshCcw, ShoppingCart, Share2, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { WishlistButton } from '../../wishlist/components/WishlistButton.jsx';
+import { SEO } from '../../../components/shared/SEO.jsx';
 
 export const ProductDetailsPage = () => {
   const { slug } = useParams();
@@ -41,7 +43,7 @@ export const ProductDetailsPage = () => {
   if (!product) return <ErrorState title="Product not found" />;
 
   const images = product.images || [];
-  const mainImageUrl = images[activeImage]?.imageUrl || 'https://via.placeholder.com/600x600?text=No+Image';
+  const mainImageUrl = optimizeImage(images[activeImage]?.imageUrl, 800) || 'https://via.placeholder.com/600x600?text=No+Image';
   
   const variants = product.variants || [];
   const selectedVariant = variants.find(v => v.id === selectedVariantId) || variants[0];
@@ -122,14 +124,78 @@ export const ProductDetailsPage = () => {
     }
   };
 
+  // JSON-LD Schema
+  const schemas = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": product.name,
+      "image": [mainImageUrl],
+      "description": product.shortDescription || product.description || product.name,
+      "brand": {
+        "@type": "Brand",
+        "name": product.brand || "Cravo Marketplace"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": window.location.href,
+        "priceCurrency": "INR",
+        "price": selectedVariant?.price || 0,
+        "availability": isOutOfStock ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+        "itemCondition": "https://schema.org/NewCondition"
+      },
+      ...(product.averageRating > 0 && {
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": product.averageRating,
+          "reviewCount": product.totalReviews || 1
+        }
+      })
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://cravo.com/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": product.category?.name || "Products",
+          "item": `https://cravo.com/products?category=${product.category?.slug || ''}`
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": product.name,
+          "item": window.location.href
+        }
+      ]
+    }
+  ];
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
+      <SEO 
+        title={product.name}
+        description={product.shortDescription || product.description}
+        image={mainImageUrl}
+        url={window.location.href}
+        type="product"
+        schema={schemas}
+      />
 
       {/* Breadcrumbs */}
       <div className="flex items-center gap-2 text-[13px] text-gray-500 mb-8 font-medium">
-        <button onClick={() => navigate('/')} className="hover:text-gray-900 transition-colors">Home</button>
+        <Link to="/" className="hover:text-gray-900 transition-colors">Home</Link>
         <ChevronRight size={14} className="text-gray-300" />
-        <span className="hover:text-gray-900 transition-colors cursor-pointer">{product.category?.name || 'Dairy & Eggs'}</span>
+        <Link to={product.category?.slug ? `/products?category=${product.category.slug}` : '/products'} className="hover:text-gray-900 transition-colors cursor-pointer">
+          {product.category?.name || 'Dairy & Eggs'}
+        </Link>
         <ChevronRight size={14} className="text-gray-300" />
         <span className="text-gray-900 font-semibold">{product.name}</span>
       </div>
@@ -156,8 +222,12 @@ export const ProductDetailsPage = () => {
           <div className="flex-1 flex items-center justify-center min-h-[360px] my-4">
             <img 
               src={mainImageUrl} 
-              alt={product.name} 
+              alt={`${product.name} - Cravo Marketplace`} 
+              title={product.name}
               className="w-full h-[360px] object-contain mix-blend-multiply"
+              loading="eager"
+              width="800"
+              height="800"
             />
           </div>
           
@@ -182,7 +252,15 @@ export const ProductDetailsPage = () => {
                         : 'border border-transparent'
                     }`}
                   >
-                    <img src={img.imageUrl} alt={`Thumbnail ${idx}`} className="w-full h-full object-contain mix-blend-multiply" />
+                    <img 
+                      src={optimizeImage(img.imageUrl, 150)} 
+                      alt={`${product.name} thumbnail ${idx + 1}`} 
+                      title={`${product.name} view ${idx + 1}`}
+                      className="w-full h-full object-contain mix-blend-multiply" 
+                      loading="lazy"
+                      width="150"
+                      height="150"
+                    />
                   </button>
                 ))}
               </div>

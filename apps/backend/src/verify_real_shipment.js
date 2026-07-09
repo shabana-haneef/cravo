@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { prisma } from './config/prisma.js';
-import { delhiveryShipmentService } from './services/delhiveryShipmentService.js';
+import { delhiveryShipmentService } from './modules/delivery/services/delhiveryShipmentService.js';
 
 const TOKEN = process.env.DELHIVERY_API_TOKEN;
 const ENV = process.env.DELHIVERY_ENV;

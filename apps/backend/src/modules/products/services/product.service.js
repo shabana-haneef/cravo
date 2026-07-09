@@ -10,6 +10,28 @@ import { notificationService } from '../../notifications/services/notification.s
 import { governanceSettingsService } from '../../admin/services/governanceSettings.service.js';
 import prisma from '../../../lib/prisma.js';
 import { AppError } from '../../../shared/errors/AppError.js';
+import { redis } from '../../../config/redis.js';
+
+const _clearCatalogCache = async () => {
+  if (!redis || !redis.isOpen) return;
+  try {
+    let cursor = 0;
+    do {
+      const result = await redis.scan(cursor, { MATCH: 'catalog:list:*', COUNT: 100 });
+      cursor = result.cursor;
+      if (result.keys.length > 0) await redis.del(result.keys);
+    } while (cursor !== 0);
+
+    cursor = 0;
+    do {
+      const result = await redis.scan(cursor, { MATCH: 'catalog:suggestions:*', COUNT: 100 });
+      cursor = result.cursor;
+      if (result.keys.length > 0) await redis.del(result.keys);
+    } while (cursor !== 0);
+  } catch (error) {
+    console.error('Failed to clear catalog cache:', error);
+  }
+};
 
 export const productService = {
   async createProduct(userId, data, files) {
@@ -101,7 +123,8 @@ export const productService = {
         name: data.variantName,
         sku: variantSku,
         price: data.price,
-        compareAtPrice: data.compareAtPrice
+        compareAtPrice: data.compareAtPrice,
+        weight: data.weight || null
       }, tx);
 
       // Create Initial Inventory
@@ -126,14 +149,14 @@ export const productService = {
     });
   },
 
-  async getMyProducts(userId, page = 1, limit = 10) {
+  async getMyProducts(userId, page = 1, limit = 10, cursor = null) {
     const seller = await sellerRepository.findByUserId(userId);
     if (!seller) return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
 
     const shop = await shopRepository.findBySellerId(seller.id);
     if (!shop) return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
 
-    return productRepository.findByShopId(shop.id, page, limit);
+    return productRepository.findByShopId(shop.id, page, limit, cursor);
   },
 
   async getMyProductById(userId, productId) {
@@ -196,10 +219,25 @@ export const productService = {
         // Update product
         await productRepository.update(product.id, updates, tx);
       });
+      
+      _clearCatalogCache();
+      if (redis && redis.isOpen) {
+        redis.del(`catalog:product:${product.id}`).catch(()=>{});
+        redis.del(`catalog:product:${product.slug}`).catch(()=>{});
+      }
+
       return productRepository.findById(product.id);
     } else {
       if (Object.keys(updates).length > 0) {
-        return productRepository.update(product.id, updates);
+        const updatedProduct = await productRepository.update(product.id, updates);
+        
+        _clearCatalogCache();
+        if (redis && redis.isOpen) {
+          redis.del(`catalog:product:${product.id}`).catch(()=>{});
+          redis.del(`catalog:product:${product.slug}`).catch(()=>{});
+        }
+        
+        return updatedProduct;
       }
       return product;
     }
@@ -207,7 +245,15 @@ export const productService = {
 
   async deleteProduct(userId, productId) {
     const product = await this.getMyProductById(userId, productId);
-    return productRepository.update(product.id, { status: 'ARCHIVED' });
+    const deletedProduct = await productRepository.update(product.id, { status: 'ARCHIVED' });
+    
+    _clearCatalogCache();
+    if (redis && redis.isOpen) {
+      redis.del(`catalog:product:${product.id}`).catch(()=>{});
+      redis.del(`catalog:product:${product.slug}`).catch(()=>{});
+    }
+
+    return deletedProduct;
   },
 
   async getPendingApplications(status = 'PENDING_APPROVAL') {
@@ -220,6 +266,12 @@ export const productService = {
     if (product.status === 'APPROVED') throw new AppError("Already approved", 400);
 
     const result = await productRepository.update(productId, { status: 'APPROVED', rejectionReason: null });
+
+    _clearCatalogCache();
+    if (redis && redis.isOpen) {
+      redis.del(`catalog:product:${product.id}`).catch(()=>{});
+      redis.del(`catalog:product:${product.slug}`).catch(()=>{});
+    }
 
     // Notify seller (fire-and-forget) — findById includes shop→seller
     if (product.shop?.seller?.userId) {
@@ -242,6 +294,12 @@ export const productService = {
 
     const result = await productRepository.update(productId, { status: 'REJECTED', rejectionReason: reason });
 
+    _clearCatalogCache();
+    if (redis && redis.isOpen) {
+      redis.del(`catalog:product:${product.id}`).catch(()=>{});
+      redis.del(`catalog:product:${product.slug}`).catch(()=>{});
+    }
+
     // Notify seller (fire-and-forget)
     if (product.shop?.seller?.userId) {
       notificationService.createAndEmit(
@@ -256,24 +314,79 @@ export const productService = {
     return result;
   },
 
-  async getPublicProducts(filters, sort, page = 1, limit = 10) {
-    return productRepository.searchPublicProducts(filters, sort, page, limit);
+  async getPublicProducts(filters, sort, page = 1, limit = 10, cursor = null) {
+    const cacheKey = `catalog:list:${Buffer.from(JSON.stringify({ filters, sort, page, limit, cursor })).toString('base64')}`;
+    
+    if (redis && redis.isOpen) {
+      try {
+        const cached = await redis.get(cacheKey);
+        if (cached) return JSON.parse(cached);
+      } catch (e) {
+        console.error('Redis cache error (getPublicProducts):', e);
+      }
+    }
+
+    const result = await productRepository.searchPublicProducts(filters, sort, page, limit, cursor);
+
+    if (redis && redis.isOpen) {
+      redis.setEx(cacheKey, 3600, JSON.stringify(result)).catch(() => {}); // 1 hour TTL
+    }
+
+    return result;
   },
 
   async getSuggestions(q) {
     if (!q) return [];
-    return productRepository.getSuggestions(q);
+    
+    const cacheKey = `catalog:suggestions:${Buffer.from(q).toString('base64')}`;
+    
+    if (redis && redis.isOpen) {
+      try {
+        const cached = await redis.get(cacheKey);
+        if (cached) return JSON.parse(cached);
+      } catch (e) {
+        console.error('Redis cache error (getSuggestions):', e);
+      }
+    }
+
+    const result = await productRepository.getSuggestions(q);
+    
+    if (redis && redis.isOpen) {
+      redis.setEx(cacheKey, 3600, JSON.stringify(result)).catch(() => {}); // 1 hour TTL
+    }
+
+    return result;
   },
 
   async getPublicProduct(slugOrId) {
     if (!slugOrId || slugOrId === 'undefined') {
       throw new AppError("Product not found", 404);
     }
+    
+    const cacheKey = `catalog:product:${slugOrId}`;
+    
+    if (redis && redis.isOpen) {
+      try {
+        const cached = await redis.get(cacheKey);
+        if (cached) return JSON.parse(cached);
+      } catch (e) {
+        console.error('Redis cache error (getPublicProduct):', e);
+      }
+    }
+
     let product = await productRepository.findBySlug(slugOrId);
     if (!product) {
       product = await productRepository.findByIdWithDetails(slugOrId);
     }
-    if (!product || product.status !== 'APPROVED') throw new AppError("Product not found", 404);
+    
+    if (!product || product.status !== 'APPROVED') {
+      throw new AppError("Product not found", 404);
+    }
+
+    if (redis && redis.isOpen) {
+      redis.setEx(cacheKey, 86400, JSON.stringify(product)).catch(() => {}); // 24 hours TTL
+    }
+
     return product;
   }
 };

@@ -6,13 +6,14 @@ import { successResponse, errorResponse } from '../../../shared/responses/apiRes
 export const orderController = {
   async getPreview(req, res, next) {
     try {
-      const { buyNow, variantId, quantity } = req.query;
+      const { buyNow, variantId, quantity, addressId, unselectedItemIds } = req.query;
+      const unselectedArray = unselectedItemIds ? unselectedItemIds.split(',') : [];
       const buyNowParams = {
         buyNow: buyNow === 'true',
         variantId,
         quantity: quantity ? parseInt(quantity) : 1
       };
-      const preview = await checkoutService.getPreview(req.user.id, buyNowParams);
+      const preview = await checkoutService.getPreview(req.user.id, buyNowParams, addressId, unselectedArray);
       return successResponse(res, 'Checkout preview retrieved', preview);
     } catch (error) { next(error); }
   },
@@ -22,13 +23,13 @@ export const orderController = {
       const parsed = checkoutSchema.safeParse(req.body);
       if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
 
-      const { addressId, buyNow, variantId, quantity } = parsed.data;
+      const { addressId, buyNow, variantId, quantity, unselectedItemIds } = parsed.data;
       const buyNowParams = {
         buyNow,
         variantId,
         quantity
       };
-      const result = await checkoutService.processCheckout(req.user.id, addressId, buyNowParams);
+      const result = await checkoutService.processCheckout(req.user.id, addressId, buyNowParams, unselectedItemIds || []);
       return successResponse(res, 'Order created successfully', result, 201);
     } catch (error) { next(error); }
   },

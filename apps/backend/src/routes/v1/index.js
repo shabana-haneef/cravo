@@ -16,7 +16,7 @@ import deliveryRoutes from "../../modules/delivery/routes/delivery.routes.js";
 import wishlistRoutes from "../../modules/wishlist/routes/wishlist.routes.js";
 import { adminAdRoutes, sellerAdRoutes, publicAdRoutes } from "../../modules/advertisements/routes/ad.routes.js";
 import notificationRoutes from "../../modules/notifications/routes/notification.routes.js";
-import delhiveryRoutes from "../delhivery.routes.js";
+import delhiveryRoutes from "../../modules/delivery/routes/delhivery.routes.js";
 import campaignRoutes from "../../modules/campaigns/routes/campaign.routes.js";
 
 const router = Router();

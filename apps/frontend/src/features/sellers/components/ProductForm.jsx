@@ -48,6 +48,7 @@ const variantSchema = z.object({
   price: z.coerce.number().min(0.01, 'Must be positive'),
   compareAtPrice: z.union([z.coerce.number().positive(), z.literal(''), z.nan()]).optional().transform(v => v === '' || isNaN(v) ? null : v),
   initialStock: z.coerce.number().int().min(0, 'Cannot be negative'),
+  weight: z.coerce.number().min(1, 'Weight must be at least 1 gram'),
 });
 
 const schema = z.object({
@@ -113,11 +114,11 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
       tags: initialData?.tags || [],
       ingredients: initialData?.ingredients || '',
       isFeatured: initialData?.isFeatured || false,
-      variants: initialData?.variants?.length > 0 ? initialData.variants : [{ variantName: '', price: '', compareAtPrice: '', initialStock: 0 }],
+      variants: initialData?.variants?.length > 0 ? initialData.variants : [{ variantName: '', price: '', compareAtPrice: '', initialStock: 0, weight: '' }],
     };
   };
 
-  const { register, handleSubmit, control, trigger, watch, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, trigger, watch, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: getInitialValues(),
   });
@@ -232,6 +233,7 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
         formData.append('price', initialVariant.price);
         if (initialVariant.compareAtPrice) formData.append('compareAtPrice', initialVariant.compareAtPrice);
         formData.append('initialStock', initialVariant.initialStock);
+        formData.append('weight', initialVariant.weight);
 
         const res = await createProductMut.mutateAsync(formData);
         const productId = res?.data?.product?.id || res?.product?.id;
@@ -246,7 +248,8 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
               name: variant.variantName,
               price: variant.price,
               compareAtPrice: variant.compareAtPrice,
-              initialStock: variant.initialStock
+              initialStock: variant.initialStock,
+              weight: variant.weight
             };
             await addVariantMut.mutateAsync({ productId, payload });
           }
@@ -261,7 +264,8 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
             name: variant.variantName,
             price: variant.price,
             compareAtPrice: variant.compareAtPrice,
-            initialStock: variant.initialStock
+            initialStock: variant.initialStock,
+            weight: variant.weight
           };
           if (variant.id) {
             await updateVariantMut.mutateAsync({ productId: initialData.id, variantId: variant.id, payload });
@@ -275,7 +279,8 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
 
       if (onClose) onClose(); else navigate('/seller/products');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to save product');
+      console.error('Product save error:', err);
+      toast.error(err.response?.data?.message || err.message || 'Failed to save product');
     } finally {
       setIsSubmitting(false);
     }
@@ -547,7 +552,7 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
         {/* Step 4: Variants */}
         <div className={currentStep === 4 ? 'block animate-in fade-in slide-in-from-right-4 duration-300' : 'hidden'}>
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-            <VariantsManager control={control} register={register} errors={errors} />
+            <VariantsManager control={control} register={register} errors={errors} watch={watch} setValue={setValue} />
             {errors.variants?.root && <p className="text-xs text-red-500 mt-2">{errors.variants.root.message}</p>}
           </div>
         </div>

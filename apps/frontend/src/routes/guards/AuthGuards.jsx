@@ -1,10 +1,15 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth.store.js';
+import { LoadingScreen } from '../../components/ui/LoadingScreen.jsx';
 
 export const ProtectedRoute = () => {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isInitializing } = useAuthStore();
   const location = useLocation();
+
+  if (isInitializing) {
+    return <LoadingScreen message="Checking authentication..." />;
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
@@ -14,7 +19,11 @@ export const ProtectedRoute = () => {
 };
 
 export const RoleRoute = ({ allowedRoles }) => {
-  const { user } = useAuthStore();
+  const { user, isInitializing } = useAuthStore();
+
+  if (isInitializing) {
+    return <LoadingScreen message="Verifying permissions..." />;
+  }
 
   if (!user || !allowedRoles.includes(user.role)) {
     // Eject to a safe route based on their actual role or home
@@ -32,7 +41,11 @@ export const RoleRoute = ({ allowedRoles }) => {
 };
 
 export const PublicRoute = () => {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, isInitializing } = useAuthStore();
+
+  if (isInitializing) {
+    return <LoadingScreen message="Checking authentication..." />;
+  }
 
   // If already logged in, redirect away from auth pages (login/register)
   if (isAuthenticated) {

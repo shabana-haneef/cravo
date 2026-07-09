@@ -1,16 +1,13 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { AppError } from '../../../shared/errors/AppError.js';
-import { env } from '../../../config/env.js'; // Wait, let's just use process.env if we don't have env.js exported correctly, but I assume they have standard env config.
+import { env } from '../../../config/env.js';
 
 export const razorpayService = {
   getInstance() {
-    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-      throw new AppError("Razorpay keys are missing from environment", 500);
-    }
     return new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET
+      key_id: env.RAZORPAY_KEY_ID,
+      key_secret: env.RAZORPAY_KEY_SECRET
     });
   },
 
@@ -32,14 +29,19 @@ export const razorpayService = {
     }
   },
 
-  verifySignature(razorpayOrderId, razorpayPaymentId, signature) {
-    if (!process.env.RAZORPAY_KEY_SECRET) {
-      throw new AppError("Razorpay secret is missing from environment", 500);
+  async getPayment(paymentId) {
+    const instance = this.getInstance();
+    try {
+      return await instance.payments.fetch(paymentId);
+    } catch (error) {
+      throw new AppError("Failed to fetch Razorpay payment", 500);
     }
+  },
 
+  verifySignature(razorpayOrderId, razorpayPaymentId, signature) {
     const body = razorpayOrderId + "|" + razorpayPaymentId;
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .createHmac("sha256", env.RAZORPAY_KEY_SECRET)
       .update(body.toString())
       .digest("hex");
 
@@ -47,10 +49,8 @@ export const razorpayService = {
   },
 
   verifyWebhookSignature(body, signature) {
-    if (!process.env.RAZORPAY_WEBHOOK_SECRET) return false;
-    
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
+      .createHmac("sha256", env.RAZORPAY_WEBHOOK_SECRET)
       .update(body)
       .digest("hex");
 

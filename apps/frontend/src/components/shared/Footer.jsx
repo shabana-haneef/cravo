@@ -20,6 +20,7 @@ export const Footer = () => {
               <li>
                 <Link 
                   to="/" 
+                  title="Cravo Marketplace Home"
                   onClick={(e) => {
                     if (window.location.pathname === '/') {
                       e.preventDefault();
@@ -39,17 +40,17 @@ export const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/products" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
+                <Link to="/products" title="Shop All Products" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
                   Shop
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
+                <Link to="/about" title="About Cravo Marketplace" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
                   About Us
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
+                <Link to="/contact" title="Contact Cravo Support" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
                   Contact Us
                 </Link>
               </li>
@@ -63,22 +64,22 @@ export const Footer = () => {
             </h3>
             <ul className="flex flex-col gap-4">
               <li>
-                <Link to="/help" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
+                <Link to="/help" title="Customer Help Center" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
                   Help Center
                 </Link>
               </li>
               <li>
-                <Link to="/faq" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
+                <Link to="/faq" title="Frequently Asked Questions" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
                   FAQs
                 </Link>
               </li>
               <li>
-                <Link to="/shipping-policy" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
+                <Link to="/shipping-policy" title="Shipping Policy" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
                   Shipping Policy
                 </Link>
               </li>
               <li>
-                <Link to="/refund-policy" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
+                <Link to="/refund-policy" title="Refund and Return Policy" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
                   Refund & Return Policy
                 </Link>
               </li>
@@ -92,22 +93,22 @@ export const Footer = () => {
             </h3>
             <ul className="flex flex-col gap-4">
               <li>
-                <Link to="/privacy" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
+                <Link to="/privacy" title="Privacy Policy" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link to="/terms" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
+                <Link to="/terms" title="Terms of Service" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
                   Terms of Service
                 </Link>
               </li>
               <li>
-                <Link to="/seller-terms" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
+                <Link to="/seller-terms" title="Seller Terms and Conditions" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
                   Seller Terms
                 </Link>
               </li>
               <li>
-                <Link to="/track-order" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
+                <Link to="/track-order" title="Track Your Order" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
                   Track Order
                 </Link>
               </li>

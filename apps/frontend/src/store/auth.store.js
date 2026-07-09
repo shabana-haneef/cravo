@@ -7,9 +7,12 @@ export const useAuthStore = create(
       user: null,
       isAuthenticated: false,
       accessToken: null,
+      isInitializing: true,
+
+      setInitializing: (isInitializing) => set({ isInitializing }),
 
       setAuth: (user, accessToken) => {
-        set({ user, accessToken, isAuthenticated: true });
+        set({ user, accessToken, isAuthenticated: true, isInitializing: false });
       },
 
       updateUser: (user) => {
@@ -17,11 +20,16 @@ export const useAuthStore = create(
       },
 
       clearAuth: () => {
-        set({ user: null, accessToken: null, isAuthenticated: false });
+        set({ user: null, accessToken: null, isAuthenticated: false, isInitializing: false });
       }
     }),
     {
       name: 'auth-storage',
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+        accessToken: state.accessToken
+      }),
     }
   )
 );

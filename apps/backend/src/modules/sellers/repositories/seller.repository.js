@@ -5,6 +5,10 @@ export const sellerRepository = {
     return tx.seller.create({ data });
   },
 
+  async update(id, data, tx = prisma) {
+    return tx.seller.update({ where: { id }, data });
+  },
+
   async findByUserId(userId) {
     return prisma.seller.findUnique({
       where: { userId },
@@ -43,6 +47,7 @@ export const sellerRepository = {
     const where = status ? { status } : {};
     return prisma.seller.findMany({
       where,
+      take: 100, // Hard limit to prevent unbounded array DoS
       include: {
         documents: true,
         user: {

@@ -5,10 +5,11 @@ import { Store, ShoppingCart, Star, Leaf } from 'lucide-react';
 import { useAddToCart } from '../../features/cart/hooks/useCartQueries.js';
 import { toast } from 'sonner';
 import { WishlistButton } from '../../features/wishlist/components/WishlistButton.jsx';
+import { optimizeImage } from '../../lib/cloudinary.js';
 
-export const ProductCard = ({ product, variant = 'simple' }) => {
+export const ProductCard = React.memo(({ product, variant = 'simple' }) => {
   const { name, slug, shop, variants, images, category } = product;
-  const mainImage = images?.[0]?.imageUrl || 'https://via.placeholder.com/400x400?text=No+Image';
+  const mainImage = optimizeImage(images?.[0]?.imageUrl, 400) || 'https://via.placeholder.com/400x400?text=No+Image';
   const defaultVariant = variants?.[0];
   const price = defaultVariant?.price || 0;
   // const comparePrice = defaultVariant?.compareAtPrice;
@@ -52,10 +53,8 @@ export const ProductCard = ({ product, variant = 'simple' }) => {
     const label = isSize ? 'Size' : 'Colour';
 
     return (
-      <motion.div
-        whileHover={{ y: -5, boxShadow: '0 10px 25px rgba(0,0,0,0.08)' }}
-        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-        className="group bg-white rounded-xl border border-gray-200 flex flex-col h-full overflow-hidden p-3 relative text-left"
+      <div
+        className="group bg-white rounded-xl border border-gray-200 flex flex-col h-full overflow-hidden p-3 relative text-left hover:-translate-y-[5px] hover:shadow-[0_10px_25px_rgba(0,0,0,0.08)] transition-all duration-300"
       >
         {/* Favorite Button */}
         <WishlistButton 
@@ -67,9 +66,12 @@ export const ProductCard = ({ product, variant = 'simple' }) => {
         <Link to={`/products/${slug}`} className="relative block w-full aspect-square bg-[#F6F9F6] rounded-lg overflow-hidden p-2 flex items-center justify-center mb-3">
           <img 
             src={mainImage} 
-            alt={name} 
+            alt={`${name} - Cravo Marketplace`}
+            title={name}
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 mix-blend-multiply"
             loading="lazy"
+            width="400"
+            height="400"
           />
           {isOutOfStock && (
             <div className="absolute inset-0 bg-white/60 backdrop-blur-xs flex items-center justify-center z-10">
@@ -134,24 +136,25 @@ export const ProductCard = ({ product, variant = 'simple' }) => {
             {isAdding ? 'Moving...' : 'Move to cart'}
           </button>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
   if (variant === 'organic-list') {
     return (
-      <motion.div
-        whileHover={{ y: -4, boxShadow: '0 8px 24px rgba(0,0,0,0.06)' }}
-        transition={{ type: 'spring', stiffness: 320, damping: 22 }}
-        className="group bg-white rounded-xl border border-gray-100 flex flex-col h-full overflow-hidden"
+      <div
+        className="group bg-white rounded-xl border border-gray-100 flex flex-col h-full overflow-hidden hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all duration-300"
       >
         {/* Image Container */}
         <Link to={`/products/${slug}`} className="relative block bg-[#F9FAFB] aspect-square p-3 flex items-center justify-center overflow-hidden rounded-t-xl">
           <img 
             src={mainImage} 
-            alt={name} 
+            alt={`${name} - Organic Product`}
+            title={name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 mix-blend-multiply"
             loading="lazy"
+            width="400"
+            height="400"
           />
           
           {/* Organic Badge */}
@@ -204,23 +207,24 @@ export const ProductCard = ({ product, variant = 'simple' }) => {
             </button>
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <motion.div
-      whileHover={{ y: -5, boxShadow: '0 10px 30px rgba(0,0,0,0.06)' }}
-      transition={{ type: 'spring', stiffness: 320, damping: 22 }}
-      className="group bg-white rounded-2xl border border-gray-100 flex flex-col h-full overflow-hidden"
+    <div
+      className="group bg-white rounded-2xl border border-gray-100 flex flex-col h-full overflow-hidden hover:-translate-y-[5px] hover:shadow-[0_10px_30px_rgba(0,0,0,0.06)] transition-all duration-300"
     >
       {/* Image Container */}
       <Link to={`/products/${slug}`} className="relative block w-full aspect-[4/3] bg-[#F9FAFB] overflow-hidden">
         <img 
           src={mainImage} 
-          alt={name} 
+          alt={`${name} - Cravo Marketplace`}
+          title={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
+          width="400"
+          height="300"
         />
         
         {/* Organic Badge */}
@@ -274,6 +278,8 @@ export const ProductCard = ({ product, variant = 'simple' }) => {
           </motion.button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
-};
+});
+
+ProductCard.displayName = 'ProductCard';

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Settings, Store, ShoppingCart, CreditCard, Truck, Database, Bell, Shield, 
@@ -31,6 +31,15 @@ export const AdminSettingsPage = () => {
   const [showHealthModal, setShowHealthModal] = useState(false);
   const [healthData, setHealthData] = useState([]);
   const [loadingHealth, setLoadingHealth] = useState(false);
+  
+  // Track timeouts for cleanup
+  const timeoutsRef = useRef([]);
+
+  useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach(clearTimeout);
+    };
+  }, []);
 
   // Order Settings States
   const [loadingOrderSettings, setLoadingOrderSettings] = useState(false);
@@ -363,12 +372,13 @@ export const AdminSettingsPage = () => {
       }));
       toast.success('Settings saved successfully!');
 
-      setTimeout(() => {
+      const tId = setTimeout(() => {
         setCardStatus(prev => ({
           ...prev,
           [cardName]: { ...prev[cardName], success: false }
         }));
       }, 3000);
+      timeoutsRef.current.push(tId);
     } catch (e) {
       const errMsg = e.response?.data?.message || 'Failed to save settings.';
       setCardStatus(prev => ({
@@ -424,12 +434,13 @@ export const AdminSettingsPage = () => {
       }));
       toast.success('Settings saved successfully!');
 
-      setTimeout(() => {
+      const tId = setTimeout(() => {
         setCardStatus(prev => ({
           ...prev,
           [cardName]: { ...prev[cardName], success: false }
         }));
       }, 3000);
+      timeoutsRef.current.push(tId);
     } catch (e) {
       const errMsg = e.message || e.response?.data?.message || 'Failed to save settings.';
       setCardStatus(prev => ({
@@ -481,12 +492,13 @@ export const AdminSettingsPage = () => {
       }));
       toast.success('Settings saved successfully!');
 
-      setTimeout(() => {
+      const tId = setTimeout(() => {
         setCardStatus(prev => ({
           ...prev,
           [cardName]: { ...prev[cardName], success: false }
         }));
       }, 3000);
+      timeoutsRef.current.push(tId);
     } catch (e) {
       const errMsg = e.response?.data?.message || 'Failed to save settings.';
       setCardStatus(prev => ({
@@ -616,12 +628,13 @@ export const AdminSettingsPage = () => {
       }));
       toast.success('Settings saved successfully!');
 
-      setTimeout(() => {
+      const tId = setTimeout(() => {
         setCardStatus(prev => ({
           ...prev,
           [cardName]: { ...prev[cardName], success: false }
         }));
       }, 3000);
+      timeoutsRef.current.push(tId);
     } catch (e) {
       const errMsg = e.message || e.response?.data?.message || 'Failed to save settings.';
       setCardStatus(prev => ({
@@ -829,12 +842,13 @@ export const AdminSettingsPage = () => {
       }));
       toast.success('Settings saved successfully!');
 
-      setTimeout(() => {
+      const tId = setTimeout(() => {
         setCardStatus(prev => ({
           ...prev,
           [cardName]: { ...prev[cardName], success: false }
         }));
       }, 3000);
+      timeoutsRef.current.push(tId);
     } catch (e) {
       const errMsg = e.message || e.response?.data?.message || 'Failed to save settings.';
       setCardStatus(prev => ({

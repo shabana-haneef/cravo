@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -12,6 +13,7 @@ model User {
   email              String              @unique
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+  deletedAt          DateTime?
   isEmailVerified    Boolean             @default(false)
   lastLoginAt        DateTime?
   passwordHash       String?
@@ -29,7 +31,6 @@ model User {
   seller             Seller?
   wishlist           WishlistItem[]
 
-  @@index([email])
   @@index([status])
 }
 
@@ -44,6 +45,7 @@ model Seller {
   approvedAt         DateTime?
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
+  deletedAt          DateTime?
   pickupAddress      String?
   pickupCity         String?
   pickupLocationName String?
@@ -74,6 +76,7 @@ model Shop {
   status            ShopStatus   @default(ACTIVE)
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
+  deletedAt         DateTime?
   carts             Cart[]
   orders            Order[]
   products          Product[]
@@ -81,8 +84,6 @@ model Shop {
   seller            Seller       @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   timings           ShopTiming[]
 
-  @@index([slug])
-  @@index([sellerId])
   @@index([status])
 }
 
@@ -190,6 +191,7 @@ model Category {
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
   products      Product[]
 }
 
@@ -210,8 +212,8 @@ model Product {
   totalReviews       Int              @default(0)
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
+  deletedAt          DateTime?
   ingredients        String           @default("Not specified")
-  weight             Float?
   declaredValue      Float?
   labelImagePublicId String?
   labelImageUrl      String?
@@ -226,7 +228,6 @@ model Product {
   @@index([shopId])
   @@index([categoryId])
   @@index([status])
-  @@index([slug])
 }
 
 model ProductImage {
@@ -236,6 +237,8 @@ model ProductImage {
   publicId  String
   sortOrder Int     @default(0)
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
 }
 
 model ProductVariant {
@@ -245,11 +248,15 @@ model ProductVariant {
   sku            String      @unique
   price          Float
   compareAtPrice Float?
+  weight         Float?
   isActive       Boolean     @default(true)
+  deletedAt      DateTime?
   cartItems      CartItem[]
   inventory      Inventory?
   orderItems     OrderItem[]
   product        Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
 }
 
 model Inventory {
@@ -289,6 +296,8 @@ model Cart {
   shop      Shop?      @relation(fields: [shopId], references: [id])
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   items     CartItem[]
+
+  @@index([shopId])
 }
 
 model CartItem {
@@ -304,33 +313,36 @@ model CartItem {
   productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
 
   @@unique([cartId, productVariantId])
+  @@index([productId])
+  @@index([productVariantId])
 }
 
 model Order {
-  id                  String      @id @default(cuid())
-  orderNumber         String      @unique
+  id                  String             @id @default(cuid())
+  orderNumber         String             @unique
   customerId          String
   shopId              String
   addressId           String
   subtotal            Float
   deliveryCharge      Float
-  discount            Float       @default(0.0)
+  discount            Float              @default(0.0)
   grandTotal          Float
-  status              OrderStatus @default(PENDING_PAYMENT)
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
+  status              OrderStatus        @default(PENDING_PAYMENT)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
   awbNumber           String?
   delhiveryShipmentId String?
-  pickupRequested     Boolean     @default(false)
-  shipmentCreated     Boolean     @default(false)
+  pickupRequested     Boolean            @default(false)
+  shipmentCreated     Boolean            @default(false)
   shipmentCreatedAt   DateTime?
-  shipmentLogs        Json        @default("[]")
+  shipmentLogs        Json               @default("[]")
+  orderShipmentLogs   OrderShipmentLog[]
   shippingLabelUrl    String?
-  trackingStatus      String      @default("pending")
+  trackingStatus      String             @default("pending")
   delivery            Delivery?
-  address             Address     @relation(fields: [addressId], references: [id])
-  customer            User        @relation(fields: [customerId], references: [id])
-  shop                Shop        @relation(fields: [shopId], references: [id])
+  address             Address            @relation(fields: [addressId], references: [id])
+  customer            User               @relation(fields: [customerId], references: [id])
+  shop                Shop               @relation(fields: [shopId], references: [id])
   items               OrderItem[]
   payments            Payment[]
 
@@ -338,6 +350,7 @@ model Order {
   @@index([shopId])
   @@index([orderNumber])
   @@index([status])
+  @@index([addressId])
 }
 
 model OrderItem {
@@ -351,6 +364,10 @@ model OrderItem {
   order            Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product          Product        @relation(fields: [productId], references: [id])
   productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([productVariantId])
 }
 
 model Payment {
@@ -363,6 +380,25 @@ model Payment {
   status            PaymentStatus @default(PENDING)
   createdAt         DateTime      @default(now())
   order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model OrderShipmentLog {
+  id         String   @id @default(cuid())
+  orderId    String
+  event      String
+  timestamp  DateTime
+  awbNumber  String?
+  shipmentId String?
+  remarks    String?
+  error      String?
+  createdAt  DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([timestamp])
 }
 
 model Delivery {
@@ -424,6 +460,7 @@ model Advertisement {
 
   @@index([status])
   @@index([sellerId])
+  @@index([packageId])
 }
 
 model AdPayment {
@@ -447,7 +484,6 @@ model WishlistItem {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
-  @@index([userId])
   @@index([productId])
 }
 
@@ -646,6 +682,7 @@ model Campaign {
   rejectionReason  String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+  deletedAt        DateTime?
 
   seller    Seller                  @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   shop      Shop                    @relation(fields: [shopId], references: [id], onDelete: Cascade)

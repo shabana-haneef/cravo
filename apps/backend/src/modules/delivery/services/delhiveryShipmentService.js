@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { logger } from '../shared/services/logger.js';
-import { AppError } from '../shared/errors/AppError.js';
+import { logger } from '../../../shared/services/logger.js';
+import { AppError } from '../../../shared/errors/AppError.js';
 
 // Dynamic helpers — read process.env at call time (after dotenv has loaded)
 const getToken = () => process.env.DELHIVERY_API_TOKEN || process.env.DELHIVERY_API_KEY;

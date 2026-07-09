@@ -22,40 +22,43 @@ export const inventoryService = {
     const inventory = await this.getInventory(userId, variantId);
 
     return prisma.$transaction(async (tx) => {
-      // Re-fetch with lock in real PG environment if possible, 
-      // but Prisma doesn't natively support pessimistic locks smoothly without raw query.
-      // We will do a generic update and verify.
-      
-      const currentInventory = await inventoryRepository.findByVariantId(variantId, tx);
-      
       let type = 'MANUAL_ADJUSTMENT';
       if (quantity > 0) type = 'STOCK_IN';
       if (quantity < 0) type = 'STOCK_OUT';
 
-      const newStock = currentInventory.availableStock + quantity;
+      const updateData = { availableStock: { increment: quantity } };
+      const whereClause = { id: inventory.id };
       
-      if (newStock < 0) {
-        throw new AppError(`Cannot reduce stock by ${Math.abs(quantity)}. Only ${currentInventory.availableStock} available.`, 400);
+      if (quantity < 0) {
+        whereClause.availableStock = { gte: Math.abs(quantity) };
       }
 
-      const updatedInventory = await inventoryRepository.update(currentInventory.id, {
-        availableStock: newStock
-      }, tx);
+      const updateResult = await tx.inventory.updateMany({
+        where: whereClause,
+        data: updateData
+      });
+
+      if (updateResult.count === 0) {
+        throw new AppError(`Cannot reduce stock by ${Math.abs(quantity)}. Insufficient available stock.`, 400);
+      }
+
+      // Re-fetch for logging and limits
+      const updatedInventory = await tx.inventory.findUnique({ where: { id: inventory.id } });
 
       await inventoryTransactionRepository.create({
-        inventoryId: currentInventory.id,
+        inventoryId: inventory.id,
         type,
         quantity: Math.abs(quantity),
-        previousStock: currentInventory.availableStock,
-        newStock,
+        previousStock: inventory.availableStock,
+        newStock: updatedInventory.availableStock,
         reason: reason || 'Manual adjustment',
         createdBy: userId
       }, tx);
 
-      logger.info({ variantId, newStock }, 'Stock adjusted manually');
+      logger.info({ variantId, newStock: updatedInventory.availableStock }, 'Stock adjusted manually');
 
-      if (newStock <= updatedInventory.lowStockThreshold) {
-        logger.warn({ variantId, newStock }, 'Low stock alert');
+      if (updatedInventory.availableStock <= updatedInventory.lowStockThreshold) {
+        logger.warn({ variantId, newStock: updatedInventory.availableStock }, 'Low stock alert');
         // Trigger notification service here
       }
 
@@ -71,78 +74,85 @@ export const inventoryService = {
   // Reusable system methods (not exposed to sellers via direct HTTP)
   async reserveStock(variantId, quantity) {
     return prisma.$transaction(async (tx) => {
-      const inventory = await inventoryRepository.findByVariantId(variantId, tx);
-      if (!inventory) throw new AppError("Inventory not found", 404);
+      const updateResult = await tx.inventory.updateMany({
+        where: { 
+          productVariantId: variantId,
+          availableStock: { gte: quantity }
+        },
+        data: {
+          availableStock: { decrement: quantity },
+          reservedStock: { increment: quantity }
+        }
+      });
       
-      if (inventory.availableStock < quantity) {
-        throw new AppError("Insufficient stock", 400);
+      if (updateResult.count === 0) {
+        throw new AppError("Insufficient stock or inventory not found", 400);
       }
 
-      const newAvailable = inventory.availableStock - quantity;
-      const newReserved = inventory.reservedStock + quantity;
-
-      const updated = await inventoryRepository.update(inventory.id, {
-        availableStock: newAvailable,
-        reservedStock: newReserved
-      }, tx);
+      const inventory = await tx.inventory.findUnique({ where: { productVariantId: variantId } });
 
       await inventoryTransactionRepository.create({
         inventoryId: inventory.id,
         type: 'ORDER_RESERVED',
         quantity,
-        previousStock: inventory.availableStock,
-        newStock: newAvailable,
+        previousStock: inventory.availableStock + quantity,
+        newStock: inventory.availableStock,
         reason: 'Order placed'
       }, tx);
 
-      return updated;
+      return inventory;
     });
   },
 
   async releaseStock(variantId, quantity) {
     return prisma.$transaction(async (tx) => {
-      const inventory = await inventoryRepository.findByVariantId(variantId, tx);
-      if (!inventory) throw new AppError("Inventory not found", 404);
+      const updateResult = await tx.inventory.updateMany({
+        where: { 
+          productVariantId: variantId,
+          reservedStock: { gte: quantity }
+        },
+        data: {
+          availableStock: { increment: quantity },
+          reservedStock: { decrement: quantity }
+        }
+      });
       
-      if (inventory.reservedStock < quantity) {
-        throw new AppError("Cannot release more than reserved stock", 400);
+      if (updateResult.count === 0) {
+        throw new AppError("Cannot release more than reserved stock or inventory not found", 400);
       }
 
-      const newAvailable = inventory.availableStock + quantity;
-      const newReserved = inventory.reservedStock - quantity;
-
-      const updated = await inventoryRepository.update(inventory.id, {
-        availableStock: newAvailable,
-        reservedStock: newReserved
-      }, tx);
+      const inventory = await tx.inventory.findUnique({ where: { productVariantId: variantId } });
 
       await inventoryTransactionRepository.create({
         inventoryId: inventory.id,
         type: 'ORDER_RELEASED',
         quantity,
-        previousStock: inventory.availableStock,
-        newStock: newAvailable,
+        previousStock: inventory.availableStock - quantity,
+        newStock: inventory.availableStock,
         reason: 'Order cancelled/released'
       }, tx);
 
-      return updated;
+      return inventory;
     });
   },
 
   async deductStock(variantId, quantity) {
     return prisma.$transaction(async (tx) => {
-      const inventory = await inventoryRepository.findByVariantId(variantId, tx);
-      if (!inventory) throw new AppError("Inventory not found", 404);
+      const updateResult = await tx.inventory.updateMany({
+        where: { 
+          productVariantId: variantId,
+          reservedStock: { gte: quantity }
+        },
+        data: {
+          reservedStock: { decrement: quantity }
+        }
+      });
       
-      if (inventory.reservedStock < quantity) {
-        throw new AppError("Reserved stock mismatch", 400);
+      if (updateResult.count === 0) {
+        throw new AppError("Reserved stock mismatch or inventory not found", 400);
       }
 
-      const newReserved = inventory.reservedStock - quantity;
-
-      const updated = await inventoryRepository.update(inventory.id, {
-        reservedStock: newReserved
-      }, tx);
+      const inventory = await tx.inventory.findUnique({ where: { productVariantId: variantId } });
 
       await inventoryTransactionRepository.create({
         inventoryId: inventory.id,
@@ -153,7 +163,7 @@ export const inventoryService = {
         reason: 'Order completed and shipped'
       }, tx);
 
-      return updated;
+      return inventory;
     });
   }
 };

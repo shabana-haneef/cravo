@@ -1,5 +1,5 @@
 import { delhiveryService } from '../services/delhiveryService.js';
-import { logger } from '../shared/services/logger.js';
+import { logger } from '../../../shared/services/logger.js';
 
 export const delhiveryController = {
   /**

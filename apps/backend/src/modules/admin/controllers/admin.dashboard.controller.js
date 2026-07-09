@@ -1,6 +1,7 @@
 import prisma from '../../../lib/prisma.js';
 import { successResponse } from '../../../shared/responses/apiResponse.js';
 import { auditLogService } from '../services/auditLog.service.js';
+import { z } from 'zod';
 
 // In-memory settings for demo purposes (since no Settings table exists in Prisma)
 let mockSettings = {
@@ -84,18 +85,24 @@ export const adminDashboardController = {
 
   async updateSettings(req, res, next) {
     try {
-      const { platformName, supportEmail } = req.body;
+      const updateDashboardSettingsSchema = z.object({
+        platformName: z.string().min(1, 'Platform name cannot be empty').max(100).optional(),
+        supportEmail: z.string().email('Invalid support email').max(255).optional()
+      });
+      
+      const parsed = updateDashboardSettingsSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return next(new AppError(parsed.error.errors[0].message, 400));
+      }
+
+      const { platformName, supportEmail } = parsed.data;
       if (platformName) mockSettings.platformName = platformName;
       if (supportEmail) mockSettings.supportEmail = supportEmail;
       
-      await auditLogService.log({
-        adminId: req.user.id,
-        adminEmail: req.user.email,
-        action: 'SETTINGS_UPDATE',
+      await auditLogService.logFromRequest(req, {
+        actionType: 'SETTINGS_UPDATE',
         targetType: 'PLATFORM_SETTINGS',
-        targetId: 'GLOBAL',
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent']
+        targetId: 'GLOBAL'
       });
 
       return successResponse(res, 'Settings updated successfully', { settings: mockSettings });

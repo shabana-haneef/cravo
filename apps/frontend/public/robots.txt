@@ -1,0 +1,52 @@
+# =========================================================================
+# Cravo Marketplace - robots.txt
+# =========================================================================
+
+User-agent: *
+
+# -------------------------------------------------------------------------
+# ALLOWED ROUTES (Public Catalog & Content)
+# -------------------------------------------------------------------------
+Allow: /$
+Allow: /products
+Allow: /categories
+Allow: /brands
+Allow: /shops
+Allow: /about
+Allow: /contact
+Allow: /help
+Allow: /faq
+Allow: /faqs
+Allow: /privacy
+Allow: /terms
+
+# -------------------------------------------------------------------------
+# DISALLOWED ROUTES (Private, Admin & Transactional)
+# -------------------------------------------------------------------------
+
+# Administration & Dashboards
+Disallow: /admin/
+Disallow: /seller/
+
+# Transactional & Checkout Flow
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders/
+
+# User Account & Authentication
+Disallow: /profile
+Disallow: /addresses
+Disallow: /wishlist
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+
+# API & Backend Services
+Disallow: /api/
+
+# -------------------------------------------------------------------------
+# SITEMAP
+# -------------------------------------------------------------------------
+Sitemap: https://cravo.com/sitemap.xml

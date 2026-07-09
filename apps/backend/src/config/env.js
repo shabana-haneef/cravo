@@ -19,11 +19,18 @@ const envSchema = z.object({
     .string()
     .min(10),
 
-  CLOUDINARY_CLOUD_NAME: z.string().optional(),
-  CLOUDINARY_API_KEY: z.string().optional(),
-  CLOUDINARY_API_SECRET: z.string().optional(),
+  CLOUDINARY_CLOUD_NAME: z.string().min(1, "Cloudinary Name required"),
+  CLOUDINARY_API_KEY: z.string().min(1, "Cloudinary API Key required"),
+  CLOUDINARY_API_SECRET: z.string().min(1, "Cloudinary API Secret required"),
+
+  RESEND_API_KEY: z.string().startsWith("re_", "Invalid Resend Key Format"),
+
+  RAZORPAY_KEY_ID: z.string().min(1, "Razorpay Key ID required"),
+  RAZORPAY_KEY_SECRET: z.string().min(1, "Razorpay Key Secret required"),
+  RAZORPAY_WEBHOOK_SECRET: z.string().min(1, "Razorpay Webhook Secret required"),
 
   GOOGLE_CLIENT_ID: z.string().optional(),
+  FRONTEND_URLS: z.string().optional(),
 });
 
 const parsed =

@@ -21,6 +21,7 @@ export const productVariantService = {
         name: data.name,
         price: data.price,
         compareAtPrice: data.compareAtPrice,
+        weight: data.weight || null,
         isActive: data.isActive,
         productId: product.id,
         sku: variantSku

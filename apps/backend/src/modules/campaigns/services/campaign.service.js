@@ -4,6 +4,7 @@ import { shopRepository } from '../../shops/repositories/shop.repository.js';
 import { cloudinaryService } from '../../../shared/services/cloudinary.service.js';
 import { razorpayService } from '../../payments/services/razorpay.service.js';
 import { AppError } from '../../../shared/errors/AppError.js';
+import { auditLogService } from '../../admin/services/auditLog.service.js';
 import prisma from '../../../lib/prisma.js';
 
 export const campaignService = {
@@ -58,15 +59,13 @@ export const campaignService = {
     });
 
     // Create Audit Log
-    await prisma.auditLog.create({
-      data: {
+    await auditLogService.log({
         targetType: 'CAMPAIGN',
         targetId: campaign.id,
         actionType: 'CREATED',
         actorId: userId,
-        actorEmail: 'seller@cravo.com', // Typically from context, but we will simplify
+        actorEmail: 'seller@cravo.com',
         actorRole: 'SELLER'
-      }
     });
 
     return { campaign, razorpayOrder };

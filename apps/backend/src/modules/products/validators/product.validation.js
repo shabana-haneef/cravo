@@ -18,6 +18,7 @@ export const productSchema = z.object({
     return val || [];
   }, z.array(z.string()).optional()),
   ingredients: z.string().min(1, 'Ingredients are required.'),
+  weight: z.coerce.number().positive().optional().nullable(),
   isFeatured: z.coerce.boolean().default(false),
   // Initial variant data
   variantName: z.string().min(1, "Variant name is required"),
@@ -44,5 +45,6 @@ export const updateProductSchema = z.object({
     return val || [];
   }, z.array(z.string()).optional()),
   ingredients: z.string().min(1, 'Ingredients are required.'),
+  weight: z.coerce.number().positive().optional().nullable(),
   isFeatured: z.coerce.boolean().optional()
 });

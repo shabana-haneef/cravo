@@ -21,7 +21,7 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  const [isInitializing, setIsInitializing] = useState(true);
+  const setInitializing = useAuthStore((state) => state.setInitializing);
   const setAuth = useAuthStore((state) => state.setAuth);
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -35,12 +35,12 @@ function App() {
       } catch (error) {
         clearAuth();
       } finally {
-        setIsInitializing(false);
+        setInitializing(false);
       }
     };
 
     initAuth();
-  }, [setAuth, clearAuth]);
+  }, [setAuth, clearAuth, setInitializing]);
 
   // Manage socket lifecycle based on auth state
   useEffect(() => {
@@ -51,9 +51,6 @@ function App() {
     }
   }, [isAuthenticated]);
 
-  if (isInitializing) {
-    return <LoadingScreen message="Starting up Cravo..." />;
-  }
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { logger } from '../../../shared/services/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,6 +31,38 @@ const DEFAULT_SETTINGS = {
   blockExcessiveFailedAttempts: true
 };
 
+import { z } from 'zod';
+
+const paymentSettingsSchema = z.object({
+  enableRazorpay: z.boolean(),
+  enableCod: z.boolean(),
+  maxCodAmount: z.number().min(1, 'Maximum COD Order Amount must be between ₹1 and ₹50,000.').max(50000).optional(),
+  minOrderAmount: z.number().min(0, 'Minimum Order Amount must be a non-negative number.'),
+  maxOrderAmount: z.number().min(1, 'Maximum Order Amount must be a positive number.'),
+  maxSingleTransactionAmount: z.number().min(1, 'Maximum Single Transaction Amount must be a positive number.'),
+  enableRefundRequests: z.boolean(),
+  refundRequestWindowDays: z.number().min(1, 'Refund Request Window must be between 1 and 30 days.').max(30),
+  requireAdminRefundApproval: z.boolean(),
+  autoRefundProcessing: z.boolean(),
+  commissionType: z.enum(['Percentage', 'Fixed'], { errorMap: () => ({ message: "Commission Type must be 'Percentage' or 'Fixed'." }) }),
+  commissionValue: z.number().min(0, 'Commission Value must be a non-negative number.'),
+  applyCommissionOn: z.enum(['Product Total', 'Order Total'], { errorMap: () => ({ message: "Apply Commission On must be 'Product Total' or 'Order Total'." }) }),
+  enableSellerPayouts: z.boolean(),
+  minPayoutThreshold: z.number().min(0, 'Minimum Payout Threshold must be a non-negative number.'),
+  payoutReleaseDelayDays: z.number().min(0, 'Payout Release Delay must be a non-negative number.'),
+  autoPayoutProcessing: z.boolean(),
+  maxFailedPaymentAttempts: z.number().min(1, 'Maximum Failed Payment Attempts must be a positive number.'),
+  manualReviewThreshold: z.number().min(0, 'Manual Review Threshold must be a non-negative number.'),
+  blockExcessiveFailedAttempts: z.boolean()
+}).strict()
+.refine(data => data.minOrderAmount <= data.maxOrderAmount, {
+  message: "Minimum Order Amount cannot exceed Maximum Order Amount."
+})
+.refine(data => {
+  if (data.commissionType === 'Percentage' && data.commissionValue > 100) return false;
+  return true;
+}, { message: "Percentage Commission cannot exceed 100%." });
+
 export const paymentSettingsService = {
   async get() {
     try {
@@ -40,120 +73,35 @@ export const paymentSettingsService = {
         await this.save(DEFAULT_SETTINGS);
         return DEFAULT_SETTINGS;
       }
-      console.error('Failed to read payment settings file:', error);
+      logger.error({ err: error }, 'Failed to read payment settings file');
       return DEFAULT_SETTINGS;
     }
   },
 
   async save(settings) {
     try {
+      const parsed = paymentSettingsSchema.parse(settings);
       const dir = path.dirname(SETTINGS_FILE);
       await fs.mkdir(dir, { recursive: true });
-      await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
-      return settings;
+      await fs.writeFile(SETTINGS_FILE, JSON.stringify(parsed, null, 2), 'utf-8');
+      return parsed;
     } catch (error) {
-      console.error('Failed to save payment settings file:', error);
+      logger.error({ err: error }, 'Failed to save payment settings file');
       throw error;
     }
   },
 
   validate(settings) {
-    const errors = [];
-
-    // Payment Methods
-    if (typeof settings.enableRazorpay !== 'boolean') {
-      errors.push("Field 'enableRazorpay' must be a boolean.");
+    const parsed = paymentSettingsSchema.safeParse(settings);
+    if (!parsed.success) {
+      return {
+        isValid: false,
+        errors: parsed.error.errors.map(e => e.message)
+      };
     }
-    if (typeof settings.enableCod !== 'boolean') {
-      errors.push("Field 'enableCod' must be a boolean.");
-    }
-    if (settings.enableCod) {
-      const maxCodAmount = Number(settings.maxCodAmount);
-      if (isNaN(maxCodAmount) || maxCodAmount < 1 || maxCodAmount > 50000) {
-        errors.push("Maximum COD Order Amount must be between ₹1 and ₹50,000.");
-      }
-    }
-
-    // Limits
-    const minOrderAmount = Number(settings.minOrderAmount);
-    const maxOrderAmount = Number(settings.maxOrderAmount);
-    const maxSingleTransactionAmount = Number(settings.maxSingleTransactionAmount);
-
-    if (isNaN(minOrderAmount) || minOrderAmount < 0) {
-      errors.push("Minimum Order Amount must be a non-negative number.");
-    }
-    if (isNaN(maxOrderAmount) || maxOrderAmount <= 0) {
-      errors.push("Maximum Order Amount must be a positive number.");
-    }
-    if (minOrderAmount > maxOrderAmount) {
-      errors.push("Minimum Order Amount cannot exceed Maximum Order Amount.");
-    }
-    if (isNaN(maxSingleTransactionAmount) || maxSingleTransactionAmount <= 0) {
-      errors.push("Maximum Single Transaction Amount must be a positive number.");
-    }
-
-    // Refund
-    if (typeof settings.enableRefundRequests !== 'boolean') {
-      errors.push("Field 'enableRefundRequests' must be a boolean.");
-    }
-    const refundRequestWindowDays = Number(settings.refundRequestWindowDays);
-    if (isNaN(refundRequestWindowDays) || refundRequestWindowDays < 1 || refundRequestWindowDays > 30) {
-      errors.push("Refund Request Window must be between 1 and 30 days.");
-    }
-    if (typeof settings.requireAdminRefundApproval !== 'boolean') {
-      errors.push("Field 'requireAdminRefundApproval' must be a boolean.");
-    }
-    if (typeof settings.autoRefundProcessing !== 'boolean') {
-      errors.push("Field 'autoRefundProcessing' must be a boolean.");
-    }
-
-    // Commission
-    if (settings.commissionType !== 'Percentage' && settings.commissionType !== 'Fixed') {
-      errors.push("Commission Type must be 'Percentage' or 'Fixed'.");
-    }
-    const commissionValue = Number(settings.commissionValue);
-    if (isNaN(commissionValue) || commissionValue < 0) {
-      errors.push("Commission Value must be a non-negative number.");
-    }
-    if (settings.commissionType === 'Percentage' && commissionValue > 100) {
-      errors.push("Percentage Commission cannot exceed 100%.");
-    }
-    if (settings.applyCommissionOn !== 'Product Total' && settings.applyCommissionOn !== 'Order Total') {
-      errors.push("Apply Commission On must be 'Product Total' or 'Order Total'.");
-    }
-
-    // Payouts
-    if (typeof settings.enableSellerPayouts !== 'boolean') {
-      errors.push("Field 'enableSellerPayouts' must be a boolean.");
-    }
-    const minPayoutThreshold = Number(settings.minPayoutThreshold);
-    if (isNaN(minPayoutThreshold) || minPayoutThreshold < 0) {
-      errors.push("Minimum Payout Threshold must be a non-negative number.");
-    }
-    const payoutReleaseDelayDays = Number(settings.payoutReleaseDelayDays);
-    if (isNaN(payoutReleaseDelayDays) || payoutReleaseDelayDays < 0) {
-      errors.push("Payout Release Delay must be a non-negative number.");
-    }
-    if (typeof settings.autoPayoutProcessing !== 'boolean') {
-      errors.push("Field 'autoPayoutProcessing' must be a boolean.");
-    }
-
-    // Fraud
-    const maxFailedPaymentAttempts = Number(settings.maxFailedPaymentAttempts);
-    if (isNaN(maxFailedPaymentAttempts) || maxFailedPaymentAttempts <= 0) {
-      errors.push("Maximum Failed Payment Attempts must be a positive number.");
-    }
-    const manualReviewThreshold = Number(settings.manualReviewThreshold);
-    if (isNaN(manualReviewThreshold) || manualReviewThreshold < 0) {
-      errors.push("Manual Review Threshold must be a non-negative number.");
-    }
-    if (typeof settings.blockExcessiveFailedAttempts !== 'boolean') {
-      errors.push("Field 'blockExcessiveFailedAttempts' must be a boolean.");
-    }
-
     return {
-      isValid: errors.length === 0,
-      errors
+      isValid: true,
+      errors: []
     };
   }
 };

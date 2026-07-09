@@ -69,7 +69,7 @@ export const ScrollReveal = ({ children, variant = fadeUp, delay = 0, className 
   <motion.div
     initial="hidden"
     whileInView="visible"
-    viewport={{ once: true, amount: 0.12 }}
+    viewport={{ once: true, margin: "0px 0px -50px 0px" }}
     variants={variant}
     custom={delay}
     className={className}
@@ -84,7 +84,7 @@ export const StaggerReveal = ({ children, className = '', ...props }) => (
   <motion.div
     initial="hidden"
     whileInView="visible"
-    viewport={{ once: true, amount: 0.08 }}
+    viewport={{ once: true, margin: "0px 0px -50px 0px" }}
     variants={staggerContainer}
     className={className}
     {...props}

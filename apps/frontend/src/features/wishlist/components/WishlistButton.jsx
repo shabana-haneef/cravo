@@ -6,7 +6,7 @@ import { useWishlist, useToggleWishlist } from '../hooks/useWishlistQueries.js';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
-export const WishlistButton = ({ productId, className = "" }) => {
+export const WishlistButton = React.memo(({ productId, className = "" }) => {
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
 
@@ -67,4 +67,6 @@ export const WishlistButton = ({ productId, className = "" }) => {
       />
     </motion.button>
   );
-};
+});
+
+WishlistButton.displayName = 'WishlistButton';

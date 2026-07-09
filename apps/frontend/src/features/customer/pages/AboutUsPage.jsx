@@ -1,8 +1,14 @@
 import React from 'react';
+import { SEO } from '../../../components/shared/SEO.jsx';
 
 export const AboutUsPage = () => {
   return (
     <div className="min-h-screen py-16 px-6 sm:px-8 bg-gradient-to-b from-white to-[#F8FAF8]">
+      <SEO 
+        title="About Us"
+        description="Learn more about Cravo Marketplace. A specialized online marketplace dedicated to preserved food products prepared by home-based mothers and independent women entrepreneurs."
+        url={window.location.href}
+      />
       <div className="max-w-3xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-12">

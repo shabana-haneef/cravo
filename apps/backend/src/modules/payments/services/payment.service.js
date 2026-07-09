@@ -26,15 +26,54 @@ export const paymentService = {
       throw new AppError("Unauthorized access to this payment", 403);
     }
 
-    // 3. Update Statuses Atomically
-    return prisma.$transaction(async (tx) => {
-      await paymentRepository.update(payment.id, {
-        razorpayPaymentId,
-        razorpaySignature,
-        status: 'SUCCESS'
-      }, tx);
+    // 3. Strict Amount and Currency Verification
+    const rzpPayment = await razorpayService.getPayment(razorpayPaymentId);
+    
+    const expectedAmountPaise = Math.round(payment.amount * 100);
+    if (rzpPayment.amount !== expectedAmountPaise) {
+      logger.error({ 
+        userId, orderId: payment.orderId, expected: expectedAmountPaise, received: rzpPayment.amount 
+      }, 'SECURITY ALERT: Payment amount mismatch');
+      throw new AppError("Payment verification failed: Amount mismatch", 400);
+    }
 
-      await orderRepository.updateStatus(payment.orderId, 'PLACED', tx);
+    if (rzpPayment.currency !== 'INR') {
+      logger.error({ 
+        userId, orderId: payment.orderId, expected: 'INR', received: rzpPayment.currency 
+      }, 'SECURITY ALERT: Currency mismatch');
+      throw new AppError("Payment verification failed: Currency mismatch", 400);
+    }
+
+    if (rzpPayment.order_id !== razorpayOrderId) {
+      logger.error({ 
+        userId, orderId: payment.orderId, expected: razorpayOrderId, received: rzpPayment.order_id 
+      }, 'SECURITY ALERT: Order ID mismatch');
+      throw new AppError("Payment verification failed: Order ID mismatch", 400);
+    }
+
+    if (rzpPayment.status !== 'captured' && rzpPayment.status !== 'authorized') {
+       throw new AppError("Payment verification failed: Invalid status from gateway", 400);
+    }
+
+    // 4. Update Statuses Atomically
+    return prisma.$transaction(async (tx) => {
+      const updateResult = await tx.payment.updateMany({
+        where: { id: payment.id, status: 'PENDING' },
+        data: {
+          razorpayPaymentId,
+          razorpaySignature,
+          status: 'SUCCESS'
+        }
+      });
+
+      if (updateResult.count === 0) {
+        return { message: "Payment already verified" };
+      }
+
+      await tx.order.updateMany({
+        where: { id: payment.orderId, status: 'PENDING_PAYMENT' },
+        data: { status: 'PLACED' }
+      });
       
       logger.info({ userId, orderId: payment.orderId, razorpayPaymentId }, 'Payment successful and order placed');
 
@@ -66,13 +105,42 @@ export const paymentService = {
     if (!payment) return; // Ignore unmapped payments
 
     if (event === 'payment.captured' && payment.status === 'PENDING') {
+      // Strict Amount and Currency Verification
+      const expectedAmountPaise = Math.round(payment.amount * 100);
+      
+      if (payload.amount !== expectedAmountPaise || payload.currency !== 'INR') {
+        logger.error({ 
+          orderId: payment.orderId, 
+          expectedAmount: expectedAmountPaise, 
+          receivedAmount: payload.amount,
+          receivedCurrency: payload.currency
+        }, 'SECURITY ALERT: Webhook payment amount/currency mismatch');
+        return; // Ignore fraudulent webhook payload
+      }
+
+      let isDuplicate = false;
       await prisma.$transaction(async (tx) => {
-        await paymentRepository.update(payment.id, {
-          razorpayPaymentId: payload.id,
-          status: 'SUCCESS'
-        }, tx);
-        await orderRepository.updateStatus(payment.orderId, 'PLACED', tx);
+        const updateResult = await tx.payment.updateMany({
+          where: { id: payment.id, status: 'PENDING' },
+          data: {
+            razorpayPaymentId: payload.id,
+            status: 'SUCCESS'
+          }
+        });
+        
+        if (updateResult.count === 0) {
+          isDuplicate = true;
+          return; // Ignore duplicate/retried webhook
+        }
+        
+        await tx.order.updateMany({
+          where: { id: payment.orderId, status: 'PENDING_PAYMENT' },
+          data: { status: 'PLACED' }
+        });
       });
+      
+      if (isDuplicate) return;
+      
       logger.info({ orderId: payment.orderId }, 'Webhook: Payment captured');
 
       // Notify seller (fire-and-forget)
@@ -89,27 +157,42 @@ export const paymentService = {
     }
 
     if (event === 'payment.failed' && payment.status === 'PENDING') {
+      let isDuplicate = false;
       await prisma.$transaction(async (tx) => {
-        await paymentRepository.update(payment.id, {
-          razorpayPaymentId: payload.id,
-          status: 'FAILED'
-        }, tx);
-        await orderRepository.updateStatus(payment.orderId, 'CANCELLED', tx);
+        const updateResult = await tx.payment.updateMany({
+          where: { id: payment.id, status: 'PENDING' },
+          data: {
+            razorpayPaymentId: payload.id,
+            status: 'FAILED'
+          }
+        });
         
-        // Release reserved stock back to available
+        if (updateResult.count === 0) {
+          isDuplicate = true;
+          return;
+        }
+
+        await tx.order.updateMany({
+          where: { id: payment.orderId, status: 'PENDING_PAYMENT' },
+          data: { status: 'CANCELLED' }
+        });
+        
+        // Release reserved stock back to available using Atomic SQL Updates
         const order = await orderRepository.findById(payment.orderId);
         for (const item of order.items) {
-          const inventory = await tx.inventory.findUnique({
-            where: { productVariantId: item.productVariantId }
+          const invUpdateResult = await tx.inventory.updateMany({
+            where: { 
+              productVariantId: item.productVariantId,
+              reservedStock: { gte: item.quantity }
+            },
+            data: {
+              availableStock: { increment: item.quantity },
+              reservedStock: { decrement: item.quantity }
+            }
           });
-          if (inventory) {
-            await tx.inventory.update({
-              where: { id: inventory.id },
-              data: {
-                availableStock: inventory.availableStock + item.quantity,
-                reservedStock: inventory.reservedStock - item.quantity
-              }
-            });
+          
+          if (invUpdateResult.count > 0) {
+            const inventory = await tx.inventory.findUnique({ where: { productVariantId: item.productVariantId } });
             await tx.inventoryTransaction.create({
               data: {
                 inventoryId: inventory.id,
@@ -123,6 +206,7 @@ export const paymentService = {
           }
         }
       });
+      if (isDuplicate) return;
       logger.info({ orderId: payment.orderId }, 'Webhook: Payment failed and stock released');
     }
   }

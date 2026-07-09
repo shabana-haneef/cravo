@@ -7,14 +7,17 @@ export const productRepository = {
   async update(id, data, tx = prisma) {
     return tx.product.update({ where: { id }, data });
   },
+  async countByCategory(categoryId) {
+    return prisma.product.count({ where: { categoryId } });
+  },
   async findById(id) {
     return prisma.product.findUnique({
       where: { id },
       include: {
-        images: { orderBy: { sortOrder: 'asc' } },
-        variants: true,
+        images: { orderBy: { sortOrder: 'asc' }, take: 10 },
+        variants: { take: 50 },
         category: true,
-        shop: { include: { seller: { include: { user: true } } } }
+        shop: { select: { id: true, name: true, slug: true, seller: { select: { id: true, userId: true, user: { select: { email: true } } } } } }
       }
     });
   },
@@ -22,13 +25,16 @@ export const productRepository = {
     return prisma.product.findUnique({
       where: { id },
       include: {
-        images: { orderBy: { sortOrder: 'asc' } },
-        variants: { where: { isActive: true }, include: { inventory: true } },
+        images: { orderBy: { sortOrder: 'asc' }, take: 10 },
+        variants: { where: { isActive: true }, include: { inventory: true }, take: 50 },
         category: true,
         shop: {
-          include: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
             seller: {
-              include: { user: { include: { profile: true } } }
+              select: { id: true, userId: true, user: { select: { id: true, email: true, profile: { select: { fullName: true } } } } }
             }
           }
         }
@@ -39,31 +45,37 @@ export const productRepository = {
     return prisma.product.findUnique({
       where: { slug },
       include: {
-        images: { orderBy: { sortOrder: 'asc' } },
-        variants: { where: { isActive: true }, include: { inventory: true } },
+        images: { orderBy: { sortOrder: 'asc' }, take: 10 },
+        variants: { where: { isActive: true }, include: { inventory: true }, take: 50 },
         category: true,
         shop: {
-          include: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
             seller: {
-              include: { user: { include: { profile: true } } }
+              select: { id: true, userId: true, user: { select: { id: true, email: true, profile: { select: { fullName: true } } } } }
             }
           }
         }
       }
     });
   },
-  async findByShopId(shopId, page = 1, limit = 10) {
-    const skip = (page - 1) * limit;
+  async findByShopId(shopId, page = 1, requestedLimit = 10, cursor = null) {
+    const limit = Math.min(Number(requestedLimit) || 10, 100);
     const where = { shopId, status: { not: 'ARCHIVED' } };
+
+    const paginationArgs = cursor
+      ? { cursor: { id: cursor }, skip: 1, take: limit }
+      : { skip: (page - 1) * limit, take: limit };
 
     const [data, total] = await Promise.all([
       prisma.product.findMany({
         where,
-        skip,
-        take: limit,
+        ...paginationArgs,
         include: {
-          images: { orderBy: { sortOrder: 'asc' } },
-          variants: { include: { inventory: true } },
+          images: { orderBy: { sortOrder: 'asc' }, take: 10 },
+          variants: { include: { inventory: true }, take: 50 },
           category: true
         },
         orderBy: { createdAt: 'desc' }
@@ -71,16 +83,27 @@ export const productRepository = {
       prisma.product.count({ where })
     ]);
 
-    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+    const nextCursor = data.length === limit ? data[data.length - 1].id : null;
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit), nextCursor } };
   },
   async findPendingApplications(status = 'PENDING_APPROVAL') {
     return prisma.product.findMany({
       where: { status },
+      take: 100, // Hard limit to prevent unbounded array DoS
       include: {
-        shop: { include: { seller: { include: { user: { include: { profile: true } } } } } },
+        shop: { 
+          select: { 
+            id: true,
+            name: true, 
+            slug: true, 
+            seller: { 
+              select: { id: true, userId: true, user: { select: { id: true, email: true, profile: { select: { fullName: true } } } } } 
+            } 
+          } 
+        },
         category: true,
         images: { orderBy: { sortOrder: 'asc' }, take: 3 },
-        variants: { where: { isActive: true }, take: 5 }
+        variants: { where: { isActive: true }, take: 50 }
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -89,8 +112,8 @@ export const productRepository = {
     const count = await prisma.product.count({ where: { slug } });
     return count > 0;
   },
-  async searchPublicProducts(filters, sort, page = 1, limit = 10) {
-    const skip = (page - 1) * limit;
+  async searchPublicProducts(filters, sort, page = 1, requestedLimit = 10, cursor = null) {
+    const limit = Math.min(Number(requestedLimit) || 10, 100);
     const where = { 
       status: 'APPROVED',
       shop: {
@@ -124,13 +147,16 @@ export const productRepository = {
       };
     }
 
-    let orderBy = { createdAt: 'desc' };
+    let orderBy = { id: 'desc' }; // Cursor requires deterministic ID sort
+
+    const paginationArgs = cursor
+      ? { cursor: { id: cursor }, skip: 1, take: limit }
+      : { skip: (page - 1) * limit, take: limit };
 
     const [data, total] = await Promise.all([
       prisma.product.findMany({
         where,
-        skip,
-        take: limit,
+        ...paginationArgs,
         include: {
           images: { orderBy: { sortOrder: 'asc' }, take: 1 }, 
           variants: { where: { isActive: true }, orderBy: { price: 'asc' }, take: 1, include: { inventory: true } },
@@ -142,7 +168,8 @@ export const productRepository = {
       prisma.product.count({ where })
     ]);
 
-    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+    const nextCursor = data.length === limit ? data[data.length - 1].id : null;
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit), nextCursor } };
   },
   async getSuggestions(q) {
     return prisma.product.findMany({

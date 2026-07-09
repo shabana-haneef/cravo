@@ -55,26 +55,35 @@ export const orderService = {
       throw new AppError(`Cancellation window of ${settings.customerCancellationWindowMins} minutes has expired.`, 400);
     }
 
-    if (!['PENDING_PAYMENT', 'PLACED'].includes(order.status)) {
-      throw new AppError("Order cannot be cancelled at this stage", 400);
-    }
-
     return prisma.$transaction(async (tx) => {
-      await orderRepository.updateStatus(orderId, 'CANCELLED', tx);
+      // Atomic state transition prevents Double Cancellation race condition
+      const updateResult = await tx.order.updateMany({
+        where: { 
+          id: orderId,
+          status: { in: ['PENDING_PAYMENT', 'PLACED'] }
+        },
+        data: { status: 'CANCELLED' }
+      });
 
-      // Release reserved stock
+      if (updateResult.count === 0) {
+        throw new AppError("Order cannot be cancelled at this stage", 400);
+      }
+
+      // Release reserved stock using Atomic SQL Updates
       for (const item of order.items) {
-        const inventory = await tx.inventory.findUnique({
-          where: { productVariantId: item.productVariantId }
+        const updateResult = await tx.inventory.updateMany({
+          where: { 
+            productVariantId: item.productVariantId,
+            reservedStock: { gte: item.quantity }
+          },
+          data: {
+            availableStock: { increment: item.quantity },
+            reservedStock: { decrement: item.quantity }
+          }
         });
-        if (inventory) {
-          await tx.inventory.update({
-            where: { id: inventory.id },
-            data: {
-              availableStock: inventory.availableStock + item.quantity,
-              reservedStock: inventory.reservedStock - item.quantity
-            }
-          });
+        
+        if (updateResult.count > 0) {
+          const inventory = await tx.inventory.findUnique({ where: { productVariantId: item.productVariantId } });
           await tx.inventoryTransaction.create({
             data: {
               inventoryId: inventory.id,
@@ -125,26 +134,37 @@ export const orderService = {
       'OUT_FOR_DELIVERY': ['DELIVERED']
     };
 
-    if (!transitions[order.status]?.includes(status)) {
-      throw new AppError(`Cannot transition order from ${order.status} to ${status}`, 400);
-    }
-
     const result = await prisma.$transaction(async (tx) => {
-      await orderRepository.updateStatus(orderId, status, tx);
+      const validSourceStatuses = Object.keys(transitions).filter(key => transitions[key].includes(status));
+      
+      // Atomic state transition prevents Double Status Update race condition
+      const updateResult = await tx.order.updateMany({
+        where: { 
+          id: orderId,
+          status: { in: validSourceStatuses }
+        },
+        data: { status }
+      });
 
-      // If delivered, deduct stock from reserved (ORDER_COMPLETED)
+      if (updateResult.count === 0) {
+        throw new AppError(`Cannot transition order to ${status} at this stage`, 400);
+      }
+
+      // If delivered, deduct stock from reserved (ORDER_COMPLETED) using Atomic SQL Updates
       if (status === 'DELIVERED') {
         for (const item of order.items) {
-          const inventory = await tx.inventory.findUnique({
-            where: { productVariantId: item.productVariantId }
+          const updateResult = await tx.inventory.updateMany({
+            where: { 
+              productVariantId: item.productVariantId,
+              reservedStock: { gte: item.quantity }
+            },
+            data: {
+              reservedStock: { decrement: item.quantity }
+            }
           });
-          if (inventory) {
-            await tx.inventory.update({
-              where: { id: inventory.id },
-              data: {
-                reservedStock: inventory.reservedStock - item.quantity
-              }
-            });
+          
+          if (updateResult.count > 0) {
+            const inventory = await tx.inventory.findUnique({ where: { productVariantId: item.productVariantId } });
             await tx.inventoryTransaction.create({
               data: {
                 inventoryId: inventory.id,

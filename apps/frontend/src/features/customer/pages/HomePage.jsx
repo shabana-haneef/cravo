@@ -11,6 +11,8 @@ import {
   fadeUp, fadeIn, slideLeft, slideRight, scaleIn
 } from '../../../components/shared/Motion.jsx';
 import { ArrowRight, ShoppingBag, Search, CheckCircle2, Leaf, Truck, ShieldCheck, RefreshCcw, ChevronDown, Users } from 'lucide-react';
+import { optimizeImage } from '../../../lib/cloudinary.js';
+import { SEO } from '../../../components/shared/SEO.jsx';
 
 export const HomePage = () => {
   const { data: catData, isLoading: catLoading, isError: catError, refetch: refetchCat } = useCategories();
@@ -23,17 +25,50 @@ export const HomePage = () => {
   const { scrollY } = useScroll();
   const heroBgY = useTransform(scrollY, [0, 600], [0, 90]);
 
+  // JSON-LD Schemas
+  const schemas = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Cravo Marketplace",
+      "url": "https://cravo.com",
+      "logo": "https://cravo.com/favicon.png",
+      "sameAs": [
+        "https://www.facebook.com/cravomarketplace",
+        "https://www.instagram.com/cravomarketplace"
+      ]
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Cravo Marketplace",
+      "url": "https://cravo.com",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://cravo.com/products?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+  ];
+
   return (
     <div className="flex flex-col gap-16 w-full">
+      <SEO 
+        description="Discover authentic pickles, spices, snacks, and more — made by trusted home sellers across India."
+        url={window.location.href}
+        schema={schemas}
+      />
 
       {/* ── Hero ── */}
       <section id="hero" className="relative w-[100vw] h-[calc(100vh-80px)] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] -mt-8 overflow-hidden flex flex-col items-center justify-center p-8 bg-black">
         {/* Parallax BG */}
         <motion.img
           src="/images/herobg.png"
-          alt="Crafted in Home Kitchens background"
+          alt="Authentic Indian Pickles and Preserved Foods"
+          title="Cravo Marketplace - Crafted in Home Kitchens"
           className="absolute inset-0 w-full h-full object-cover opacity-60 scale-105"
-          style={{ y: heroBgY }}
+          style={{ y: heroBgY, willChange: 'transform' }}
+          loading="eager"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
 
@@ -134,9 +169,13 @@ export const HomePage = () => {
                     >
                       <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-[3px] border-white shadow-md flex items-center justify-center p-0.5 bg-gray-50 relative group-hover:scale-[1.03] transition-transform duration-300">
                         <img 
-                          src={category.imageUrl || '/grocery-bag.png'} 
-                          alt={category.name} 
+                          src={optimizeImage(category.imageUrl, 300) || '/grocery-bag.png'} 
+                          alt={`${category.name} Category`} 
+                          title={`Shop for ${category.name}`}
                           className="w-full h-full object-cover rounded-full" 
+                          loading="lazy"
+                          width="112"
+                          height="112"
                         />
                       </div>
                       

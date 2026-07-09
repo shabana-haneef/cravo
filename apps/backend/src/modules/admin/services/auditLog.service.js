@@ -1,6 +1,26 @@
 import prisma from '../../../lib/prisma.js';
+import { logger } from '../../../shared/services/logger.js';
 
 export const auditLogService = {
+  // Helper to automatically extract actor and request metadata from the Express 'req' object
+  async logFromRequest(req, { actionType, targetType = null, targetId = null, targetName = null, status = 'SUCCESS' }) {
+    const actor = req.user || {};
+    return this.log({
+      actorId: actor.id,
+      actorEmail: actor.email,
+      actorRole: actor.role,
+      actionType,
+      targetType,
+      targetId,
+      targetName,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      requestMethod: req.method,
+      endpoint: req.originalUrl,
+      status
+    });
+  },
+
   // Append-only logger
   async log({
     actorId,
@@ -34,7 +54,7 @@ export const auditLogService = {
         }
       });
     } catch (error) {
-      console.error('Failed to write audit log:', error);
+      logger.error({ err: error }, 'Failed to write audit log');
     }
   },
 

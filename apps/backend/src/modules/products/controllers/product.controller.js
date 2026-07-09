@@ -19,7 +19,8 @@ export const productController = {
     try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
-      const result = await productService.getMyProducts(req.user.id, page, limit);
+      const cursor = req.query.cursor || null;
+      const result = await productService.getMyProducts(req.user.id, page, limit, cursor);
       return successResponse(res, 'Products retrieved', { products: result.data, meta: result.meta });
     } catch (error) { next(error); }
   },
@@ -52,11 +53,11 @@ export const productController = {
 
   async getPublicProducts(req, res, next) {
     try {
-      const { category, shop, minPrice, maxPrice, sort, search } = req.query;
+      const { category, shop, minPrice, maxPrice, sort, search, cursor } = req.query;
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
       const filters = { category, shop, minPrice, maxPrice, search };
-      const result = await productService.getPublicProducts(filters, sort, page, limit);
+      const result = await productService.getPublicProducts(filters, sort, page, limit, cursor);
       return successResponse(res, 'Products retrieved', { products: result.data, meta: result.meta });
     } catch (error) { next(error); }
   },

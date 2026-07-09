@@ -18,7 +18,8 @@ export const getSocket = () => {
 
   socket = io('/', {
     path: '/socket.io',
-    transports: ['polling', 'websocket'],
+    transports: ['websocket'],
+    upgrade: false,               // Disable polling fallback entirely
     withCredentials: true,        // Send httpOnly cookies (refreshToken) with handshake
     auth: { token: token ?? '' }, // Send access token if available; backend falls back to cookie
     autoConnect: true,

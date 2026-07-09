@@ -33,14 +33,10 @@ export const adminSellerController = {
       const application = await sellerService.approveApplication(req.params.id);
       logger.info({ adminId: req.user.id, sellerId: application.id }, 'Seller application approved');
       
-      await auditLogService.log({
-        adminId: req.user.id,
-        adminEmail: req.user.email,
-        action: 'SELLER_APPROVAL',
+      await auditLogService.logFromRequest(req, {
+        actionType: 'SELLER_APPROVAL',
         targetType: 'SELLER',
-        targetId: application.id,
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent']
+        targetId: application.id
       });
 
       return successResponse(res, 'Application approved successfully', { application });
@@ -57,14 +53,10 @@ export const adminSellerController = {
       const application = await sellerService.rejectApplication(req.params.id, parsed.data.reason);
       logger.info({ adminId: req.user.id, sellerId: application.id }, 'Seller application rejected');
       
-      await auditLogService.log({
-        adminId: req.user.id,
-        adminEmail: req.user.email,
-        action: 'SELLER_REJECTION',
+      await auditLogService.logFromRequest(req, {
+        actionType: 'SELLER_REJECTION',
         targetType: 'SELLER',
-        targetId: application.id,
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent']
+        targetId: application.id
       });
 
       return successResponse(res, 'Application rejected successfully', { application });

@@ -1,16 +1,135 @@
 version: '3.8'
 
 services:
-  redis:
+  # ----------------------------------------------------
+  # Frontend Service (React/Vite -> Nginx)
+  # ----------------------------------------------------
+  frontend:
     build:
-      context: .
-      dockerfile: ./docker/redis/Dockerfile
-    container_name: cravo-redis
-    restart: always
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    container_name: cravo_frontend
+    ports:
+      - "80:8080" # Maps host port 80 to container's 8080 (unprivileged Nginx)
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - cravo_network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ----------------------------------------------------
+  # Backend Service (Node.js/Express)
+  # ----------------------------------------------------
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: cravo_backend
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    env_file:
+      - ./apps/backend/.env
+    environment:
+      - DATABASE_URL=postgresql://cravo_user:cravo_password@postgres:5432/cravo_db?schema=public
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cravo_network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ----------------------------------------------------
+  # PostgreSQL Database
+  # ----------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: cravo_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cravo_user
+      POSTGRES_PASSWORD: cravo_password
+      POSTGRES_DB: cravo_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - cravo_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cravo_user -d cravo_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ----------------------------------------------------
+  # Redis Cache & Message Broker
+  # ----------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: cravo_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - redisdata:/data
+    networks:
+      - cravo_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  cravo_network:
+    driver: bridge
 
 volumes:
-  redis_data:
+  pgdata:
+  redisdata:

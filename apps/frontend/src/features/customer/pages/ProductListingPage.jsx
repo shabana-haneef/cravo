@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useDebounce } from '../../../hooks/useDebounce.js';
 import { useProducts } from '../../products/hooks/useProductQueries.js';
 import { useCategories } from '../../categories/hooks/useCategoryQueries.js';
 import { ProductCard } from '../../../components/shared/ProductCard.jsx';
-import { DebouncedSearch } from '../../../components/shared/DebouncedSearch.jsx';
+
 import { ProductSkeleton } from '../../../components/shared/Skeletons.jsx';
 import { EmptyState } from '../../../components/shared/EmptyState.jsx';
 import { ErrorState } from '../../../components/shared/ErrorState.jsx';
@@ -13,12 +14,12 @@ import { Filter, Store, ChevronDown, Leaf, CheckCircle2, ShieldCheck, Truck, X, 
 import { toast } from 'sonner';
 import { ScrollReveal, StaggerReveal, StaggerItem, fadeUp } from '../../../components/shared/Motion.jsx';
 import shopBanner from '../../../assets/minimal-basket.png';
+import { SEO } from '../../../components/shared/SEO.jsx';
 
 export const ProductListingPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // State for filters
-  const [search, setSearch] = useState(searchParams.get('search') || '');
+  const search = searchParams.get('search') || '';
   const [category, setCategory] = useState(searchParams.get('category') || '');
 
   let initialMin = searchParams.get('minPrice') || '';
@@ -34,6 +35,11 @@ export const ProductListingPage = () => {
   const [ratingFilter, setRatingFilter] = useState(''); // e.g. '4', '3', '2', '1'
   const [inStockOnly, setInStockOnly] = useState(false);
 
+  const debouncedMinPrice = useDebounce(minPrice, 500);
+  const debouncedMaxPrice = useDebounce(maxPrice, 500);
+
+  // No local search state sync needed, we derive it from searchParams directly
+
   // Queries
   const { data: catData } = useCategories();
   const categories = catData?.data?.categories || [];
@@ -41,8 +47,8 @@ export const ProductListingPage = () => {
   const { data: prodData, isLoading, isError, refetch, isFetching } = useProducts({
     search,
     category,
-    minPrice,
-    maxPrice,
+    minPrice: debouncedMinPrice,
+    maxPrice: debouncedMaxPrice,
     sort,
     page,
     limit: 12
@@ -56,17 +62,14 @@ export const ProductListingPage = () => {
     const params = new URLSearchParams();
     if (search) params.set('search', search);
     if (category) params.set('category', category);
-    if (minPrice) params.set('minPrice', minPrice);
-    if (maxPrice) params.set('maxPrice', maxPrice);
+    if (debouncedMinPrice) params.set('minPrice', debouncedMinPrice);
+    if (debouncedMaxPrice) params.set('maxPrice', debouncedMaxPrice);
     if (sort !== 'latest') params.set('sort', sort);
     if (page > 1) params.set('page', page);
     setSearchParams(params, { replace: true });
-  }, [search, category, minPrice, maxPrice, sort, page, setSearchParams]);
+  }, [search, category, debouncedMinPrice, debouncedMaxPrice, sort, page, setSearchParams]);
 
-  const handleSearch = (term) => {
-    setSearch(term);
-    setPage(1); // Reset page on new search
-  };
+
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -77,6 +80,11 @@ export const ProductListingPage = () => {
 
   return (
     <div className="w-full">
+      <SEO 
+        title={search ? `Search results for "${search}"` : category ? `Products in ${category}` : 'All Products'}
+        description="Search results and latest products on Cravo Marketplace."
+        url={window.location.href}
+      />
       {/* Page Header / Banner */}
       <div className="bg-white border border-gray-100 shadow-sm rounded-3xl relative overflow-hidden mb-8 min-h-[160px] flex items-center">
         <div className="p-5 lg:p-6 z-10 w-full lg:w-3/5">
@@ -126,8 +134,12 @@ export const ProductListingPage = () => {
         <div className="absolute right-0 top-0 h-full w-[50%] hidden lg:block">
           <img
             src={shopBanner}
-            alt="Cravo Premium Collection"
+            alt="Cravo Premium Organic Collection Banner"
+            title="Shop Premium Organic Products"
             className="w-full h-full object-contain object-right p-0 pr-4 scale-[1.65] origin-right transition-transform duration-300 hover:scale-[1.7] motion-reduce:transition-none motion-reduce:hover:scale-[1.65]"
+            loading="eager"
+            width="600"
+            height="160"
           />
         </div>
       </div>
@@ -135,17 +147,12 @@ export const ProductListingPage = () => {
       <div className="flex flex-col lg:flex-row gap-10">
         {/* Sidebar Filters */}
         <aside className="w-full lg:w-[260px] flex-shrink-0 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-120px)] z-10 custom-scrollbar overflow-y-auto rounded-xl">
-          {/* Header */}
-          <div className="bg-[#F9FAFB] px-5 py-4 rounded-xl flex items-center justify-between mb-4 border border-gray-100">
-            <div className="flex items-center gap-2">
-              <Filter size={18} className="text-gray-800" />
-              <h2 className="text-[15px] font-bold text-gray-900">Filter</h2>
-            </div>
-          </div>
-
           <div className="bg-white px-5 py-6 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-[16px] font-bold text-gray-900">Filters</h2>
+              <div className="flex items-center gap-2">
+                <Filter size={18} className="text-gray-800" />
+                <h2 className="text-[16px] font-bold text-gray-900">Filters</h2>
+              </div>
               <X size={18} className="text-gray-400 cursor-pointer hover:text-gray-600 lg:hidden" onClick={() => toast.info('Close filters menu')} />
             </div>
 
@@ -277,7 +284,7 @@ export const ProductListingPage = () => {
                 Apply Filters
               </button>
               <button
-                onClick={() => { setSearch(''); setCategory(''); setMinPrice(''); setMaxPrice(''); setRatingFilter(''); setInStockOnly(false); setPage(1); }}
+                onClick={() => { setCategory(''); setMinPrice(''); setMaxPrice(''); setRatingFilter(''); setInStockOnly(false); setPage(1); const params = new URLSearchParams(); setSearchParams(params, { replace: true }); }}
                 className="w-full py-3 text-[#113B1A] font-bold text-[14px] hover:bg-gray-50 rounded-lg transition-colors"
               >
                 Clear All
@@ -347,7 +354,7 @@ export const ProductListingPage = () => {
                 icon={Store}
                 title="No products found"
                 description="Try adjusting your filters or search terms to find what you're looking for."
-                action={<button onClick={() => { setSearch(''); setCategory(''); setMinPrice(''); setMaxPrice(''); }} className="mt-4 px-6 py-2 bg-[#1E3A2B] text-white rounded-full text-sm font-medium hover:bg-[#162A1F] transition-colors">Clear all filters</button>}
+                action={<button onClick={() => { setCategory(''); setMinPrice(''); setMaxPrice(''); const params = new URLSearchParams(); setSearchParams(params, { replace: true }); }} className="mt-4 px-6 py-2 bg-[#1E3A2B] text-white rounded-full text-sm font-medium hover:bg-[#162A1F] transition-colors">Clear all filters</button>}
               />
             </div>
           )}

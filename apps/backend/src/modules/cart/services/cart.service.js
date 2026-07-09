@@ -4,6 +4,7 @@ import { productVariantRepository } from '../../products/repositories/productVar
 import { inventoryRepository } from '../../inventory/repositories/inventory.repository.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 import { logger } from '../../../shared/services/logger.js';
+import { shopRepository } from '../../shops/repositories/shop.repository.js';
 import prisma from '../../../lib/prisma.js';
 
 export const cartService = {
@@ -14,13 +15,15 @@ export const cartService = {
       cart = await cartRepository.getByUserId(userId);
     }
 
-    let subtotal = 0;
+    let subtotalPaise = 0;
     let totalItems = cart.items.length;
 
     const validatedItems = cart.items.map(item => {
       const price = item.productVariant.price;
-      const itemTotal = price * item.quantity;
-      subtotal += itemTotal;
+      const pricePaise = Math.round(price * 100);
+      const itemTotalPaise = pricePaise * item.quantity;
+      subtotalPaise += itemTotalPaise;
+      const itemTotal = itemTotalPaise / 100;
 
       const productImages = item.product.images || [];
       const sortedImages = productImages.sort((a, b) => a.sortOrder - b.sortOrder);
@@ -36,9 +39,12 @@ export const cartService = {
         imageUrl,
         quantity: item.quantity,
         unitPrice: price,
-        totalPrice: itemTotal
+        totalPrice: itemTotal,
+        weightGrams: item.productVariant.weight || 500 // fallback to 500g if weight is null
       };
     });
+
+    const finalSubtotal = subtotalPaise / 100;
 
     return {
       id: cart.id,
@@ -46,19 +52,16 @@ export const cartService = {
       shop: cart.shop ? { name: cart.shop.name, slug: cart.shop.slug } : null,
       items: validatedItems,
       summary: {
-        subtotal,
+        subtotal: finalSubtotal,
         totalItems,
-        estimatedTotal: subtotal // Delivery calculated at checkout
+        estimatedTotal: finalSubtotal // Delivery calculated at checkout
       }
     };
   },
 
   async addItem(userId, variantId, quantity) {
     // 1. Validate Variant & Product
-    const variant = await prisma.productVariant.findUnique({
-      where: { id: variantId },
-      include: { product: true }
-    });
+    const variant = await productVariantRepository.findByIdWithProduct(variantId);
 
     if (!variant || !variant.isActive) throw new AppError("Product variant not available", 400);
     if (variant.product.status !== 'APPROVED') throw new AppError("Product not available", 400);
@@ -66,13 +69,7 @@ export const cartService = {
     const targetShopId = variant.product.shopId;
 
     // Check if the user is the owner of this shop
-    const userShop = await prisma.shop.findFirst({
-      where: {
-        seller: {
-          userId: userId
-        }
-      }
-    });
+    const userShop = await shopRepository.findByUserId(userId);
 
     if (userShop && userShop.id === targetShopId) {
       throw new AppError("You cannot purchase your own products", 400);

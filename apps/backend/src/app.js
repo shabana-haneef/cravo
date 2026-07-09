@@ -5,7 +5,8 @@ import compression from "compression";
 import cookieParser from "cookie-parser";
 import { rateLimit } from "express-rate-limit";
 import routes from "./routes/v1/index.js";
-import delhiveryRoutes from "./routes/delhivery.routes.js";
+import delhiveryRoutes from "./modules/delivery/routes/delhivery.routes.js";
+import seoRoutes from "./modules/seo/routes/seo.routes.js";
 
 import { notFound } from "./shared/middleware/notFound.middleware.js";
 import { errorHandler } from "./shared/middleware/error.middleware.js";
@@ -30,13 +31,33 @@ const generalLimiter = rateLimit({
 
 const app = express();
 
+// Required for rate-limiting behind Vercel/Nginx/Load Balancers
+app.set('trust proxy', 1);
+
 app.use(helmet());
+
+import { requestLoggerMiddleware } from "./shared/services/logger.js";
+app.use(requestLoggerMiddleware);
 
 app.use(compression());
 
+// Parse allowed origins from environment variable, fallback to localhost for dev
+const allowedOrigins = process.env.FRONTEND_URLS 
+  ? process.env.FRONTEND_URLS.split(',').map(url => url.trim()) 
+  : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+
 app.use(
   cors({
-    origin: true,
+    origin: function (origin, callback) {
+      // Allow requests with no origin (e.g., mobile apps, curl, server-to-server)
+      // If the origin exists, it MUST strictly match the explicit allowlist
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        // Reject all other origins
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   })
 );
@@ -67,6 +88,11 @@ app.use(
   "/api/delhivery",
   generalLimiter,
   delhiveryRoutes
+);
+
+app.use(
+  "/api/seo",
+  seoRoutes
 );
 
 app.use(notFound);

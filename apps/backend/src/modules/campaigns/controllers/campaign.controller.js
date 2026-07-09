@@ -1,6 +1,7 @@
 import { campaignService } from '../services/campaign.service.js';
 import { campaignSchema } from '../validators/campaign.validation.js';
 import { successResponse, errorResponse } from '../../../shared/responses/apiResponse.js';
+import { z } from 'zod';
 
 export const campaignController = {
   async createCampaign(req, res, next) {
@@ -62,8 +63,13 @@ export const campaignController = {
 
   async rejectCampaign(req, res, next) {
     try {
-      const { reason } = req.body;
-      if (!reason) return errorResponse(res, "Rejection reason is required", 400);
+      const rejectCampaignSchema = z.object({
+        reason: z.string().min(1, "Rejection reason is required").max(1000, "Rejection reason is too long")
+      });
+      const parsed = rejectCampaignSchema.safeParse(req.body);
+      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
+
+      const { reason } = parsed.data;
       const campaign = await campaignService.rejectCampaign(req.user.id, req.params.id, reason);
       return successResponse(res, 'Campaign rejected', campaign);
     } catch (error) { next(error); }
