@@ -36,7 +36,7 @@ export const FaqPage = () => {
         {
           id: 'os-1',
           question: 'How do I track my order?',
-          answer: 'Once your order is processed and dispatched, you will receive an email and SMS with tracking details. You can also track your order directly from your profile dashboard under the "Orders" section or by visiting the "Track Order" page.'
+          answer: 'Once your order is processed and dispatched, you will receive an email with tracking details. You can also track your order directly from your profile dashboard under the "Orders" section or by visiting the "Track Order" page.'
         },
         {
           id: 'os-2',

@@ -64,7 +64,7 @@ export const Footer = () => {
             </h3>
             <ul className="flex flex-col gap-4">
               <li>
-                <Link to="/help" title="Customer Help Center" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
+                <Link to="/help-center" title="Customer Help Center" className="text-gray-600 hover:text-[#154D21] transition-colors duration-200 motion-reduce:transition-none text-sm font-semibold">
                   Help Center
                 </Link>
               </li>

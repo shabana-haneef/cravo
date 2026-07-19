@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useAuthStore } from '../store/auth.store.js';
 import { useCartStore } from '../store/cart.store.js';
 import { useLogout } from '../features/auth/hooks/useAuthQueries.js';
-import { ShoppingCart, User, LogOut, Store, Package, Box, ChevronDown, Search, Heart } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Store, Package, Box, ChevronDown, Search, Heart, HelpCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button.jsx';
 import { GlobalAdPopup } from '../components/shared/GlobalAdPopup.jsx';
 import { useWishlist } from '../features/wishlist/hooks/useWishlistQueries.js';
@@ -126,7 +126,14 @@ export const MainLayout = () => {
                 >
                   <User size={18} className="stroke-[2]" />
                   <span className="max-w-[120px] truncate">{(user?.email?.split('@') || [])[0] || 'User'}</span>
-                  <ChevronDown size={14} className="text-gray-400" />
+                </Link>
+
+                <Link
+                  to="/help-center"
+                  title="Help Center"
+                  className="hidden md:flex p-2 text-gray-500 hover:text-[#154D21] transition-colors rounded-xl hover:bg-gray-50"
+                >
+                  <HelpCircle size={20} className="stroke-[2]" />
                 </Link>
 
                 <button

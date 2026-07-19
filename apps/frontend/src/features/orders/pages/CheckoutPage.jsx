@@ -173,6 +173,7 @@ export const CheckoutPage = () => {
   const { 
     data: previewResponse, 
     isLoading: loadingPreview,
+    isFetching: fetchingPreview,
     isError: hasPreviewError,
     error: previewError
   } = useCheckoutPreview(previewParams);
@@ -345,7 +346,8 @@ export const CheckoutPage = () => {
     </div>
   );
 
-  if (loadingPreview) return <CheckoutSkeleton />;
+  // Show skeleton while loading OR while fetching fresh data with no prior response
+  if (loadingPreview || (fetchingPreview && !previewResponse)) return <CheckoutSkeleton />;
 
   if (hasPreviewError || !cart) {
     const errorMessage = previewError?.response?.data?.message || 'Failed to load checkout preview. Please check your cart or try again.';

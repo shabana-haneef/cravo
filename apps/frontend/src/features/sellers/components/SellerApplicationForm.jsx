@@ -10,7 +10,6 @@ import { Loader2, SendHorizonal, ShieldCheck } from 'lucide-react';
 const schema = z.object({
   bio: z.string().max(500, 'Bio must be 500 characters or less.').optional(),
   idProof: z.any().refine((f) => f instanceof File, 'ID Proof is required.'),
-  addressProof: z.any().refine((f) => f instanceof File, 'Address Proof is required.'),
   shopImage: z.any().optional(),
   fssaiLicense: z.any().optional(),
 });
@@ -29,7 +28,6 @@ export const SellerApplicationForm = () => {
     defaultValues: {
       bio: '',
       idProof: null,
-      addressProof: null,
       shopImage: null,
       fssaiLicense: null,
     },
@@ -39,7 +37,6 @@ export const SellerApplicationForm = () => {
     const formData = new FormData();
     if (data.bio) formData.append('bio', data.bio);
     formData.append('idProof', data.idProof);
-    formData.append('addressProof', data.addressProof);
     if (data.shopImage instanceof File) formData.append('shopImage', data.shopImage);
     if (data.fssaiLicense instanceof File) formData.append('fssaiLicense', data.fssaiLicense);
 
@@ -113,20 +110,6 @@ export const SellerApplicationForm = () => {
                   value={field.value}
                   onChange={field.onChange}
                   error={errors.idProof?.message}
-                />
-              )}
-            />
-
-            <Controller
-              name="addressProof"
-              control={control}
-              render={({ field }) => (
-                <FileUpload
-                  label="Address Proof"
-                  required
-                  value={field.value}
-                  onChange={field.onChange}
-                  error={errors.addressProof?.message}
                 />
               )}
             />

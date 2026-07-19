@@ -12,7 +12,11 @@ export const useCheckoutPreview = (params) => {
   return useQuery({
     queryKey: [...ORDER_KEYS.preview, params],
     queryFn: () => orderApi.getPreview(params),
-    retry: false, // Don't retry on empty cart
+    retry: false,              // don't retry on empty cart / bad params
+    staleTime: 0,              // always stale — checkout must be fresh
+    gcTime: 0,                 // don't persist cache across navigations
+    refetchOnMount: 'always',  // force fresh fetch every time the page mounts
+    refetchOnWindowFocus: false,
   });
 };
 

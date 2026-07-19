@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useProduct, useProducts } from '../../products/hooks/useProductQueries.js';
 import { useCart, useAddToCart, useClearCart } from '../../cart/hooks/useCartQueries.js';
 import { DetailsSkeleton } from '../../../components/shared/Skeletons.jsx';

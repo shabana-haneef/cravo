@@ -163,21 +163,25 @@ async function _validateOrderLimits(userId, cart, grandTotal, settings) {
 
   // Calculate Cumulative 24-Hour Purchase History
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  
-  const recentPurchases = await prisma.orderItem.groupBy({
-    by: ['productVariantId'],
-    where: {
-      order: {
-        customerId: userId,
-        createdAt: { gte: twentyFourHoursAgo },
-        status: { notIn: ['CANCELLED', 'FAILED'] }
-      },
-      productVariantId: { in: cart.items.map(i => i.productVariantId) }
-    },
-    _sum: {
-      quantity: true
-    }
-  });
+
+  const variantIds = cart.items.map(i => i.productVariantId).filter(Boolean);
+
+  // If no items have a variantId, skip the limit check entirely
+  const recentPurchases = variantIds.length > 0
+    ? await prisma.orderItem.groupBy({
+        by: ['productVariantId'],
+        where: {
+          order: {
+            customerId: userId,
+            createdAt: { gte: twentyFourHoursAgo },
+            // FAILED is not an OrderStatus — only CANCELLED and REFUNDED are terminal
+            status: { notIn: ['CANCELLED', 'REFUNDED'] }
+          },
+          productVariantId: { in: variantIds }
+        },
+        _sum: { quantity: true }
+      })
+    : [];
 
   const purchasedMap = recentPurchases.reduce((acc, curr) => {
     acc[curr.productVariantId] = curr._sum.quantity || 0;

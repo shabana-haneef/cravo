@@ -39,6 +39,7 @@ const ShippingPolicyPage = React.lazy(() => import('../features/customer/pages/S
 const TrackOrder = React.lazy(() => import('../features/customer/pages/TrackOrder.jsx').then(m => ({ default: m.TrackOrder })));
 const SellerTermsPage = React.lazy(() => import('../features/customer/pages/SellerTermsPage.jsx').then(m => ({ default: m.SellerTermsPage })));
 const WishlistPage = React.lazy(() => import('../features/wishlist/pages/WishlistPage.jsx').then(m => ({ default: m.WishlistPage })));
+const HelpCenterPage = React.lazy(() => import('../features/customer/pages/HelpCenterPage.jsx').then(m => ({ default: m.HelpCenterPage })));
 
 // Lazy load cart, checkout, and order pages
 const CartPage = React.lazy(() => import('../features/cart/pages/CartPage.jsx').then(m => ({ default: m.CartPage })));
@@ -116,6 +117,7 @@ const router = createBrowserRouter([
           { path: '/addresses', element: <S><AddressesPage /></S> },
           { path: '/seller/application', element: <S><SellerApplicationContainer /></S> },
           { path: '/wishlist', element: <S><WishlistPage /></S> },
+          { path: '/help-center', element: <S><HelpCenterPage /></S> },
         ]
       }
     ]
