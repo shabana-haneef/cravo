@@ -40,13 +40,96 @@ const generalAuthLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+/**
+ * @swagger
+ * tags:
+ *   name: Authentication
+ *   description: User registration, login, and token management
+ */
+
 // ==========================================
 // Public Auth Endpoints
 // ==========================================
+/**
+ * @swagger
+ * /api/v1/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - firstName
+ *               - lastName
+ *               - role
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [CUSTOMER, SELLER]
+ *     responses:
+ *       201:
+ *         description: Successfully registered. Check email for verification code.
+ *       400:
+ *         description: Validation error or email already exists
+ */
 router.post('/register', registerLimiter, authController.register);
 router.post('/verify-email', otpLimiter, authController.verifyEmail);
 router.post('/resend-otp', otpLimiter, authController.resendOtp);
 
+/**
+ * @swagger
+ * /api/v1/auth/login:
+ *   post:
+ *     summary: Login to the application
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Successfully logged in
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     accessToken:
+ *                       type: string
+ *                     user:
+ *                       type: object
+ *       401:
+ *         description: Invalid credentials
+ */
 router.post('/login', loginLimiter, authController.login);
 router.post('/google', loginLimiter, authController.googleAuth);
 router.post('/refresh-token', generalAuthLimiter, authController.refreshToken); 

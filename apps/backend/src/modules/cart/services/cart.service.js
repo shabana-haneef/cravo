@@ -5,6 +5,7 @@ import { inventoryRepository } from '../../inventory/repositories/inventory.repo
 import { AppError } from '../../../shared/errors/AppError.js';
 import { logger } from '../../../shared/services/logger.js';
 import { shopRepository } from '../../shops/repositories/shop.repository.js';
+import { campaignHelper } from '../../campaigns/services/campaign.helper.js';
 import prisma from '../../../lib/prisma.js';
 
 export const cartService = {
@@ -18,8 +19,11 @@ export const cartService = {
     let subtotalPaise = 0;
     let totalItems = cart.items.length;
 
+    // --- APPLY CAMPAIGN DISCOUNTS ---
+    await campaignHelper.applyDiscountsToCartItems(cart.shopId, cart.items);
+
     const validatedItems = cart.items.map(item => {
-      const price = item.productVariant.price;
+      const price = Number(item.productVariant.price);
       const pricePaise = Math.round(price * 100);
       const itemTotalPaise = pricePaise * item.quantity;
       subtotalPaise += itemTotalPaise;

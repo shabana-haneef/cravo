@@ -1,24 +1,23 @@
 import { z } from 'zod';
 
-export const campaignSchema = z.object({
-  name: z.string().min(3, "Campaign name must be at least 3 characters").max(100),
-  type: z.enum(['PRODUCT_PROMOTION', 'STOREWIDE_OFFER', 'DISCOUNT_CAMPAIGN', 'FLASH_SALE']),
-  targetProductIds: z.preprocess((val) => {
-    if (typeof val === 'string') {
-      try { return JSON.parse(val); } catch { return []; }
-    }
-    return val || [];
-  }, z.array(z.string()).optional()),
-  destinationUrl: z.string().url("Must be a valid URL").optional().nullable(),
-  budget: z.coerce.number().min(100, "Minimum budget is ₹100"),
-  startDate: z.coerce.date().optional().nullable(),
-  endDate: z.coerce.date().optional().nullable(),
+export const productPromotionSchema = z.object({
+  productId: z.string().min(1, "Product ID is required")
 });
 
-export const updateCampaignSchema = z.object({
-  name: z.string().min(3).max(100).optional(),
-  budget: z.coerce.number().min(100).optional(),
-  destinationUrl: z.string().url().optional().nullable(),
-  startDate: z.coerce.date().optional().nullable(),
-  endDate: z.coerce.date().optional().nullable(),
+export const storewideOfferSchema = z.object({
+  packageType: z.enum(['GO', 'PRO', 'PREMIUM'], { required_error: "Valid package type is required" })
+});
+
+export const discountCampaignSchema = z.object({
+  discountPercentage: z.coerce.number().refine(val => [25, 50, 75].includes(val), "Discount must be 25, 50, or 75")
+});
+
+export const flashSaleSchema = z.object({
+  productId: z.string().min(1, "Product ID is required")
+});
+
+export const verifyPaymentSchema = z.object({
+  razorpayOrderId: z.string().min(1, "Razorpay Order ID is required"),
+  razorpayPaymentId: z.string().min(1, "Razorpay Payment ID is required"),
+  razorpaySignature: z.string().min(1, "Razorpay Signature is required")
 });

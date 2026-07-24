@@ -77,7 +77,7 @@ api.interceptors.response.use(
       } catch (err) {
         processQueue(err, null);
         useAuthStore.getState().clearAuth(); // Force logout
-        if (window.location.pathname !== '/login') {
+        if (window.location.pathname !== '/login' && originalRequest.url !== '/auth/me') {
           window.location.href = '/login'; // Redirect to login page
         }
         return Promise.reject(err);

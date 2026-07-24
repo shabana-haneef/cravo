@@ -5,4 +5,4 @@ export const profileSchema = z.object({
   phone: z.string().regex(/^[6-9]\d{9}$/, "Must be a valid 10-digit Indian mobile number"),
   avatar: z.string().url("Avatar must be a valid URL").optional().nullable(),
   dateOfBirth: z.coerce.date().optional().nullable(),
-});
+}).strip();

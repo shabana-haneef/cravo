@@ -8,11 +8,35 @@ const router = Router();
 
 // Seller Routes
 router.post(
-  '/', 
+  '/product-promotion', 
   protect, 
   allowRoles('SELLER'), 
   upload.single('banner'), 
-  campaignController.createCampaign
+  campaignController.createProductPromotion
+);
+
+router.post(
+  '/storewide-offer', 
+  protect, 
+  allowRoles('SELLER'), 
+  upload.single('banner'), 
+  campaignController.createStorewideOffer
+);
+
+router.post(
+  '/discount', 
+  protect, 
+  allowRoles('SELLER'), 
+  upload.single('banner'), 
+  campaignController.createDiscountCampaign
+);
+
+router.post(
+  '/flash-sale', 
+  protect, 
+  allowRoles('SELLER'), 
+  upload.single('banner'), 
+  campaignController.createFlashSale
 );
 
 router.post(
@@ -63,6 +87,12 @@ router.patch(
   protect, 
   allowRoles('ADMIN'), 
   campaignController.rejectCampaign
+);
+
+// Public/App Route for Analytics
+router.post(
+  '/:id/track',
+  campaignController.trackAnalytics
 );
 
 export default router;

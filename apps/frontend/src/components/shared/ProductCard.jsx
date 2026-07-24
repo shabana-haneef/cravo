@@ -11,8 +11,8 @@ export const ProductCard = React.memo(({ product, variant = 'simple' }) => {
   const { name, slug, shop, variants, images, category } = product;
   const mainImage = optimizeImage(images?.[0]?.imageUrl, 400) || 'https://via.placeholder.com/400x400?text=No+Image';
   const defaultVariant = variants?.[0];
-  const price = defaultVariant?.price || 0;
-  // const comparePrice = defaultVariant?.compareAtPrice;
+  const price = Number(defaultVariant?.price) || 0;
+  // const comparePrice = Number(defaultVariant?.compareAtPrice) || 0;
   const isOutOfStock = defaultVariant?.inventory?.availableStock <= 0;
   const variantName = defaultVariant?.name || defaultVariant?.variantName || '1 Kg'; // fallback if no name
 
@@ -41,7 +41,7 @@ export const ProductCard = React.memo(({ product, variant = 'simple' }) => {
   };
 
   if (variant === 'wishlist') {
-    const compareAtPrice = defaultVariant?.compareAtPrice;
+    const compareAtPrice = Number(defaultVariant?.compareAtPrice) || 0;
     const hasDiscount = compareAtPrice && compareAtPrice > price;
     const discountPercent = hasDiscount ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100) : 0;
 

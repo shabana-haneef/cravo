@@ -12,6 +12,7 @@ import { deliverySettingsService } from '../../admin/services/deliverySettings.s
 import { delhiveryService } from '../../delivery/services/delhiveryService.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 import { logger } from '../../../shared/services/logger.js';
+import { campaignHelper } from '../../campaigns/services/campaign.helper.js';
 import prisma from '../../../lib/prisma.js';
 
 function generateOrderNumber() {
@@ -52,7 +53,7 @@ async function _resolveCart(userId, buyNowParams) {
     if (!variant || !variant.isActive || variant.product.status !== 'APPROVED') {
       throw new AppError("Product variant not available", 400);
     }
-    const pricePaise = Math.round(variant.price * 100);
+    const pricePaise = Math.round(Number(variant.price) * 100);
     const subtotalPaise = pricePaise * buyNowParams.quantity;
     const subtotal = subtotalPaise / 100;
     const imageUrl = variant.product.images?.[0]?.imageUrl || null;
@@ -63,6 +64,8 @@ async function _resolveCart(userId, buyNowParams) {
       items: [
         {
           id: 'buy-now-mock-item',
+          product: variant.product, // Pass product so helper can grab ID
+          productVariant: variant, // Pass variant reference for helper to mutate
           productId: variant.productId,
           variantId: variant.id,
           productSlug: variant.product.slug,
@@ -70,16 +73,27 @@ async function _resolveCart(userId, buyNowParams) {
           variantName: variant.name,
           imageUrl,
           quantity: buyNowParams.quantity,
-          unitPrice: variant.price,
-          totalPrice: subtotal,
-          weightGrams: variant.weight || 500
+          weightGrams: variant.weight || 500,
+          unitPrice: Number(variant.price) // Initally set to variant.price, but we'll override if discounted
         }
-      ],
-      summary: {
-        subtotal,
-        totalItems: buyNowParams.quantity,
-        estimatedTotal: subtotal
-      }
+      ]
+    };
+
+    // Apply Campaign Discounts
+    await campaignHelper.applyDiscountsToCartItems(cart.shopId, cart.items);
+
+    // Recalculate with updated price
+    const updatedPrice = Number(cart.items[0].productVariant.price);
+    const updatedSubtotalPaise = Math.round(updatedPrice * 100) * buyNowParams.quantity;
+    const updatedSubtotal = updatedSubtotalPaise / 100;
+    
+    cart.items[0].unitPrice = updatedPrice;
+    cart.items[0].totalPrice = updatedSubtotal;
+
+    cart.summary = {
+      subtotal: updatedSubtotal,
+      totalItems: buyNowParams.quantity,
+      estimatedTotal: updatedSubtotal
     };
   } else {
     cart = await cartService.getCart(userId);
@@ -117,7 +131,7 @@ async function _validateAddress(userId, addressId, settings, deliverySettings) {
 }
 
 async function _calculateShipping(cart, address, deliverySettings) {
-  const subtotal = cart.summary.subtotal;
+  const subtotal = Number(cart.summary.subtotal);
   let deliveryCharge = 0;
 
   if (deliverySettings.enableDeliveryCharges) {
@@ -434,6 +448,37 @@ export const checkoutService = {
 
       // 7. Create Order
       const order = await _createOrderRecord(tx, cart, subtotal, deliveryCharge, discount, grandTotal, addressId, orderNumber, userId);
+
+      // 8. Track Campaign Conversions
+      const shopId = cart.shopId;
+      const productIds = cart.items.map(item => item.productId);
+      const activeCampaigns = await tx.campaign.findMany({
+        where: {
+          status: 'ACTIVE',
+          shopId: shopId,
+          OR: [
+            { type: { in: ['STOREWIDE_OFFER', 'DISCOUNT_CAMPAIGN'] } },
+            { type: { in: ['PRODUCT_PROMOTION', 'FLASH_SALE'] }, targetProductIds: { hasSome: productIds } }
+          ]
+        },
+        select: { id: true, type: true, targetProductIds: true }
+      });
+
+      if (activeCampaigns.length > 0) {
+        // dynamic import to avoid circular dependencies
+        const { campaignRepository } = await import('../../campaigns/repositories/campaign.repository.js');
+        for (const campaign of activeCampaigns) {
+          let campaignRevenue = 0;
+          cart.items.forEach(item => {
+            if (['STOREWIDE_OFFER', 'DISCOUNT_CAMPAIGN'].includes(campaign.type) || campaign.targetProductIds.includes(item.productId)) {
+              campaignRevenue += item.totalPrice; // item total price
+            }
+          });
+          if (campaignRevenue > 0) {
+            await campaignRepository.trackConversion(campaign.id, campaignRevenue, tx);
+          }
+        }
+      }
 
       // 8. Clear Cart
       await _clearCartIfApplicable(tx, cart, buyNowParams);

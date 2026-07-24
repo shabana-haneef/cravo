@@ -5,13 +5,15 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { api } from '../../lib/axios.js';
 import { optimizeImage } from '../../lib/cloudinary.js';
 
+import { useQuery } from '@tanstack/react-query';
+import { useDebounce } from '../../hooks/useDebounce.js';
+
 export const GlobalSearchBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const searchContainerRef = useRef(null);
   const shouldReduceMotion = useReducedMotion();
@@ -33,36 +35,21 @@ export const GlobalSearchBar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Debounced suggestion fetching
-  useEffect(() => {
-    if (searchQuery.trim().length < 2) {
-      setSuggestions([]);
-      return;
-    }
+  // TanStack Query for suggestions
+  const { data: suggestionsData, isLoading: isLoadingSuggestions } = useQuery({
+    queryKey: ['productSuggestions', debouncedSearch],
+    queryFn: async () => {
+      if (debouncedSearch.trim().length < 2) return [];
+      const { data } = await api.get('/products/suggestions', {
+        params: { q: debouncedSearch }
+      });
+      return data?.data?.suggestions || [];
+    },
+    enabled: debouncedSearch.trim().length >= 2,
+    staleTime: 60 * 1000 // Cache for 1 minute
+  });
 
-    const controller = new AbortController();
-    const delayDebounce = setTimeout(async () => {
-      setIsLoadingSuggestions(true);
-      try {
-        const response = await api.get('/products/suggestions', {
-          params: { q: searchQuery },
-          signal: controller.signal
-        });
-        setSuggestions(response.data?.data?.suggestions || []);
-      } catch (err) {
-        if (err.name !== 'CanceledError') {
-          console.error('Suggestions error:', err);
-        }
-      } finally {
-        setIsLoadingSuggestions(false);
-      }
-    }, 300);
-
-    return () => {
-      clearTimeout(delayDebounce);
-      controller.abort();
-    };
-  }, [searchQuery]);
+  const suggestions = suggestionsData || [];
 
   const handleSearchSubmit = (e) => {
     if (e) e.preventDefault();

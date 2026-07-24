@@ -12,6 +12,71 @@ import prisma from '../../../lib/prisma.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 import { redis } from '../../../config/redis.js';
 
+const _applyCampaignModifiers = async (products) => {
+  if (!products || products.length === 0) return products;
+  const isArray = Array.isArray(products);
+  const items = isArray ? products : [products];
+
+  const shopIds = [...new Set(items.map(p => p.shopId))];
+  const productIds = items.map(p => p.id);
+
+  // Fetch active campaigns for these shops/products
+  const activeCampaigns = await prisma.campaign.findMany({
+    where: {
+      status: 'ACTIVE',
+      shopId: { in: shopIds },
+      OR: [
+        { type: { in: ['STOREWIDE_OFFER', 'DISCOUNT_CAMPAIGN'] } },
+        { type: { in: ['PRODUCT_PROMOTION', 'FLASH_SALE'] }, targetProductIds: { hasSome: productIds } }
+      ]
+    }
+  });
+
+  if (activeCampaigns.length === 0) return products;
+
+  items.forEach(product => {
+    let isPromoted = false;
+    let maxDiscount = 0;
+
+    const applicableCampaigns = activeCampaigns.filter(c => 
+      c.shopId === product.shopId && 
+      (c.type === 'STOREWIDE_OFFER' || c.type === 'DISCOUNT_CAMPAIGN' || c.targetProductIds.includes(product.id))
+    );
+
+    applicableCampaigns.forEach(c => {
+      if (c.type === 'PRODUCT_PROMOTION') isPromoted = true;
+      if (c.type === 'STOREWIDE_OFFER') isPromoted = true; // Storewide bumps visibility of all products
+      if (c.type === 'FLASH_SALE') isPromoted = true;
+
+      if (c.type === 'DISCOUNT_CAMPAIGN' && c.metadata?.discount) {
+        maxDiscount = Math.max(maxDiscount, c.metadata.discount);
+      }
+    });
+
+    product.isPromoted = product.isPromoted || isPromoted; // Preserve if already featured
+    
+    if (maxDiscount > 0 && product.variants) {
+      product.campaignDiscount = maxDiscount;
+      product.variants.forEach(variant => {
+        // Only apply if there's no existing manual compareAtPrice discount that is better
+        const manualDiscount = variant.compareAtPrice ? ((variant.compareAtPrice - variant.price) / variant.compareAtPrice) * 100 : 0;
+        if (maxDiscount > manualDiscount) {
+          variant.originalPrice = variant.compareAtPrice || variant.price;
+          variant.price = variant.originalPrice * (1 - maxDiscount / 100);
+          variant.isCampaignDiscount = true;
+        }
+      });
+    }
+  });
+
+  // If sorting is required, bump promoted products to the top
+  if (isArray) {
+    items.sort((a, b) => (b.isPromoted ? 1 : 0) - (a.isPromoted ? 1 : 0));
+  }
+
+  return isArray ? items : items[0];
+};
+
 const _clearCatalogCache = async () => {
   if (!redis || !redis.isOpen) return;
   try {
@@ -327,6 +392,10 @@ export const productService = {
     }
 
     const result = await productRepository.searchPublicProducts(filters, sort, page, limit, cursor);
+    
+    if (result.data) {
+      result.data = await _applyCampaignModifiers(result.data);
+    }
 
     if (redis && redis.isOpen) {
       redis.setEx(cacheKey, 3600, JSON.stringify(result)).catch(() => {}); // 1 hour TTL
@@ -349,7 +418,8 @@ export const productService = {
       }
     }
 
-    const result = await productRepository.getSuggestions(q);
+    let result = await productRepository.getSuggestions(q);
+    result = await _applyCampaignModifiers(result);
     
     if (redis && redis.isOpen) {
       redis.setEx(cacheKey, 3600, JSON.stringify(result)).catch(() => {}); // 1 hour TTL
@@ -382,6 +452,8 @@ export const productService = {
     if (!product || product.status !== 'APPROVED') {
       throw new AppError("Product not found", 404);
     }
+
+    product = await _applyCampaignModifiers(product);
 
     if (redis && redis.isOpen) {
       redis.setEx(cacheKey, 86400, JSON.stringify(product)).catch(() => {}); // 24 hours TTL

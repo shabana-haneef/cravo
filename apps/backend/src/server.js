@@ -6,17 +6,15 @@ import { redis, pubClient, subClient } from './config/redis.js';
 import { prisma } from './config/prisma.js';
 
 import { logger } from './shared/services/logger.js';
-import { initDeliverySyncJob } from './modules/delivery/jobs/deliverySync.job.js';
-import { initOrderMaintenanceJob } from './modules/orders/jobs/orderMaintenance.job.js';
-import { initSitemapJob } from './modules/seo/jobs/sitemap.job.js';
-import { jobManager } from './shared/utils/JobManager.js';
+import { initDeliverySyncWorker } from './modules/delivery/jobs/deliverySync.job.js';
+import { initOrderMaintenanceWorker } from './modules/orders/jobs/orderMaintenance.job.js';
+import { initSitemapWorker } from './modules/seo/jobs/sitemap.job.js';
+import { initCampaignExpiryWorker } from './modules/campaigns/jobs/campaignExpiry.job.js';
+import { stopAllWorkers, queueConnection } from './shared/utils/queue.manager.js';
 import { initSocket } from './lib/socket.js';
 
 let httpServer;
 let io;
-let deliverySyncJob;
-let orderMaintenanceJob;
-let sitemapJob;
 
 const startServer = async () => {
   try {
@@ -28,9 +26,10 @@ const startServer = async () => {
     await subClient.connect();
     logger.info('Redis (Main, Pub, Sub) Connected');
 
-    deliverySyncJob = initDeliverySyncJob();
-    orderMaintenanceJob = initOrderMaintenanceJob();
-    sitemapJob = initSitemapJob();
+    initDeliverySyncWorker();
+    initOrderMaintenanceWorker();
+    initSitemapWorker();
+    initCampaignExpiryWorker();
 
     httpServer = createServer(app);
     io = initSocket(httpServer);
@@ -60,8 +59,8 @@ const gracefulShutdown = async (signal) => {
   }, 10000).unref();
 
   try {
-    // 1. Stop background jobs and wait for active executions to finish
-    await jobManager.stopAndAwait(8000);
+    // 1. Stop BullMQ workers gracefully
+    await stopAllWorkers();
 
     // 2. Stop accepting new HTTP requests
     if (httpServer) {
@@ -89,6 +88,7 @@ const gracefulShutdown = async (signal) => {
     if (redis.isOpen) await redis.quit();
     if (pubClient.isOpen) await pubClient.quit();
     if (subClient.isOpen) await subClient.quit();
+    queueConnection.disconnect();
     logger.info('Redis disconnected.');
 
     logger.info('Graceful shutdown completed successfully.');

@@ -47,4 +47,4 @@ export const updateProductSchema = z.object({
   ingredients: z.string().min(1, 'Ingredients are required.'),
   weight: z.coerce.number().positive().optional().nullable(),
   isFeatured: z.coerce.boolean().optional()
-});
+}).strip();

@@ -4,6 +4,7 @@ import { AppError } from '../../../shared/errors/AppError.js';
 import { cloudinaryService } from '../../../shared/services/cloudinary.service.js';
 import { productRepository } from '../../products/repositories/product.repository.js';
 import prisma from '../../../lib/prisma.js';
+import { redis } from '../../../config/redis.js';
 
 const DEFAULT_CATEGORIES = [
   { name: 'Pickles', imageUrl: '/images/categories/images/pickles.png' },
@@ -45,6 +46,13 @@ export const categoryService = {
     });
   },
   async getCategories(activeOnly = false) {
+    const cacheKey = activeOnly ? 'categories:public' : 'categories:all';
+
+    if (activeOnly && redis.isOpen) {
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    }
+
     // 1. Seed missing default categories individually
     for (const cat of DEFAULT_CATEGORIES) {
       const slug = slugService.slugify(cat.name);
@@ -75,7 +83,14 @@ export const categoryService = {
       // Fail-safe
     }
 
-    return categoryRepository.findAll(activeOnly);
+    const categories = await categoryRepository.findAll(activeOnly);
+    
+    // Cache result if looking for public active categories
+    if (activeOnly && redis.isOpen) {
+      await redis.set(cacheKey, JSON.stringify(categories), { EX: 3600 }); // 1 hour TTL
+    }
+    
+    return categories;
   },
   async getCategoryBySlug(slug) {
     const category = await categoryRepository.findBySlug(slug);

@@ -1,23 +1,62 @@
 import { campaignService } from '../services/campaign.service.js';
-import { campaignSchema } from '../validators/campaign.validation.js';
+import { 
+  productPromotionSchema, 
+  storewideOfferSchema, 
+  discountCampaignSchema, 
+  flashSaleSchema,
+  verifyPaymentSchema 
+} from '../validators/campaign.validation.js';
 import { successResponse, errorResponse } from '../../../shared/responses/apiResponse.js';
 import { z } from 'zod';
 
 export const campaignController = {
-  async createCampaign(req, res, next) {
+  async createProductPromotion(req, res, next) {
     try {
-      const parsed = campaignSchema.safeParse(req.body);
-      if (!parsed.success) return errorResponse(res, parsed.error?.errors?.[0]?.message || "Invalid campaign data", 400);
+      const parsed = productPromotionSchema.safeParse(req.body);
+      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
 
-      const result = await campaignService.createCampaign(req.user.id, parsed.data, req.file);
-      return successResponse(res, 'Campaign drafted and order created', result, 201);
+      const result = await campaignService.createProductPromotion(req.user.id, parsed.data, req.file);
+      return successResponse(res, 'Product Promotion drafted and order created', result, 201);
+    } catch (error) { next(error); }
+  },
+
+  async createStorewideOffer(req, res, next) {
+    try {
+      const parsed = storewideOfferSchema.safeParse(req.body);
+      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
+
+      const result = await campaignService.createStorewideOffer(req.user.id, parsed.data, req.file);
+      return successResponse(res, 'Storewide Offer drafted and order created', result, 201);
+    } catch (error) { next(error); }
+  },
+
+  async createDiscountCampaign(req, res, next) {
+    try {
+      const parsed = discountCampaignSchema.safeParse(req.body);
+      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
+
+      const result = await campaignService.createDiscountCampaign(req.user.id, parsed.data, req.file);
+      return successResponse(res, 'Discount Campaign drafted and order created', result, 201);
+    } catch (error) { next(error); }
+  },
+
+  async createFlashSale(req, res, next) {
+    try {
+      const parsed = flashSaleSchema.safeParse(req.body);
+      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
+
+      const result = await campaignService.createFlashSale(req.user.id, parsed.data, req.file);
+      return successResponse(res, 'Flash Sale drafted and order created', result, 201);
     } catch (error) { next(error); }
   },
 
   async verifyPayment(req, res, next) {
     try {
-      const updatedCampaign = await campaignService.verifyPayment(req.user.id, req.params.id, req.body);
-      return successResponse(res, 'Payment verified successfully. Campaign is now pending approval.', updatedCampaign);
+      const parsed = verifyPaymentSchema.safeParse(req.body);
+      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
+
+      const updatedCampaign = await campaignService.verifyPayment(req.user.id, req.params.id, parsed.data);
+      return successResponse(res, 'Payment verified successfully. Campaign is now ACTIVE.', updatedCampaign);
     } catch (error) { next(error); }
   },
 
@@ -73,5 +112,21 @@ export const campaignController = {
       const campaign = await campaignService.rejectCampaign(req.user.id, req.params.id, reason);
       return successResponse(res, 'Campaign rejected', campaign);
     } catch (error) { next(error); }
+  },
+
+  async trackAnalytics(req, res, next) {
+    try {
+      const { type } = req.body; // 'impression' or 'click'
+      const campaignId = req.params.id;
+      
+      const impressions = type === 'impression' ? 1 : 0;
+      const clicks = type === 'click' ? 1 : 0;
+      
+      // We can directly call the repository to avoid circular/heavy service logic for high-freq endpoint
+      const { campaignRepository } = await import('../repositories/campaign.repository.js');
+      await campaignRepository.updateAnalytics(campaignId, impressions, clicks);
+      
+      return successResponse(res, 'Analytics tracked');
+    } catch (error) { next(error); } // fire and forget errors mostly
   }
 };

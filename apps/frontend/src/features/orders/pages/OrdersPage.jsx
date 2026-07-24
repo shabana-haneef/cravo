@@ -187,9 +187,10 @@ export const OrdersPage = () => {
             });
 
             // Get first item to show in preview
-            const mainItem = order.items[0];
+            const orderItems = order.items || [];
+            const mainItem = orderItems[0];
             const pImage = mainItem?.product?.images?.[0]?.imageUrl || 'https://via.placeholder.com/150';
-            const extraItemsCount = order.items.length - 1;
+            const extraItemsCount = Math.max(0, orderItems.length - 1);
 
             const isOrderCancelled = order.status === 'CANCELLED' || order.status === 'REFUNDED';
 
@@ -219,7 +220,7 @@ export const OrdersPage = () => {
                     </div>
                     <div>
                       <p className="text-gray-500 font-medium">Total</p>
-                      <p className="font-semibold text-[#154D21]">₹{order.grandTotal.toFixed(2)}</p>
+                      <p className="font-semibold text-[#154D21]">₹{(order.grandTotal || 0).toFixed(2)}</p>
                     </div>
                   </div>
                   <div className="text-right">

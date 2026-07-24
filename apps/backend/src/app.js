@@ -4,12 +4,20 @@ import helmet from "helmet";
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import { rateLimit } from "express-rate-limit";
+import { RedisStore } from "rate-limit-redis";
+import { redis } from "./config/redis.js";
 import routes from "./routes/v1/index.js";
 import delhiveryRoutes from "./modules/delivery/routes/delhivery.routes.js";
 import seoRoutes from "./modules/seo/routes/seo.routes.js";
 
 import { notFound } from "./shared/middleware/notFound.middleware.js";
 import { errorHandler } from "./shared/middleware/error.middleware.js";
+import { bullBoardRouter } from "./shared/utils/bullBoard.js";
+import { protect } from "./shared/middleware/auth.middleware.js";
+import { allowRoles } from "./shared/middleware/role.middleware.js";
+
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger.js";
 
 // General API rate limiter — 100 requests per 15 minutes per IP
 const generalLimiter = rateLimit({
@@ -17,17 +25,25 @@ const generalLimiter = rateLimit({
   max: 100,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  message: { success: false, message: 'Too many requests, please try again later.' }
+  message: { success: false, message: 'Too many requests, please try again later.' },
+  store: new RedisStore({
+    sendCommand: (...args) => redis.sendCommand(args),
+    prefix: 'rl:general:'
+  })
 });
 
 // Strict limiter for auth endpoints — 20 requests per 15 minutes per IP
-// const authLimiter = rateLimit({
-//   windowMs: 15 * 60 * 1000,
-//   max: 200,
-//   standardHeaders: 'draft-7',
-//   legacyHeaders: false,
-//   message: { success: false, message: 'Too many authentication attempts, please try again later.' }
-// });
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many authentication attempts, please try again later.' },
+  store: new RedisStore({
+    sendCommand: (...args) => redis.sendCommand(args),
+    prefix: 'rl:auth:'
+  })
+});
 
 const app = express();
 
@@ -75,8 +91,28 @@ app.get("/health", (req, res) => {
   });
 });
 
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, { customCss: '.swagger-ui .topbar { display: none }' }));
+
+app.get("/ready", async (req, res) => {
+  try {
+    // Check DB
+    const { prisma } = await import("./config/prisma.js");
+    await prisma.$queryRaw`SELECT 1`;
+    
+    // Check Redis
+    if (!redis.isOpen) throw new Error("Redis is not connected");
+    
+    res.status(200).json({ status: "OK", database: "connected", redis: "connected" });
+  } catch (error) {
+    res.status(503).json({ status: "ERROR", message: error.message });
+  }
+});
+
 // Auth routes get a stricter rate limit (must be registered before generalLimiter)
-// app.use("/api/v1/auth", authLimiter);
+app.use("/api/v1/auth", authLimiter);
+
+// Bull Board UI (Admin Only)
+app.use("/api/admin/queues", protect, allowRoles('ADMIN'), bullBoardRouter);
 
 app.use(
   "/api/v1",

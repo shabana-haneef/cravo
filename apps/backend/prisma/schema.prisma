@@ -214,7 +214,7 @@ model Product {
   updatedAt          DateTime         @updatedAt
   deletedAt          DateTime?
   ingredients        String           @default("Not specified")
-  declaredValue      Float?
+  declaredValue      Decimal?
   labelImagePublicId String?
   labelImageUrl      String?
   cartItems          CartItem[]
@@ -228,6 +228,8 @@ model Product {
   @@index([shopId])
   @@index([categoryId])
   @@index([status])
+  @@index([status, categoryId])
+  @@index([status, shopId])
 }
 
 model ProductImage {
@@ -246,8 +248,8 @@ model ProductVariant {
   productId      String
   name           String
   sku            String      @unique
-  price          Float
-  compareAtPrice Float?
+  price          Decimal
+  compareAtPrice Decimal?
   weight         Float?
   isActive       Boolean     @default(true)
   deletedAt      DateTime?
@@ -323,10 +325,10 @@ model Order {
   customerId          String
   shopId              String
   addressId           String
-  subtotal            Float
-  deliveryCharge      Float
-  discount            Float              @default(0.0)
-  grandTotal          Float
+  subtotal            Decimal
+  deliveryCharge      Decimal
+  discount            Decimal            @default(0)
+  grandTotal          Decimal
   status              OrderStatus        @default(PENDING_PAYMENT)
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
@@ -359,8 +361,8 @@ model OrderItem {
   productId        String
   productVariantId String
   quantity         Int
-  unitPrice        Float
-  totalPrice       Float
+  unitPrice        Decimal
+  totalPrice       Decimal
   order            Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product          Product        @relation(fields: [productId], references: [id])
   productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
@@ -376,7 +378,7 @@ model Payment {
   razorpayOrderId   String        @unique
   razorpayPaymentId String?       @unique
   razorpaySignature String?
-  amount            Float
+  amount            Decimal
   status            PaymentStatus @default(PENDING)
   createdAt         DateTime      @default(now())
   order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -430,7 +432,7 @@ model DeliveryTrackingEvent {
 model AdPackage {
   id             String          @id @default(cuid())
   name           String
-  price          Float
+  price          Decimal
   durationDays   Int
   features       String[]        @default([])
   isActive       Boolean         @default(true)
@@ -469,7 +471,7 @@ model AdPayment {
   razorpayOrderId   String        @unique
   razorpayPaymentId String?       @unique
   razorpaySignature String?
-  amount            Float
+  amount            Decimal
   status            PaymentStatus @default(PENDING)
   createdAt         DateTime      @default(now())
   advertisement     Advertisement @relation(fields: [advertisementId], references: [id], onDelete: Cascade)
@@ -676,10 +678,11 @@ model Campaign {
   bannerPublicId   String?
   destinationUrl   String?
   targetProductIds String[]       @default([])
-  budget           Float
+  budget           Decimal
   startDate        DateTime?
   endDate          DateTime?
   rejectionReason  String?
+  metadata         Json?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   deletedAt        DateTime?
@@ -693,16 +696,19 @@ model Campaign {
   @@index([sellerId])
   @@index([shopId])
   @@index([status])
+  @@index([status, shopId])
 }
 
 model CampaignAnalytics {
-  id          String   @id @default(cuid())
-  campaignId  String   @unique
-  impressions Int      @default(0)
-  clicks      Int      @default(0)
-  spend       Float    @default(0.0)
-  updatedAt   DateTime @updatedAt
-  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  id               String   @id @default(cuid())
+  campaignId       String   @unique
+  impressions      Int      @default(0)
+  clicks           Int      @default(0)
+  ordersGenerated  Int      @default(0)
+  revenueGenerated Decimal  @default(0)
+  spend            Decimal  @default(0)
+  updatedAt        DateTime @updatedAt
+  campaign         Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 }
 
 model CampaignPayment {
@@ -711,7 +717,7 @@ model CampaignPayment {
   razorpayOrderId   String        @unique
   razorpayPaymentId String?       @unique
   razorpaySignature String?
-  amount            Float
+  amount            Decimal
   status            PaymentStatus @default(PENDING)
   createdAt         DateTime      @default(now())
   campaign          Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)

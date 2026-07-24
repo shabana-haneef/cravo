@@ -68,7 +68,26 @@ export const campaignRepository = {
       create: {
         campaignId,
         impressions,
-        clicks
+        clicks,
+        ordersGenerated: 0,
+        revenueGenerated: 0
+      }
+    });
+  },
+
+  async trackConversion(campaignId, revenue, tx = prisma) {
+    return tx.campaignAnalytics.upsert({
+      where: { campaignId },
+      update: {
+        ordersGenerated: { increment: 1 },
+        revenueGenerated: { increment: revenue }
+      },
+      create: {
+        campaignId,
+        impressions: 0,
+        clicks: 0,
+        ordersGenerated: 1,
+        revenueGenerated: revenue
       }
     });
   },
