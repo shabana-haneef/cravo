@@ -2,8 +2,14 @@ import axios from 'axios';
 import { useAuthStore } from '../store/auth.store.js';
 
 // Base instance
+// In production (Vercel), VITE_API_URL points to the Render backend.
+// In local dev, Vite proxy handles /api so we fall back to '/api/v1'.
+const BASE_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api/v1`
+  : '/api/v1';
+
 export const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: BASE_URL,
   withCredentials: true, // For httpOnly cookies like refreshToken
 });
 
@@ -62,7 +68,7 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const { data } = await axios.post('/api/v1/auth/refresh-token', {}, { withCredentials: true });
+        const { data } = await axios.post(`${BASE_URL}/auth/refresh-token`, {}, { withCredentials: true });
         const newToken = data.data.accessToken;
 
         // Update zustand store
