@@ -15,7 +15,6 @@ RUN npm ci
 # Copy application source and Prisma schema
 COPY src/ ./src/
 COPY prisma/ ./prisma/
-COPY config/ ./config/
 
 # Generate Prisma Client
 RUN npx prisma generate
@@ -46,7 +45,6 @@ USER nodejs
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/src ./src
 COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nodejs:nodejs /app/config ./config
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
 
 # Expose the application port
