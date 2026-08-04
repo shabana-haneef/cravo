@@ -33,8 +33,8 @@ export const sellerService = {
     }
 
     const requiresDocs = govSettings.requireSellerDocumentVerification;
-    if (requiresDocs && (!files.idProof || !files.addressProof)) {
-      throw new AppError("ID Proof and Address Proof are required.", 400);
+    if (requiresDocs && (!files.idProof)) {
+      throw new AppError("ID Proof is required.", 400);
     }
 
     // Process files sequentially to Cloudinary
