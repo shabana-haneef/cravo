@@ -4,11 +4,11 @@ import { AppError } from '../errors/AppError.js';
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
-  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
   if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new AppError('Invalid file type. Only JPEG, PNG, WEBP, and PDF are allowed.', 400), false);
+    cb(new AppError('Invalid file type. Only JPEG, PNG, and WEBP are allowed.', 400), false);
   }
 };
 
@@ -36,8 +36,6 @@ const validateFileIntegrity = (file) => {
       if (hex !== '52494646') return false; // RIFF
       const format = file.buffer.toString('ascii', 8, 12);
       return format === 'WEBP' && ext === 'webp';
-    case 'application/pdf':
-      return hex === '25504446' && ext === 'pdf';
     default:
       return false;
   }

@@ -11,15 +11,15 @@ datasource db {
 model User {
   id                 String              @id @default(cuid())
   email              String              @unique
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  deletedAt          DateTime?
+  passwordHash       String?
+  role               UserRole            @default(CUSTOMER)
+  status             UserStatus          @default(ACTIVE)
   isEmailVerified    Boolean             @default(false)
   lastLoginAt        DateTime?
-  passwordHash       String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
   googleId           String?             @unique
-  status             UserStatus          @default(ACTIVE)
-  role               UserRole            @default(CUSTOMER)
+  deletedAt          DateTime?
   addresses          Address[]
   cart               Cart?
   emailVerifications EmailVerification[]
@@ -45,18 +45,54 @@ model Seller {
   approvedAt         DateTime?
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
-  deletedAt          DateTime?
   pickupAddress      String?
   pickupCity         String?
   pickupLocationName String?
   pickupPhone        String?
   pickupPincode      String?
   pickupState        String?
+  
+  // Comprehensive Seller Application Fields (Temporary storage until approved)
+  businessName       String?
+  businessType       String?
+  fssaiNumber        String?
+  businessAddressLine1 String?
+  businessAddressLine2 String?
+  businessCity       String?
+  businessState      String?
+  businessPincode    String?
+  businessCountry    String?
+  
+  storeName          String?
+  storeDescription   String?
+  storeWebsite       String?
+  socialLinks        Json?
+  supportEmail       String?
+  supportPhone       String?
+  businessHours      Json?
+
+  deletedAt          DateTime?
   advertisements     Advertisement[]
   campaigns          Campaign[]
   user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   documents          SellerDocument[]
   shop               Shop?
+  bankAccount        BankAccount?
+}
+
+model BankAccount {
+  id                String   @id @default(cuid())
+  sellerId          String   @unique
+  accountHolderName String
+  bankName          String
+  accountNumber     String
+  ifsc              String
+  branchName        String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  seller            Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
 }
 
 model Shop {
@@ -74,13 +110,20 @@ model Shop {
   isPickupEnabled   Boolean      @default(true)
   isDeliveryEnabled Boolean      @default(true)
   status            ShopStatus   @default(ACTIVE)
+  
+  website           String?
+  socialLinks       Json?
+  supportEmail      String?
+  supportPhone      String?
+  businessHours     Json?
+
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
   deletedAt         DateTime?
+  campaigns         Campaign[]
   carts             Cart[]
   orders            Order[]
   products          Product[]
-  campaigns         Campaign[]
   seller            Seller       @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   timings           ShopTiming[]
 
@@ -212,11 +255,11 @@ model Product {
   totalReviews       Int              @default(0)
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
-  deletedAt          DateTime?
   ingredients        String           @default("Not specified")
-  declaredValue      Decimal?
   labelImagePublicId String?
   labelImageUrl      String?
+  declaredValue      Decimal?
+  deletedAt          DateTime?
   cartItems          CartItem[]
   orderItems         OrderItem[]
   category           Category         @relation(fields: [categoryId], references: [id])
@@ -250,8 +293,8 @@ model ProductVariant {
   sku            String      @unique
   price          Decimal
   compareAtPrice Decimal?
-  weight         Float?
   isActive       Boolean     @default(true)
+  weight         Float?
   deletedAt      DateTime?
   cartItems      CartItem[]
   inventory      Inventory?
@@ -327,7 +370,7 @@ model Order {
   addressId           String
   subtotal            Decimal
   deliveryCharge      Decimal
-  discount            Decimal            @default(0)
+  discount            Decimal            @default(0.0)
   grandTotal          Decimal
   status              OrderStatus        @default(PENDING_PAYMENT)
   createdAt           DateTime           @default(now())
@@ -338,7 +381,6 @@ model Order {
   shipmentCreated     Boolean            @default(false)
   shipmentCreatedAt   DateTime?
   shipmentLogs        Json               @default("[]")
-  orderShipmentLogs   OrderShipmentLog[]
   shippingLabelUrl    String?
   trackingStatus      String             @default("pending")
   delivery            Delivery?
@@ -346,6 +388,7 @@ model Order {
   customer            User               @relation(fields: [customerId], references: [id])
   shop                Shop               @relation(fields: [shopId], references: [id])
   items               OrderItem[]
+  orderShipmentLogs   OrderShipmentLog[]
   payments            Payment[]
 
   @@index([customerId])
@@ -396,8 +439,7 @@ model OrderShipmentLog {
   remarks    String?
   error      String?
   createdAt  DateTime @default(now())
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
   @@index([timestamp])
@@ -536,6 +578,73 @@ model IntegrationLog {
   @@index([timestamp])
 }
 
+model Campaign {
+  id               String                  @id @default(cuid())
+  sellerId         String
+  shopId           String
+  name             String
+  type             CampaignType
+  status           CampaignStatus          @default(DRAFT)
+  bannerUrl        String?
+  bannerPublicId   String?
+  destinationUrl   String?
+  targetProductIds String[]                @default([])
+  budget           Decimal
+  startDate        DateTime?
+  endDate          DateTime?
+  rejectionReason  String?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  deletedAt        DateTime?
+  metadata         Json?
+  seller           Seller                  @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  shop             Shop                    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  analytics        CampaignAnalytics?
+  payment          CampaignPayment?
+  history          CampaignStatusHistory[]
+
+  @@index([sellerId])
+  @@index([shopId])
+  @@index([status])
+  @@index([status, shopId])
+}
+
+model CampaignAnalytics {
+  id               String   @id @default(cuid())
+  campaignId       String   @unique
+  impressions      Int      @default(0)
+  clicks           Int      @default(0)
+  spend            Decimal  @default(0.0)
+  updatedAt        DateTime @updatedAt
+  ordersGenerated  Int      @default(0)
+  revenueGenerated Decimal  @default(0.0)
+  campaign         Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+model CampaignPayment {
+  id                String        @id @default(cuid())
+  campaignId        String        @unique
+  razorpayOrderId   String        @unique
+  razorpayPaymentId String?       @unique
+  razorpaySignature String?
+  amount            Decimal
+  status            PaymentStatus @default(PENDING)
+  createdAt         DateTime      @default(now())
+  campaign          Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+model CampaignStatusHistory {
+  id         String         @id @default(cuid())
+  campaignId String
+  status     CampaignStatus
+  reason     String?
+  changedBy  String
+  createdAt  DateTime       @default(now())
+  campaign   Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+}
+
 enum UserRole {
   CUSTOMER
   SELLER
@@ -665,74 +774,6 @@ enum AdStatus {
   REJECTED
   ACTIVE
   EXPIRED
-}
-
-model Campaign {
-  id               String         @id @default(cuid())
-  sellerId         String
-  shopId           String
-  name             String
-  type             CampaignType
-  status           CampaignStatus @default(DRAFT)
-  bannerUrl        String?
-  bannerPublicId   String?
-  destinationUrl   String?
-  targetProductIds String[]       @default([])
-  budget           Decimal
-  startDate        DateTime?
-  endDate          DateTime?
-  rejectionReason  String?
-  metadata         Json?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  deletedAt        DateTime?
-
-  seller    Seller                  @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  shop      Shop                    @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  payment   CampaignPayment?
-  analytics CampaignAnalytics?
-  history   CampaignStatusHistory[]
-
-  @@index([sellerId])
-  @@index([shopId])
-  @@index([status])
-  @@index([status, shopId])
-}
-
-model CampaignAnalytics {
-  id               String   @id @default(cuid())
-  campaignId       String   @unique
-  impressions      Int      @default(0)
-  clicks           Int      @default(0)
-  ordersGenerated  Int      @default(0)
-  revenueGenerated Decimal  @default(0)
-  spend            Decimal  @default(0)
-  updatedAt        DateTime @updatedAt
-  campaign         Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-}
-
-model CampaignPayment {
-  id                String        @id @default(cuid())
-  campaignId        String        @unique
-  razorpayOrderId   String        @unique
-  razorpayPaymentId String?       @unique
-  razorpaySignature String?
-  amount            Decimal
-  status            PaymentStatus @default(PENDING)
-  createdAt         DateTime      @default(now())
-  campaign          Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-}
-
-model CampaignStatusHistory {
-  id         String         @id @default(cuid())
-  campaignId String
-  status     CampaignStatus
-  reason     String?
-  changedBy  String
-  createdAt  DateTime       @default(now())
-  campaign   Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-
-  @@index([campaignId])
 }
 
 enum CampaignType {

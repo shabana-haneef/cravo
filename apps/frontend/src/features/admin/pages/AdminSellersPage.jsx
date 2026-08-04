@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Store, Check, X, FileText, Image as ImageIcon, MapPin, Search } from 'lucide-react';
+import { Store, Check, X, FileText, MapPin, Search } from 'lucide-react';
 import { adminService } from '../services/admin.service.js';
 import { toast } from 'sonner';
 
@@ -56,10 +56,17 @@ export const AdminSellersPage = () => {
     }
   };
 
-  const openReviewModal = (app) => {
-    setSelectedApp(app);
-    setRejectReason('');
-    setIsModalOpen(true);
+  const openReviewModal = async (appPreview) => {
+    try {
+      toast.loading("Loading full application...", { id: "loadApp" });
+      const res = await adminService.getSellerApplication(appPreview.id);
+      setSelectedApp(res.data.application);
+      setRejectReason('');
+      setIsModalOpen(true);
+      toast.dismiss("loadApp");
+    } catch (e) {
+      toast.error("Failed to load application details", { id: "loadApp" });
+    }
   };
 
   const closeModal = () => {
@@ -138,8 +145,8 @@ export const AdminSellersPage = () => {
                 
                 <div className="space-y-2 mt-4 text-sm">
                   <div className="flex items-start gap-2 text-gray-600">
-                    <FileText size={16} className="mt-0.5 text-gray-400" />
-                    <p className="line-clamp-2">{app.bio || 'No bio provided.'}</p>
+                    <Store size={16} className="mt-0.5 text-gray-400" />
+                    <p className="line-clamp-2">{app.businessName || 'No Business Name'}</p>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <Check size={16} className="text-green-500" />
@@ -164,7 +171,7 @@ export const AdminSellersPage = () => {
       {/* Review Modal */}
       {isModalOpen && selectedApp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center z-10">
               <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                 <Store className="text-[#1E3A2B]" />
@@ -176,7 +183,8 @@ export const AdminSellersPage = () => {
             </div>
 
             <div className="p-6 space-y-8">
-              {/* Applicant Info */}
+              
+              {/* Row 1: Basic & Business */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Applicant Details</h3>
@@ -195,17 +203,69 @@ export const AdminSellersPage = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Applied On:</span>
-                      <span className="font-medium text-gray-900">{new Date(selectedApp.createdAt).toLocaleDateString()}</span>
+                      <span className="font-medium text-gray-900">{new Date(selectedApp.createdAt).toLocaleDateString('en-IN')}</span>
                     </div>
                   </div>
                 </div>
                 
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Business Bio</h3>
-                  <div className="bg-gray-50 rounded-xl p-4 h-full border border-gray-100">
-                    <p className="text-gray-700 whitespace-pre-wrap">{selectedApp.bio || 'No bio provided.'}</p>
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Business Info</h3>
+                  <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Business Name:</span>
+                      <span className="font-medium text-gray-900">{selectedApp.businessName || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Type:</span>
+                      <span className="font-medium text-gray-900">{selectedApp.businessType || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">FSSAI Number:</span>
+                      <span className="font-medium text-gray-900">{selectedApp.fssaiNumber || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Store Website:</span>
+                      <span className="font-medium text-gray-900">{selectedApp.storeWebsite || 'N/A'}</span>
+                    </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Row 2: Addresses */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Business Address</h3>
+                  <div className="bg-gray-50 rounded-xl p-4 text-gray-700 whitespace-pre-wrap">
+                    {selectedApp.businessAddressLine1}<br/>
+                    {selectedApp.businessAddressLine2 && <>{selectedApp.businessAddressLine2}<br/></>}
+                    {selectedApp.businessCity}, {selectedApp.businessState} - {selectedApp.businessPincode}<br/>
+                    {selectedApp.businessCountry}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Pickup Address</h3>
+                  <div className="bg-gray-50 rounded-xl p-4 text-gray-700 whitespace-pre-wrap">
+                    {selectedApp.pickupLocationName && <>{selectedApp.pickupLocationName}<br/></>}
+                    {selectedApp.pickupAddress}<br/>
+                    {selectedApp.pickupCity}, {selectedApp.pickupState} - {selectedApp.pickupPincode}
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 3: Bank Details */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Bank Details</h3>
+                {selectedApp.bankAccount ? (
+                  <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-2 gap-4">
+                    <div><span className="text-gray-500 block text-xs">Account Holder</span><span className="font-medium">{selectedApp.bankAccount.accountHolderName}</span></div>
+                    <div><span className="text-gray-500 block text-xs">Bank Name</span><span className="font-medium">{selectedApp.bankAccount.bankName}</span></div>
+                    <div><span className="text-gray-500 block text-xs">Account Number</span><span className="font-medium">{selectedApp.bankAccount.accountNumber}</span></div>
+                    <div><span className="text-gray-500 block text-xs">IFSC Code</span><span className="font-medium">{selectedApp.bankAccount.ifsc}</span></div>
+                    <div><span className="text-gray-500 block text-xs">Branch Name</span><span className="font-medium">{selectedApp.bankAccount.branchName}</span></div>
+                  </div>
+                ) : (
+                  <div className="text-gray-500 italic">No bank details provided.</div>
+                )}
               </div>
 
               {/* Documents */}
@@ -219,19 +279,11 @@ export const AdminSellersPage = () => {
                         <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline">View Full</a>
                       </div>
                       <div className="h-48 bg-gray-50 flex items-center justify-center p-2 relative">
-                        {doc.fileUrl.toLowerCase().includes('.pdf') ? (
-                          <div className="flex flex-col items-center justify-center text-gray-500">
-                            <FileText size={48} className="mb-2 text-indigo-400" />
-                            <span className="text-sm font-medium">PDF Document</span>
-                            <span className="text-xs mt-1">Click "View Full" to read</span>
-                          </div>
-                        ) : (
-                          <img 
-                            src={doc.fileUrl} 
-                            alt={doc.type} 
-                            className="max-h-full max-w-full object-contain rounded drop-shadow-sm group-hover:scale-105 transition-transform"
-                          />
-                        )}
+                        <img 
+                          src={doc.fileUrl} 
+                          alt={doc.type} 
+                          className="max-h-full max-w-full object-contain rounded drop-shadow-sm group-hover:scale-105 transition-transform"
+                        />
                       </div>
                     </div>
                   ))}

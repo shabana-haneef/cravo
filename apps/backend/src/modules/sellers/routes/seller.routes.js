@@ -8,9 +8,10 @@ const router = Router();
 router.use(protect);
 
 router.post('/apply', upload.fields([
+  { name: 'profilePhoto', maxCount: 1 },
   { name: 'idProof', maxCount: 1 },
-  { name: 'addressProof', maxCount: 1 },
-  { name: 'shopImage', maxCount: 1 },
+  { name: 'shopLogo', maxCount: 1 },
+  { name: 'shopBanner', maxCount: 1 },
   { name: 'fssaiLicense', maxCount: 1 }
 ]), sellerController.apply);
 
