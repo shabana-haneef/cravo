@@ -67,29 +67,30 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
+      let newToken = null;
       try {
         const { data } = await axios.post(`${BASE_URL}/auth/refresh-token`, {}, { withCredentials: true });
-        const newToken = data.data.accessToken;
+        newToken = data.data.accessToken;
 
         // Update zustand store
         useAuthStore.getState().setAuth(useAuthStore.getState().user, newToken);
 
         // Process queue
         processQueue(null, newToken);
-
-        // Retry original request
-        originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
-        return api(originalRequest);
       } catch (err) {
         processQueue(err, null);
         useAuthStore.getState().clearAuth(); // Force logout
         if (window.location.pathname !== '/login' && originalRequest.url !== '/auth/me') {
           window.location.href = '/login'; // Redirect to login page
         }
-        return Promise.reject(err);
-      } finally {
         isRefreshing = false;
+        return Promise.reject(err);
       }
+      
+      isRefreshing = false;
+      // Retry original request outside of try-catch so its errors don't trigger logout
+      originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
+      return api(originalRequest);
     }
 
     return Promise.reject(error);
