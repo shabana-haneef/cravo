@@ -18,8 +18,8 @@ const schema = z.object({
   // Step 2: Business Info
   businessName: z.string().min(1, 'Business Name is required'),
   businessType: z.string().min(1, 'Business Type is required'),
-  fssaiNumber: z.string().optional(),
-  fssaiLicense: z.any().optional(),
+  fssaiNumber: z.string().min(14, 'Valid FSSAI Number is required').max(14, 'FSSAI Number must be 14 digits'),
+  fssaiLicense: z.any().refine((f) => f instanceof File, 'FSSAI License document is required'),
 
   // Step 3: Business Address
   businessAddressLine1: z.string().min(1, 'Address Line 1 is required'),
@@ -236,15 +236,16 @@ export const SellerApplicationForm = () => {
                   {errors.businessType && <p className="text-xs text-red-500 mt-1">{errors.businessType.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">FSSAI Number (Optional)</label>
-                  <input {...register('fssaiNumber')} className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-[#1E3A2B]" />
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">FSSAI Number *</label>
+                  <input {...register('fssaiNumber')} maxLength={14} className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-[#1E3A2B]" />
+                  {errors.fssaiNumber && <p className="text-xs text-red-500 mt-1">{errors.fssaiNumber.message}</p>}
                 </div>
                 <div className="col-span-1 md:col-span-2">
                   <Controller
                     name="fssaiLicense"
                     control={control}
                     render={({ field }) => (
-                      <FileUpload label="FSSAI License Image (Optional)" value={field.value} onChange={field.onChange} />
+                      <FileUpload label="FSSAI License Document (PDF/Image) *" required value={field.value} onChange={field.onChange} error={errors.fssaiLicense?.message} />
                     )}
                   />
                 </div>
@@ -341,8 +342,7 @@ export const SellerApplicationForm = () => {
               </div>
               <div className="col-span-1 md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Account Number *</label>
-                <input {...register('accountNumber')} type="password" placeholder="Enter Account Number" className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-[#1E3A2B] mb-3" />
-                <input {...register('accountNumber')} placeholder="Confirm Account Number" className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-[#1E3A2B]" />
+                <input {...register('accountNumber')} type="text" className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-[#1E3A2B]" />
                 {errors.accountNumber && <p className="text-xs text-red-500 mt-1">{errors.accountNumber.message}</p>}
               </div>
               <div>
@@ -425,10 +425,14 @@ export const SellerApplicationForm = () => {
             <div className="bg-white border border-gray-100 rounded-2xl p-7 shadow-sm">
               <h2 className="text-xl font-bold text-gray-800 mb-4">Agreements</h2>
               <div className="space-y-4">
-                <label className="flex items-start gap-3 cursor-pointer">
+                <label className="flex items-start gap-3 cursor-pointer group">
                   <input type="checkbox" {...register('acceptTerms')} className="mt-1 w-5 h-5 rounded border-gray-300 text-[#1E3A2B] focus:ring-[#1E3A2B]" />
                   <span className="text-sm text-gray-700 leading-relaxed">
-                    I accept the Terms & Conditions, Seller Agreement, and Privacy Policy Consent. I declare that the information provided is accurate and authentic.
+                    I accept the{' '}
+                    <a href="/terms" target="_blank" className="text-[#B88645] hover:underline font-medium">Terms & Conditions</a>,{' '}
+                    <a href="/seller-agreement" target="_blank" className="text-[#B88645] hover:underline font-medium">Seller Agreement</a>, and{' '}
+                    <a href="/privacy-policy" target="_blank" className="text-[#B88645] hover:underline font-medium">Privacy Policy Consent</a>. 
+                    I declare that the information provided is accurate and authentic.
                   </span>
                 </label>
                 {errors.acceptTerms && <p className="text-xs text-red-500">{errors.acceptTerms.message}</p>}
