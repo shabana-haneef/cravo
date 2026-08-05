@@ -18,7 +18,7 @@ const schema = z.object({
   // Step 2: Business Info
   businessName: z.string().min(1, 'Business Name is required'),
   businessType: z.string().min(1, 'Business Type is required'),
-  fssaiNumber: z.string().min(14, 'Valid FSSAI Number is required').max(14, 'FSSAI Number must be 14 digits'),
+  fssaiNumber: z.string().min(14, 'FSSAI Number must be exactly 14 digits').max(14, 'FSSAI Number must be exactly 14 digits'),
   fssaiLicense: z.any().refine((f) => f instanceof File, 'FSSAI License document is required'),
 
   // Step 3: Business Address
@@ -245,7 +245,7 @@ export const SellerApplicationForm = () => {
                     name="fssaiLicense"
                     control={control}
                     render={({ field }) => (
-                      <FileUpload label="FSSAI License Document (PDF/Image) *" required value={field.value} onChange={field.onChange} error={errors.fssaiLicense?.message} />
+                      <FileUpload label="FSSAI License Document (PDF/Image)" required value={field.value} onChange={field.onChange} error={errors.fssaiLicense?.message} />
                     )}
                   />
                 </div>
