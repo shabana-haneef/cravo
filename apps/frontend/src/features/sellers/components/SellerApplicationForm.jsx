@@ -107,7 +107,7 @@ export const SellerApplicationForm = () => {
   const nextStep = async () => {
     let fieldsToValidate = [];
     if (step === 1) fieldsToValidate = ['fullName', 'mobileNumber'];
-    if (step === 2) fieldsToValidate = ['businessName', 'businessType', 'businessAddressLine1', 'businessCity', 'businessState', 'businessPincode'];
+    if (step === 2) fieldsToValidate = ['businessName', 'businessType', 'fssaiNumber', 'fssaiLicense', 'businessAddressLine1', 'businessCity', 'businessState', 'businessPincode'];
     if (step === 3) fieldsToValidate = ['pickupAddress', 'pickupCity', 'pickupState', 'pickupPincode'];
     if (step === 4) fieldsToValidate = ['accountHolderName', 'bankName', 'accountNumber', 'ifsc', 'branchName'];
     if (step === 5) fieldsToValidate = ['storeName'];
