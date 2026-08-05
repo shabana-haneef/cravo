@@ -33,7 +33,11 @@ function App() {
         const currentToken = useAuthStore.getState().accessToken;
         setAuth(data.data.user, currentToken);
       } catch (error) {
-        clearAuth();
+        // Only log out on explicit 401 Unauthorized or 403 Forbidden.
+        // Ignore 5xx errors or Network Errors to prevent unexpected logouts during server restarts.
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+          clearAuth();
+        }
       } finally {
         setInitializing(false);
       }
