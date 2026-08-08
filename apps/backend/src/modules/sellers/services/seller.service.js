@@ -25,11 +25,6 @@ export const sellerService = {
         if (!govSettings.allowSellerReapplication) {
           throw new AppError("Seller reapplication is disabled.", 400);
         }
-        await prisma.$transaction(async (tx) => {
-          await tx.sellerDocument.deleteMany({ where: { sellerId: existing.id } });
-          await tx.bankAccount.deleteMany({ where: { sellerId: existing.id } });
-          await tx.seller.delete({ where: { id: existing.id } });
-        });
       } else {
         throw new AppError("You have already submitted a seller application.", 400);
       }
@@ -85,6 +80,18 @@ export const sellerService = {
     const initialStatus = govSettings.requireSellerApproval ? 'PENDING' : 'APPROVED';
 
     return prisma.$transaction(async (tx) => {
+      // Clean up the rejected application records inside the same transaction
+      if (existing && existing.status === 'REJECTED') {
+        await tx.sellerDocument.deleteMany({ where: { sellerId: existing.id } });
+        await tx.bankAccount.deleteMany({ where: { sellerId: existing.id } });
+        const existingShop = await tx.shop.findUnique({ where: { sellerId: existing.id } });
+        if (existingShop) {
+          await tx.shopTiming.deleteMany({ where: { shopId: existingShop.id } });
+          await tx.shop.delete({ where: { id: existingShop.id } });
+        }
+        await tx.seller.delete({ where: { id: existing.id } });
+      }
+
       // Update User Profile if fullName, phone, or profilePhoto is provided
       const profileUpdates = {};
       if (data.fullName) profileUpdates.fullName = data.fullName;
@@ -92,10 +99,20 @@ export const sellerService = {
       if (profilePhotoUrl) profileUpdates.avatar = profilePhotoUrl;
       
       if (Object.keys(profileUpdates).length > 0) {
-        await tx.profile.update({
-          where: { userId },
-          data: profileUpdates
-        });
+        const profile = await tx.profile.findUnique({ where: { userId } });
+        if (!profile) {
+          await tx.profile.create({
+            data: {
+              userId,
+              ...profileUpdates
+            }
+          });
+        } else {
+          await tx.profile.update({
+            where: { userId },
+            data: profileUpdates
+          });
+        }
       }
 
       // Parse JSON fields
