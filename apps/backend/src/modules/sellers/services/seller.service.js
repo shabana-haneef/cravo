@@ -81,15 +81,16 @@ export const sellerService = {
 
     return prisma.$transaction(async (tx) => {
       // Clean up the rejected application records inside the same transaction
+      // We must use raw SQL to hard delete the Seller and Shop records to bypass Prisma's soft-delete query extension middleware.
       if (existing && existing.status === 'REJECTED') {
-        await tx.sellerDocument.deleteMany({ where: { sellerId: existing.id } });
-        await tx.bankAccount.deleteMany({ where: { sellerId: existing.id } });
+        await tx.$executeRawUnsafe('DELETE FROM "SellerDocument" WHERE "sellerId" = $1', existing.id);
+        await tx.$executeRawUnsafe('DELETE FROM "BankAccount" WHERE "sellerId" = $1', existing.id);
         const existingShop = await tx.shop.findUnique({ where: { sellerId: existing.id } });
         if (existingShop) {
-          await tx.shopTiming.deleteMany({ where: { shopId: existingShop.id } });
-          await tx.shop.delete({ where: { id: existingShop.id } });
+          await tx.$executeRawUnsafe('DELETE FROM "ShopTiming" WHERE "shopId" = $1', existingShop.id);
+          await tx.$executeRawUnsafe('DELETE FROM "Shop" WHERE id = $1', existingShop.id);
         }
-        await tx.seller.delete({ where: { id: existing.id } });
+        await tx.$executeRawUnsafe('DELETE FROM "Seller" WHERE id = $1', existing.id);
       }
 
       // Update User Profile if fullName, phone, or profilePhoto is provided
