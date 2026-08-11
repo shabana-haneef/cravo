@@ -85,24 +85,35 @@ export const sellerService = {
         await tx.$executeRawUnsafe('SELECT id FROM "User" WHERE id = $1 FOR UPDATE', userId);
 
         // 2. Fetch existing application safely from inside the locked transaction
-        const existing = await sellerRepository.findByUserId(userId, tx);
+        // Using raw SQL to completely bypass Prisma soft-delete middleware, 
+        // ensuring we see ANY existing seller record (even soft-deleted ones)
+        // that would trigger a P2002 Unique Constraint violation.
+        const existingRaw = await tx.$queryRawUnsafe('SELECT id, status, "deletedAt" FROM "Seller" WHERE "userId" = $1', userId);
         
-        if (existing) {
-          if (existing.status === 'REJECTED') {
-            if (!govSettings.allowSellerReapplication) {
+        if (existingRaw && existingRaw.length > 0) {
+          const app = existingRaw[0];
+          const isSoftDeleted = app.deletedAt !== null;
+          
+          if (app.status === 'REJECTED' || isSoftDeleted) {
+            if (app.status === 'REJECTED' && !isSoftDeleted && !govSettings.allowSellerReapplication) {
               throw new AppError("Seller reapplication is disabled.", 400);
             }
-            // Clean up the rejected application records
-            await tx.$executeRawUnsafe('DELETE FROM "SellerDocument" WHERE "sellerId" = $1', existing.id);
-            await tx.$executeRawUnsafe('DELETE FROM "BankAccount" WHERE "sellerId" = $1', existing.id);
-            const existingShop = await tx.shop.findUnique({ where: { sellerId: existing.id } });
-            if (existingShop) {
-              await tx.$executeRawUnsafe('DELETE FROM "ShopTiming" WHERE "shopId" = $1', existingShop.id);
-              await tx.$executeRawUnsafe('DELETE FROM "Shop" WHERE id = $1', existingShop.id);
+            
+            // Clean up the old application records (whether rejected or soft-deleted)
+            await tx.$executeRawUnsafe('DELETE FROM "SellerDocument" WHERE "sellerId" = $1', app.id);
+            await tx.$executeRawUnsafe('DELETE FROM "BankAccount" WHERE "sellerId" = $1', app.id);
+            
+            // For Shop, bypass soft-delete middleware as well
+            const existingShopRaw = await tx.$queryRawUnsafe('SELECT id FROM "Shop" WHERE "sellerId" = $1', app.id);
+            if (existingShopRaw && existingShopRaw.length > 0) {
+              const shopId = existingShopRaw[0].id;
+              await tx.$executeRawUnsafe('DELETE FROM "ShopTiming" WHERE "shopId" = $1', shopId);
+              await tx.$executeRawUnsafe('DELETE FROM "Shop" WHERE id = $1', shopId);
             }
-            await tx.$executeRawUnsafe('DELETE FROM "Seller" WHERE id = $1', existing.id);
+            
+            await tx.$executeRawUnsafe('DELETE FROM "Seller" WHERE id = $1', app.id);
           } else {
-            // Already submitted (PENDING or APPROVED)
+            // Already submitted (PENDING or APPROVED) and not soft-deleted
             throw new AppError("You have already submitted a seller application.", 409);
           }
         }
