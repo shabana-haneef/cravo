@@ -19,36 +19,31 @@ export const sellerService = {
       throw new AppError("New seller applications are currently disabled.", 400);
     }
 
-    const existing = await sellerRepository.findByUserId(userId);
-    if (existing) {
-      if (existing.status === 'REJECTED') {
-        if (!govSettings.allowSellerReapplication) {
-          throw new AppError("Seller reapplication is disabled.", 400);
-        }
-      } else {
-        throw new AppError("You have already submitted a seller application.", 400);
-      }
-    }
-
     const requiresDocs = govSettings.requireSellerDocumentVerification;
     if (requiresDocs && (!files.idProof)) {
       throw new AppError("ID Proof is required.", 400);
     }
 
+    // Collect public IDs for cleanup in case of TX failure
+    const publicIdsToClean = [];
+
     // Process files sequentially to Cloudinary
     const uploadTasks = [];
     
-    // Profile Photo
     let profilePhotoUrl = null;
     if (files.profilePhoto && files.profilePhoto[0]) {
       const res = await cloudinaryService.uploadBuffer(files.profilePhoto[0].buffer, 'cravo/users/profiles');
       profilePhotoUrl = res.secure_url;
+      if (res.public_id) publicIdsToClean.push(res.public_id);
     }
     
     if (files.idProof) {
       uploadTasks.push(
         cloudinaryService.uploadBuffer(files.idProof[0].buffer, 'cravo/sellers/documents/id')
-          .then(res => ({ type: 'ID_PROOF', fileUrl: res.secure_url, publicId: res.public_id }))
+          .then(res => {
+            if (res.public_id) publicIdsToClean.push(res.public_id);
+            return { type: 'ID_PROOF', fileUrl: res.secure_url, publicId: res.public_id };
+          })
       );
     }
 
@@ -58,6 +53,7 @@ export const sellerService = {
       const res = await cloudinaryService.uploadBuffer(files.shopLogo[0].buffer, 'cravo/sellers/documents/shop');
       shopLogoUrl = res.secure_url;
       shopLogoId = res.public_id;
+      if (res.public_id) publicIdsToClean.push(res.public_id);
     }
 
     let shopBannerUrl = null;
@@ -66,12 +62,16 @@ export const sellerService = {
       const res = await cloudinaryService.uploadBuffer(files.shopBanner[0].buffer, 'cravo/sellers/documents/shop_banner');
       shopBannerUrl = res.secure_url;
       shopBannerId = res.public_id;
+      if (res.public_id) publicIdsToClean.push(res.public_id);
     }
 
     if (files.fssaiLicense && files.fssaiLicense[0]) {
       uploadTasks.push(
         cloudinaryService.uploadBuffer(files.fssaiLicense[0].buffer, 'cravo/sellers/documents/fssai')
-          .then(res => ({ type: 'FSSAI_LICENSE', fileUrl: res.secure_url, publicId: res.public_id }))
+          .then(res => {
+            if (res.public_id) publicIdsToClean.push(res.public_id);
+            return { type: 'FSSAI_LICENSE', fileUrl: res.secure_url, publicId: res.public_id };
+          })
       );
     }
 
@@ -79,158 +79,181 @@ export const sellerService = {
 
     const initialStatus = govSettings.requireSellerApproval ? 'PENDING' : 'APPROVED';
 
-    return prisma.$transaction(async (tx) => {
-      // Clean up the rejected application records inside the same transaction
-      // We must use raw SQL to hard delete the Seller and Shop records to bypass Prisma's soft-delete query extension middleware.
-      if (existing && existing.status === 'REJECTED') {
-        await tx.$executeRawUnsafe('DELETE FROM "SellerDocument" WHERE "sellerId" = $1', existing.id);
-        await tx.$executeRawUnsafe('DELETE FROM "BankAccount" WHERE "sellerId" = $1', existing.id);
-        const existingShop = await tx.shop.findUnique({ where: { sellerId: existing.id } });
-        if (existingShop) {
-          await tx.$executeRawUnsafe('DELETE FROM "ShopTiming" WHERE "shopId" = $1', existingShop.id);
-          await tx.$executeRawUnsafe('DELETE FROM "Shop" WHERE id = $1', existingShop.id);
-        }
-        await tx.$executeRawUnsafe('DELETE FROM "Seller" WHERE id = $1', existing.id);
-      }
+    try {
+      return await prisma.$transaction(async (tx) => {
+        // 1. Acquire row-level lock on User to serialize concurrent submissions
+        await tx.$executeRawUnsafe('SELECT id FROM "User" WHERE id = $1 FOR UPDATE', userId);
 
-      // Update User Profile if fullName, phone, or profilePhoto is provided
-      const profileUpdates = {};
-      if (data.fullName) profileUpdates.fullName = data.fullName;
-      if (data.mobileNumber) profileUpdates.phone = data.mobileNumber;
-      if (profilePhotoUrl) profileUpdates.avatar = profilePhotoUrl;
-      
-      if (Object.keys(profileUpdates).length > 0) {
-        const profile = await tx.profile.findUnique({ where: { userId } });
-        if (!profile) {
-          await tx.profile.create({
-            data: {
-              userId,
-              ...profileUpdates
+        // 2. Fetch existing application safely from inside the locked transaction
+        const existing = await sellerRepository.findByUserId(userId, tx);
+        
+        if (existing) {
+          if (existing.status === 'REJECTED') {
+            if (!govSettings.allowSellerReapplication) {
+              throw new AppError("Seller reapplication is disabled.", 400);
             }
-          });
-        } else {
-          await tx.profile.update({
-            where: { userId },
-            data: profileUpdates
-          });
+            // Clean up the rejected application records
+            await tx.$executeRawUnsafe('DELETE FROM "SellerDocument" WHERE "sellerId" = $1', existing.id);
+            await tx.$executeRawUnsafe('DELETE FROM "BankAccount" WHERE "sellerId" = $1', existing.id);
+            const existingShop = await tx.shop.findUnique({ where: { sellerId: existing.id } });
+            if (existingShop) {
+              await tx.$executeRawUnsafe('DELETE FROM "ShopTiming" WHERE "shopId" = $1', existingShop.id);
+              await tx.$executeRawUnsafe('DELETE FROM "Shop" WHERE id = $1', existingShop.id);
+            }
+            await tx.$executeRawUnsafe('DELETE FROM "Seller" WHERE id = $1', existing.id);
+          } else {
+            // Already submitted (PENDING or APPROVED)
+            throw new AppError("You have already submitted a seller application.", 409);
+          }
         }
-      }
 
-      // Parse JSON fields
-      let socialLinks = [];
-      let businessHours = [];
-      try {
-        if (data.socialLinks) socialLinks = JSON.parse(data.socialLinks);
-        if (data.businessHours) businessHours = JSON.parse(data.businessHours);
-      } catch (e) {
-        // ignore parse error
-      }
-
-      // Create Seller record
-      const seller = await tx.seller.create({
-        data: {
-          userId,
-          status: initialStatus,
-          approvedAt: initialStatus === 'APPROVED' ? new Date() : null,
-          bio: data.storeDescription || null,
-          
-          businessName: data.businessName,
-          businessType: data.businessType,
-          fssaiNumber: data.fssaiNumber,
-          businessAddressLine1: data.businessAddressLine1,
-          businessAddressLine2: data.businessAddressLine2,
-          businessCity: data.businessCity,
-          businessState: data.businessState,
-          businessPincode: data.businessPincode,
-          businessCountry: data.businessCountry,
-          
-          pickupLocationName: data.pickupLocationName,
-          pickupAddress: data.pickupAddress,
-          pickupCity: data.pickupCity,
-          pickupState: data.pickupState,
-          pickupPincode: data.pickupPincode,
-          
-          storeName: data.storeName,
-          storeDescription: data.storeDescription,
-          storeWebsite: data.storeWebsite,
-          socialLinks: socialLinks,
-          supportEmail: data.supportEmail,
-          supportPhone: data.supportPhone,
-          businessHours: businessHours,
-          
-          // Store logo/banner in shop until approved (if Shop creation is deferred)
-          // Wait, we can just save it to Shop immediately with PENDING status!
+        // Update User Profile if fullName, phone, or profilePhoto is provided
+        const profileUpdates = {};
+        if (data.fullName) profileUpdates.fullName = data.fullName;
+        if (data.mobileNumber) profileUpdates.phone = data.mobileNumber;
+        if (profilePhotoUrl) profileUpdates.avatar = profilePhotoUrl;
+        
+        if (Object.keys(profileUpdates).length > 0) {
+          const profile = await tx.profile.findUnique({ where: { userId } });
+          if (!profile) {
+            await tx.profile.create({
+              data: {
+                userId,
+                ...profileUpdates
+              }
+            });
+          } else {
+            await tx.profile.update({
+              where: { userId },
+              data: profileUpdates
+            });
+          }
         }
-      });
 
-      // Create BankAccount
-      if (data.accountHolderName && data.bankName && data.accountNumber && data.ifsc && data.branchName) {
-        await tx.bankAccount.create({
+        // Parse JSON fields
+        let socialLinks = [];
+        let businessHours = [];
+        try {
+          if (data.socialLinks) socialLinks = JSON.parse(data.socialLinks);
+          if (data.businessHours) businessHours = JSON.parse(data.businessHours);
+        } catch (e) {
+          // ignore parse error
+        }
+
+        // Create Seller record
+        const seller = await tx.seller.create({
           data: {
-            sellerId: seller.id,
-            accountHolderName: data.accountHolderName,
-            bankName: data.bankName,
-            accountNumber: data.accountNumber,
-            ifsc: data.ifsc,
-            branchName: data.branchName
+            userId,
+            status: initialStatus,
+            approvedAt: initialStatus === 'APPROVED' ? new Date() : null,
+            bio: data.storeDescription || null,
+            
+            businessName: data.businessName,
+            businessType: data.businessType,
+            fssaiNumber: data.fssaiNumber,
+            businessAddressLine1: data.businessAddressLine1,
+            businessAddressLine2: data.businessAddressLine2,
+            businessCity: data.businessCity,
+            businessState: data.businessState,
+            businessPincode: data.businessPincode,
+            businessCountry: data.businessCountry,
+            
+            pickupLocationName: data.pickupLocationName,
+            pickupAddress: data.pickupAddress,
+            pickupCity: data.pickupCity,
+            pickupState: data.pickupState,
+            pickupPincode: data.pickupPincode,
+            
+            storeName: data.storeName,
+            storeDescription: data.storeDescription,
+            storeWebsite: data.storeWebsite,
+            socialLinks: socialLinks,
+            supportEmail: data.supportEmail,
+            supportPhone: data.supportPhone,
+            businessHours: businessHours,
+            
+            // Store logo/banner in shop until approved (if Shop creation is deferred)
+            // Wait, we can just save it to Shop immediately with PENDING status!
           }
         });
-      }
 
-      // Create Documents
-      if (uploadedDocs.length > 0) {
-        const docsToInsert = uploadedDocs.map(doc => ({
-          ...doc,
-          sellerId: seller.id
-        }));
-        await tx.sellerDocument.createMany({ data: docsToInsert });
-      }
-
-      // Save Shop images in docs just in case, or directly create the PENDING shop here.
-      // Since Shop creation is deferred to approval step, we need a way to store Logo/Banner.
-      // We will create the Shop right now but with PENDING_APPROVAL status if possible, 
-      // OR we just create a ShopDocument type. Wait, we can't create Shop right now if we want Shop deferred.
-      // Let's create the Shop immediately but set its status to INACTIVE.
-      // And in approveApplication, we set it to ACTIVE.
-      const slug = data.storeName ? data.storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + crypto.randomBytes(3).toString('hex') : 'shop-' + seller.id;
-      
-      const shop = await tx.shop.create({
-        data: {
-          sellerId: seller.id,
-          name: data.storeName || data.businessName || 'My Shop',
-          slug: slug,
-          description: data.storeDescription,
-          logoUrl: shopLogoUrl,
-          logoPublicId: shopLogoId,
-          bannerUrl: shopBannerUrl,
-          bannerPublicId: shopBannerId,
-          shopType: 'OTHER', // Default or derived from businessType
-          status: initialStatus === 'APPROVED' ? 'ACTIVE' : 'INACTIVE', // hidden until approved
-          website: data.storeWebsite,
-          socialLinks: socialLinks,
-          supportEmail: data.supportEmail,
-          supportPhone: data.supportPhone,
-          businessHours: businessHours
+        // Create BankAccount
+        if (data.accountHolderName && data.bankName && data.accountNumber && data.ifsc && data.branchName) {
+          await tx.bankAccount.create({
+            data: {
+              sellerId: seller.id,
+              accountHolderName: data.accountHolderName,
+              bankName: data.bankName,
+              accountNumber: data.accountNumber,
+              ifsc: data.ifsc,
+              branchName: data.branchName
+            }
+          });
         }
+
+        // Create Documents
+        if (uploadedDocs.length > 0) {
+          const docsToInsert = uploadedDocs.map(doc => ({
+            ...doc,
+            sellerId: seller.id
+          }));
+          await tx.sellerDocument.createMany({ data: docsToInsert });
+        }
+
+        // Save Shop images in docs just in case, or directly create the PENDING shop here.
+        // Since Shop creation is deferred to approval step, we need a way to store Logo/Banner.
+        // We will create the Shop right now but with PENDING_APPROVAL status if possible, 
+        // OR we just create a ShopDocument type. Wait, we can't create Shop right now if we want Shop deferred.
+        // Let's create the Shop immediately but set its status to INACTIVE.
+        // And in approveApplication, we set it to ACTIVE.
+        const slug = data.storeName ? data.storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + crypto.randomBytes(3).toString('hex') : 'shop-' + seller.id;
+        
+        const shop = await tx.shop.create({
+          data: {
+            sellerId: seller.id,
+            name: data.storeName || data.businessName || 'My Shop',
+            slug: slug,
+            description: data.storeDescription,
+            logoUrl: shopLogoUrl,
+            logoPublicId: shopLogoId,
+            bannerUrl: shopBannerUrl,
+            bannerPublicId: shopBannerId,
+            shopType: 'OTHER', // Default or derived from businessType
+            status: initialStatus === 'APPROVED' ? 'ACTIVE' : 'INACTIVE', // hidden until approved
+            website: data.storeWebsite,
+            socialLinks: socialLinks,
+            supportEmail: data.supportEmail,
+            supportPhone: data.supportPhone,
+            businessHours: businessHours
+          }
+        });
+
+        // Create ShopTimings
+        const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+        const timingsData = days.map(d => ({
+          shopId: shop.id,
+          dayOfWeek: d,
+          openTime: '09:00',
+          closeTime: '18:00',
+          isClosed: false
+        }));
+        await tx.shopTiming.createMany({ data: timingsData });
+
+        if (initialStatus === 'APPROVED') {
+          await tx.user.update({ where: { id: userId }, data: { role: 'SELLER' } });
+        }
+        
+        return seller;
       });
-
-      // Create ShopTimings
-      const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
-      const timingsData = days.map(d => ({
-        shopId: shop.id,
-        dayOfWeek: d,
-        openTime: '09:00',
-        closeTime: '18:00',
-        isClosed: false
-      }));
-      await tx.shopTiming.createMany({ data: timingsData });
-
-      if (initialStatus === 'APPROVED') {
-        await tx.user.update({ where: { id: userId }, data: { role: 'SELLER' } });
+    } catch (error) {
+      // Clean up orphaned Cloudinary files if the database transaction fails
+      if (publicIdsToClean.length > 0) {
+        Promise.all(
+          publicIdsToClean.map(id => cloudinaryService.delete(id).catch(e => console.error(`Failed to cleanup Cloudinary asset ${id}`, e)))
+        ).catch(() => {});
       }
-      
-      return seller;
-    });
+      throw error;
+    }
   },
 
   /**

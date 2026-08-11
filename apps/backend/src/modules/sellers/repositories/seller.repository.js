@@ -9,8 +9,8 @@ export const sellerRepository = {
     return tx.seller.update({ where: { id }, data });
   },
 
-  async findByUserId(userId) {
-    return prisma.seller.findUnique({
+  async findByUserId(userId, tx = prisma) {
+    return tx.seller.findUnique({
       where: { userId },
       include: {
         documents: true

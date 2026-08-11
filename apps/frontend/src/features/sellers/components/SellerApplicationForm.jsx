@@ -129,6 +129,7 @@ export const SellerApplicationForm = ({ onSuccess, onCancel }) => {
   };
 
   const onSubmit = (data) => {
+    if (isPending) return;
     const formData = new FormData();
     
     // Append Text Fields
