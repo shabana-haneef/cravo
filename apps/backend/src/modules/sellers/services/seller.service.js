@@ -249,7 +249,7 @@ export const sellerService = {
       // Clean up orphaned Cloudinary files if the database transaction fails
       if (publicIdsToClean.length > 0) {
         Promise.all(
-          publicIdsToClean.map(id => cloudinaryService.delete(id).catch(e => console.error(`Failed to cleanup Cloudinary asset ${id}`, e)))
+          publicIdsToClean.map(id => cloudinaryService.deleteFile(id).catch(e => console.error(`Failed to cleanup Cloudinary asset ${id}`, e)))
         ).catch(() => {});
       }
       throw error;
