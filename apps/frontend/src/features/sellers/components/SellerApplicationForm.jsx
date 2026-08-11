@@ -59,7 +59,9 @@ const schema = z.object({
   acceptTerms: z.boolean().refine((v) => v === true, 'You must accept the terms.'),
 });
 
-export const SellerApplicationForm = () => {
+import { api } from '../../../lib/axios.js';
+
+export const SellerApplicationForm = ({ onSuccess, onCancel }) => {
   const { user } = useAuthStore();
   const { mutate: apply, isPending } = useApplySeller();
   const [step, setStep] = useState(1);
@@ -144,8 +146,17 @@ export const SellerApplicationForm = () => {
     if (data.shopBanner instanceof File) formData.append('shopBanner', data.shopBanner);
 
     apply(formData, {
-      onSuccess: () => {
+      onSuccess: async () => {
         toast.success('Application submitted! We will review it within 24–48 hours.');
+        try {
+          // Sync auth state in case role was upgraded silently
+          const { data } = await api.get('/auth/me');
+          const currentToken = useAuthStore.getState().accessToken;
+          useAuthStore.getState().setAuth(data.data.user, currentToken);
+        } catch (e) {
+          console.error("Failed to sync auth state", e);
+        }
+        if (onSuccess) onSuccess();
       },
       onError: (err) => {
         const message = err.response?.data?.message || 'Failed to submit. Please try again.';
@@ -461,16 +472,27 @@ export const SellerApplicationForm = () => {
 
         {/* Navigation Buttons */}
         <div className="flex justify-between items-center pt-4">
-          {step > 1 && (
-            <button
-              type="button"
-              onClick={prevStep}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-full border border-gray-300 font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <ChevronLeft size={18} />
-              Back
-            </button>
-          )}
+          <div className="flex gap-4">
+            {step > 1 && (
+              <button
+                type="button"
+                onClick={prevStep}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-full border border-gray-300 font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <ChevronLeft size={18} />
+                Back
+              </button>
+            )}
+            {onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-full font-medium text-red-600 hover:bg-red-50 transition-colors"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
           <div className="flex-1"></div>
           {step < totalSteps && (
             <button
