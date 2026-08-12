@@ -1,7 +1,7 @@
 import { createQueue, createWorker } from '../utils/queue.manager.js';
 import { logger } from '../services/logger.js';
 import { emailService } from '../../modules/auth/services/email.service.js';
-import prisma from '../../../lib/prisma.js';
+import prisma from '../../lib/prisma.js';
 
 export const notificationQueue = createQueue('notifications');
 

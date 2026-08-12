@@ -1,5 +1,5 @@
 import { createBullBoard } from '@bull-board/api';
-import { BullMQAdapter } from '@bull-board/api/bullMQAdapter.js';
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
 import { campaignExpiryQueue } from '../../modules/campaigns/jobs/campaignExpiry.job.js';
 import { deliverySyncQueue } from '../../modules/delivery/jobs/deliverySync.job.js';
