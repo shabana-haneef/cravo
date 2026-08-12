@@ -66,5 +66,72 @@ export const sellerController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  async getPayoutSettings(req, res, next) {
+    try {
+      const payoutSettings = await sellerService.getPayoutSettings(req.user.id);
+      return successResponse(res, 'Payout settings retrieved successfully', payoutSettings);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async requestPayoutUpdateOtp(req, res, next) {
+    try {
+      const result = await sellerService.requestPayoutUpdateOtp(req.user.id);
+      return successResponse(res, result.message, null);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updatePayoutSettings(req, res, next) {
+    try {
+      const { otp, bankData } = req.body;
+      if (!otp || !bankData) {
+        return errorResponse(res, 'OTP and bank details are required', 400);
+      }
+      const updated = await sellerService.verifyAndUpdatePayoutSettings(req.user.id, otp, bankData);
+      return successResponse(res, 'Bank account updated successfully', updated);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getNotificationPreferences(req, res, next) {
+    try {
+      const preferences = await sellerService.getNotificationPreferences(req.user.id);
+      return successResponse(res, 'Notification preferences retrieved', preferences);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateNotificationPreferences(req, res, next) {
+    try {
+      const updated = await sellerService.updateNotificationPreferences(req.user.id, req.body);
+      return successResponse(res, 'Notification preferences updated successfully', updated);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getStoreProfile(req, res, next) {
+    try {
+      const profile = await sellerService.getStoreProfile(req.user.id);
+      return successResponse(res, 'Store profile retrieved', profile);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateStoreProfile(req, res, next) {
+    try {
+      const updated = await sellerService.updateStoreProfile(req.user.id, req.body);
+      return successResponse(res, 'Store profile updated successfully', updated);
+    } catch (error) {
+      next(error);
+    }
   }
 };

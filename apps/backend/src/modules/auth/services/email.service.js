@@ -62,5 +62,34 @@ export const emailService = {
       logger.error({ err: error }, "Failed to send password reset email via Resend");
       throw new AppError("Failed to send password reset email. Please try again later.", 500);
     }
+  },
+
+  /**
+   * Sends an OTP for sensitive bank account updates
+   */
+  async sendBankAccountUpdateEmail(to, otp) {
+    try {
+      const { error } = await resend.emails.send({
+        from: "Cravo Security <security@support.cravo.in>",
+        to,
+        subject: "Action Required: Verify Bank Account Update",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Bank Account Update Request</h2>
+            <p>We received a request to update the bank account details for your seller profile. Use the following code to verify this change. This code is valid for 5 minutes.</p>
+            <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
+              ${otp}
+            </div>
+            <p><strong>If you did not request this update, please change your password immediately and contact support.</strong></p>
+          </div>
+        `,
+      });
+      if (error) {
+        throw new Error(error.message);
+      }
+    } catch (error) {
+      logger.error({ err: error }, "Failed to send bank update OTP email via Resend");
+      throw new AppError("Failed to send verification email. Please try again later.", 500);
+    }
   }
 };

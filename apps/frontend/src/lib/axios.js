@@ -39,7 +39,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Handle 401 & Refresh Token
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -67,30 +66,29 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      let newToken = null;
       try {
         const { data } = await axios.post(`${BASE_URL}/auth/refresh-token`, {}, { withCredentials: true });
-        newToken = data.data.accessToken;
+        const newToken = data.data.accessToken;
 
         // Update zustand store
         useAuthStore.getState().setAuth(useAuthStore.getState().user, newToken);
 
         // Process queue
         processQueue(null, newToken);
+        
+        isRefreshing = false;
+
+        // Retry original request
+        originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
+        return api(originalRequest);
       } catch (err) {
         processQueue(err, null);
-        useAuthStore.getState().clearAuth(); // Force logout
-        if (window.location.pathname !== '/login' && originalRequest.url !== '/auth/me') {
-          window.location.href = '/login'; // Redirect to login page
-        }
         isRefreshing = false;
+        
+        useAuthStore.getState().clearAuth(); // Triggers ProtectedRoute redirect safely
+        
         return Promise.reject(err);
       }
-      
-      isRefreshing = false;
-      // Retry original request outside of try-catch so its errors don't trigger logout
-      originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
-      return api(originalRequest);
     }
 
     return Promise.reject(error);

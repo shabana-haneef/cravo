@@ -8,6 +8,9 @@ import { governanceSettingsService } from '../../admin/services/governanceSettin
 import prisma from '../../../lib/prisma.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 import crypto from 'crypto';
+import { maskAccountNumber } from '../../../shared/utils/masking.js';
+import { otpService } from '../../auth/services/otp.service.js';
+import { emailService } from '../../auth/services/email.service.js';
 
 export const sellerService = {
   /**
@@ -389,5 +392,119 @@ export const sellerService = {
     ).catch(() => {});
 
     return result;
+  },
+
+  /**
+   * Fetch Payout Settings for a seller securely
+   */
+  async getPayoutSettings(userId) {
+    const seller = await prisma.seller.findUnique({
+      where: { userId },
+      select: { id: true }
+    });
+
+    if (!seller) throw new AppError("Seller profile not found", 404);
+
+    const bankAccount = await prisma.bankAccount.findUnique({
+      where: { sellerId: seller.id }
+    });
+
+    if (!bankAccount) return null;
+
+    // Mask account number
+    const maskedAccount = maskAccountNumber(bankAccount.accountNumber);
+
+    // Log verification for debugging
+    import('../../../shared/services/logger.js').then(module => {
+      module.logger.info({
+        authenticatedUser: userId,
+        resolvedSellerId: seller.id,
+        bankAccountSellerId: bankAccount.sellerId,
+        message: 'Payout data requested'
+      });
+    });
+
+    return {
+      accountHolderName: bankAccount.accountHolderName,
+      bankName: bankAccount.bankName,
+      accountNumberMasked: maskedAccount,
+      verificationStatus: 'verified' // Could be dynamic if verification states are added
+    };
+  },
+
+  /**
+   * Request an OTP to update payout settings
+   */
+  async requestPayoutUpdateOtp(userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true }
+    });
+
+    if (!user) throw new AppError("User not found", 404);
+
+    const otp = otpService.generateOtp();
+    const hashedOtp = await otpService.hashOtp(otp);
+    const key = `bank-update:${userId}`;
+    
+    // Save to Redis with 5 minutes TTL (300 seconds)
+    await otpService.saveOtp(key, hashedOtp, 300);
+
+    // Send email
+    await emailService.sendBankAccountUpdateEmail(user.email, otp);
+
+    return { success: true, message: "OTP sent to registered email" };
+  },
+
+  /**
+   * Verify OTP and update payout settings
+   */
+  async verifyAndUpdatePayoutSettings(userId, otp, bankData) {
+    const key = `bank-update:${userId}`;
+    const isValid = await otpService.verifyOtp(key, otp);
+
+    if (!isValid) {
+      throw new AppError("Invalid or expired OTP", 400);
+    }
+
+    const seller = await prisma.seller.findUnique({
+      where: { userId },
+      select: { id: true }
+    });
+
+    if (!seller) throw new AppError("Seller profile not found", 404);
+
+    // Update the bank account
+    const updatedBank = await prisma.bankAccount.upsert({
+      where: { sellerId: seller.id },
+      update: {
+        accountHolderName: bankData.accountHolderName,
+        bankName: bankData.bankName,
+        accountNumber: bankData.accountNumber,
+        ifsc: bankData.ifsc,
+        branchName: bankData.branchName || 'Not specified'
+      },
+      create: {
+        sellerId: seller.id,
+        accountHolderName: bankData.accountHolderName,
+        bankName: bankData.bankName,
+        accountNumber: bankData.accountNumber,
+        ifsc: bankData.ifsc,
+        branchName: bankData.branchName || 'Not specified'
+      }
+    });
+
+    // Invalidate the OTP so it can't be reused
+    await otpService.deleteOtp(key);
+
+    import('../../../shared/services/logger.js').then(module => {
+      module.logger.info({
+        userId,
+        sellerId: seller.id,
+        event: 'BANK_ACCOUNT_UPDATED_VIA_OTP'
+      });
+    });
+
+    return updatedBank;
   }
 };
