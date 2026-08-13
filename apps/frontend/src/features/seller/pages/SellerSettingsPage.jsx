@@ -670,6 +670,10 @@ const StoreProfileTab = ({ onSave }) => {
   const [isLoading, setIsLoading] = React.useState(true);
   const [shopName, setShopName] = useState('');
   const [shopType, setShopType] = useState('');
+  const [businessModel, setBusinessModel] = useState('');
+  const [fssaiNumber, setFssaiNumber] = useState('');
+  const [storeWebsite, setStoreWebsite] = useState('');
+  const [supportEmail, setSupportEmail] = useState('');
   const [shopDescription, setShopDescription] = useState('');
   const [isActive, setIsActive] = useState(false);
   
@@ -696,6 +700,10 @@ const StoreProfileTab = ({ onSave }) => {
         
         setShopName(p.shopName || '');
         setShopType(p.shopType || '');
+        setBusinessModel(p.businessModel || '');
+        setFssaiNumber(p.fssaiNumber || '');
+        setStoreWebsite(p.storeWebsite || '');
+        setSupportEmail(p.supportEmail || '');
         setShopDescription(p.shopDescription || '');
         setIsActive(p.isActive || false);
         
@@ -758,6 +766,10 @@ const StoreProfileTab = ({ onSave }) => {
       await api.put('/sellers/settings/profile', {
         shopName,
         shopDescription,
+        businessModel,
+        fssaiNumber,
+        storeWebsite,
+        supportEmail,
         locationName,
         pickupPhone,
         streetAddress,
@@ -786,6 +798,10 @@ const StoreProfileTab = ({ onSave }) => {
       await api.put('/sellers/settings/profile', {
         shopName,
         shopDescription,
+        businessModel,
+        fssaiNumber,
+        storeWebsite,
+        supportEmail,
         locationName,
         pickupPhone,
         streetAddress,
@@ -937,6 +953,41 @@ const StoreProfileTab = ({ onSave }) => {
                     <option>Consignment</option>
                     <option>Managed by Cravo</option>
                   </select>
+                </div>
+              </div>
+              
+              <div>
+                <InputLabel>FSSAI License Number</InputLabel>
+                <input
+                  type="text"
+                  maxLength={14}
+                  value={fssaiNumber}
+                  onChange={(e) => setFssaiNumber(e.target.value)}
+                  placeholder="14-digit FSSAI Number"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <InputLabel>Store Website</InputLabel>
+                  <input
+                    type="url"
+                    value={storeWebsite}
+                    onChange={(e) => setStoreWebsite(e.target.value)}
+                    placeholder="https://"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                  />
+                </div>
+                <div>
+                  <InputLabel>Support Email</InputLabel>
+                  <input
+                    type="email"
+                    value={supportEmail}
+                    onChange={(e) => setSupportEmail(e.target.value)}
+                    placeholder="support@store.com"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                  />
                 </div>
               </div>
 
@@ -1883,9 +1934,9 @@ const BillingTab = () => {
 
 /* ─────────────────── Main Page ─────────────────── */
 const TABS = [
+  { id: 'store-profile', name: 'Store Profile', icon: Store },
   { id: 'notifications', name: 'Notifications', icon: Bell },
   { id: 'payouts', name: 'Payouts', icon: Wallet },
-  { id: 'store-profile', name: 'Store Profile', icon: Store },
   { id: 'security', name: 'Security', icon: Lock },
   { id: 'billing', name: 'Billing', icon: FileText },
 ];
@@ -1895,7 +1946,7 @@ export const SellerSettingsPage = () => {
   const tabParam = searchParams.get('tab');
   
   const [activeTab, setActiveTab] = useState(
-    tabParam && TABS.some(t => t.id === tabParam) ? tabParam : 'payouts'
+    tabParam && TABS.some(t => t.id === tabParam) ? tabParam : 'store-profile'
   );
 
   React.useEffect(() => {

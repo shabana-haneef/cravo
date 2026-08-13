@@ -565,7 +565,11 @@ export const sellerService = {
     return {
       shopName: seller.shop?.name || seller.storeName || '',
       shopType: seller.shop?.shopType || seller.businessType || '',
+      businessModel: seller.businessModel || 'Self-Operated', // Default to Self-Operated if missing
       shopDescription: seller.shop?.description || seller.storeDescription || '',
+      fssaiNumber: seller.fssaiNumber || '',
+      storeWebsite: seller.website || seller.storeWebsite || '',
+      supportEmail: seller.supportEmail || '',
       isActive: seller.shop?.status === 'ACTIVE',
       locationName: seller.pickupLocationName || '',
       pickupPhone: seller.pickupPhone || seller.supportPhone || '',
@@ -604,7 +608,11 @@ export const sellerService = {
           pickupState: data.state,
           pickupPincode: data.pincode,
           storeName: data.shopName,
-          storeDescription: data.shopDescription
+          storeDescription: data.shopDescription,
+          businessModel: data.businessModel,
+          fssaiNumber: data.fssaiNumber,
+          storeWebsite: data.storeWebsite,
+          supportEmail: data.supportEmail
         }
       });
 
