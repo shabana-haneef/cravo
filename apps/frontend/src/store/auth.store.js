@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { v4 as uuidv4 } from 'uuid'; // Fallback to random if not available
 
 const TAB_ID = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
 const authChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('auth_sync') : null;
