@@ -4,14 +4,15 @@ import { useAuthStore } from '../../store/auth.store.js';
 import { LoadingScreen } from '../../components/ui/LoadingScreen.jsx';
 
 export const ProtectedRoute = () => {
-  const { isAuthenticated, isInitializing } = useAuthStore();
+  const { isAuthenticated, authStatus, isInitializing } = useAuthStore();
   const location = useLocation();
 
-  if (isInitializing) {
+  // Wait for initialization and any active restoration
+  if (isInitializing || authStatus === 'idle' || authStatus === 'restoring') {
     return <LoadingScreen message="Checking authentication..." />;
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || authStatus === 'unauthenticated') {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
@@ -19,9 +20,9 @@ export const ProtectedRoute = () => {
 };
 
 export const RoleRoute = ({ allowedRoles }) => {
-  const { user, isInitializing } = useAuthStore();
+  const { user, authStatus, isInitializing } = useAuthStore();
 
-  if (isInitializing) {
+  if (isInitializing || authStatus === 'idle' || authStatus === 'restoring') {
     return <LoadingScreen message="Verifying permissions..." />;
   }
 
@@ -41,14 +42,14 @@ export const RoleRoute = ({ allowedRoles }) => {
 };
 
 export const PublicRoute = () => {
-  const { isAuthenticated, user, isInitializing } = useAuthStore();
+  const { isAuthenticated, user, authStatus, isInitializing } = useAuthStore();
 
-  if (isInitializing) {
+  if (isInitializing || authStatus === 'idle' || authStatus === 'restoring') {
     return <LoadingScreen message="Checking authentication..." />;
   }
 
   // If already logged in, redirect away from auth pages (login/register)
-  if (isAuthenticated) {
+  if (isAuthenticated && authStatus === 'authenticated') {
     if (user?.role === 'SELLER') {
       if (user?.isFirstLogin) {
         return <Navigate to="/" replace />;
