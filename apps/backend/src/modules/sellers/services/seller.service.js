@@ -428,6 +428,8 @@ export const sellerService = {
       accountHolderName: bankAccount.accountHolderName,
       bankName: bankAccount.bankName,
       accountNumberMasked: maskedAccount,
+      accountNumber: bankAccount.accountNumber,
+      ifsc: bankAccount.ifsc,
       verificationStatus: 'verified' // Could be dynamic if verification states are added
     };
   },
@@ -506,5 +508,124 @@ export const sellerService = {
     });
 
     return updatedBank;
+  },
+
+  /**
+   * Get Notification Preferences
+   */
+  async getNotificationPreferences(userId) {
+    let prefs = await prisma.notificationPreference.findUnique({
+      where: { userId }
+    });
+
+    if (!prefs) {
+      prefs = await prisma.notificationPreference.create({
+        data: { userId } // Uses defaults from schema
+      });
+    }
+
+    return prefs;
+  },
+
+  /**
+   * Update Notification Preferences
+   */
+  async updateNotificationPreferences(userId, data) {
+    return await prisma.notificationPreference.upsert({
+      where: { userId },
+      update: {
+        orderEmails: data.orderEmails,
+        inventoryAlerts: data.inventoryAlerts,
+        payoutEmails: data.payoutEmails,
+        marketingEmails: data.marketingEmails,
+        securityAlerts: true // Always force true for security
+      },
+      create: {
+        userId,
+        orderEmails: data.orderEmails ?? true,
+        inventoryAlerts: data.inventoryAlerts ?? true,
+        payoutEmails: data.payoutEmails ?? true,
+        marketingEmails: data.marketingEmails ?? false,
+        securityAlerts: true
+      }
+    });
+  },
+
+  /**
+   * Get Store Profile
+   */
+  async getStoreProfile(userId) {
+    const seller = await prisma.seller.findUnique({
+      where: { userId },
+      include: { shop: true }
+    });
+
+    if (!seller) throw new AppError("Seller profile not found", 404);
+
+    return {
+      shopName: seller.shop?.name || seller.storeName || '',
+      shopType: seller.shop?.shopType || seller.businessType || '',
+      shopDescription: seller.shop?.description || seller.storeDescription || '',
+      isActive: seller.shop?.status === 'ACTIVE',
+      locationName: seller.pickupLocationName || '',
+      pickupPhone: seller.pickupPhone || seller.supportPhone || '',
+      streetAddress: seller.pickupAddress || '',
+      city: seller.pickupCity || '',
+      state: seller.pickupState || '',
+      pincode: seller.pickupPincode || '',
+      enableSelfPickup: seller.shop?.isPickupEnabled ?? false,
+      enableHomeDelivery: seller.shop?.isDeliveryEnabled ?? false,
+      deliveryRadius: seller.shop?.deliveryRadiusKm || 5,
+      logoImage: seller.shop?.logoUrl || null,
+      bannerImage: seller.shop?.bannerUrl || null
+    };
+  },
+
+  /**
+   * Update Store Profile
+   */
+  async updateStoreProfile(userId, data) {
+    return await prisma.$transaction(async (tx) => {
+      const seller = await tx.seller.findUnique({
+        where: { userId },
+        include: { shop: true }
+      });
+
+      if (!seller) throw new AppError("Seller profile not found", 404);
+
+      // Update Seller pickup info
+      await tx.seller.update({
+        where: { id: seller.id },
+        data: {
+          pickupLocationName: data.locationName,
+          pickupPhone: data.pickupPhone,
+          pickupAddress: data.streetAddress,
+          pickupCity: data.city,
+          pickupState: data.state,
+          pickupPincode: data.pincode,
+          storeName: data.shopName,
+          storeDescription: data.shopDescription
+        }
+      });
+
+      // Update Shop info
+      if (seller.shop) {
+        await tx.shop.update({
+          where: { id: seller.shop.id },
+          data: {
+            name: data.shopName,
+            description: data.shopDescription,
+            isPickupEnabled: data.enableSelfPickup,
+            isDeliveryEnabled: data.enableHomeDelivery,
+            deliveryRadiusKm: parseInt(data.deliveryRadius) || 5,
+            status: data.isActive ? 'ACTIVE' : 'INACTIVE',
+            logoUrl: data.logoImage,
+            bannerUrl: data.bannerImage
+          }
+        });
+      }
+
+      return { success: true };
+    });
   }
 };

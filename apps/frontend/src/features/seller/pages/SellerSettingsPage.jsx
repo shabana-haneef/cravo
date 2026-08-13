@@ -53,87 +53,6 @@ const CardHeader = ({ number, icon: Icon, title, subtitle }) => (
   </div>
 );
 
-/* ─────────────────── Tab Content: General ─────────────────── */
-const GeneralTab = () => {
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [enableStore, setEnableStore] = useState(false);
-  const [allowReviews, setAllowReviews] = useState(false);
-  const [orderPrefix, setOrderPrefix] = useState('');
-  const [autoCancel, setAutoCancel] = useState('');
-  const [invoicePrefix, setInvoicePrefix] = useState('');
-  const [lowStockAlert, setLowStockAlert] = useState('');
-
-  React.useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      await new Promise(r => setTimeout(r, 800)); // Simulate API delay
-      setIsLoading(false);
-    };
-    fetchData();
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <div className="w-8 h-8 border-4 border-[#16A34A] border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 text-sm font-semibold text-gray-500">Loading general settings...</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Order Settings */}
-      <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 h-fit">
-        <CardHeader number="1" icon={ShoppingBag} title="Order Settings" subtitle="Configure how your orders are managed." />
-        <div className="flex flex-col gap-5">
-          <div>
-            <InputLabel>Order ID Prefix</InputLabel>
-            <input type="text" value={orderPrefix} onChange={(e) => setOrderPrefix(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]" />
-          </div>
-          <div>
-            <InputLabel>Auto Cancel Unpaid Orders</InputLabel>
-            <select value={autoCancel} onChange={(e) => setAutoCancel(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]">
-              <option value="">Not configured</option>
-              <option value="24">After 24 Hours</option>
-              <option value="48">After 48 Hours</option>
-              <option value="72">After 72 Hours</option>
-            </select>
-          </div>
-          <div>
-            <InputLabel>Invoice Prefix</InputLabel>
-            <input type="text" value={invoicePrefix} onChange={(e) => setInvoicePrefix(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]" />
-          </div>
-        </div>
-      </div>
-
-      {/* Other Settings */}
-      <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 h-fit">
-        <CardHeader number="2" icon={SlidersHorizontal} title="Other Settings" subtitle="Additional preferences for your store." />
-        <div className="flex flex-col gap-6">
-          <div>
-            <InputLabel>Low Stock Alert Threshold</InputLabel>
-            <input type="text" value={lowStockAlert} onChange={(e) => setLowStockAlert(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]" />
-          </div>
-          <div className="flex flex-col justify-start">
-            <InputLabel>Enable Store</InputLabel>
-            <div className="flex items-center gap-3 mt-1.5">
-              <Toggle enabled={enableStore} onChange={() => setEnableStore(!enableStore)} />
-              <span className="text-[12px] font-medium text-gray-500">Your store is visible to customers.</span>
-            </div>
-          </div>
-          <div className="flex flex-col justify-start">
-            <InputLabel>Allow Product Reviews</InputLabel>
-            <div className="flex items-center gap-3 mt-1.5">
-              <Toggle enabled={allowReviews} onChange={() => setAllowReviews(!allowReviews)} />
-              <span className="text-[12px] font-medium text-gray-500">Customers can review products.</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 /* ─────────────────── Tab Content: Notifications ─────────────────── */
 const NotificationsTab = () => {
@@ -236,6 +155,9 @@ const PayoutsTab = () => {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [rawBankAccount, setRawBankAccount] = useState('');
+  const [rawIfsc, setRawIfsc] = useState('');
+
   React.useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -246,6 +168,8 @@ const PayoutsTab = () => {
           setBankHolder(data.accountHolderName || '');
           setBankName(data.bankName || '');
           setBankAccountNum(data.accountNumberMasked || '');
+          setRawBankAccount(data.accountNumber || '');
+          setRawIfsc(data.ifsc || '');
           setVerificationStatus(data.verificationStatus || 'Not Configured');
         }
       } catch (error) {
@@ -277,8 +201,8 @@ const PayoutsTab = () => {
   const startEditing = () => {
     setTempHolder(bankHolder || '');
     setTempName(bankName || '');
-    setTempAccount(''); // Clear for security
-    setTempIfsc('');
+    setTempAccount(rawBankAccount || ''); // Pre-fill with actual raw data
+    setTempIfsc(rawIfsc || '');
     setIsEditingBank(true);
     setIsOtpSent(false);
     setOtp('');
@@ -1959,7 +1883,6 @@ const BillingTab = () => {
 
 /* ─────────────────── Main Page ─────────────────── */
 const TABS = [
-  { id: 'general', name: 'General', icon: Hexagon },
   { id: 'notifications', name: 'Notifications', icon: Bell },
   { id: 'payouts', name: 'Payouts', icon: Wallet },
   { id: 'store-profile', name: 'Store Profile', icon: Store },
@@ -1988,7 +1911,6 @@ export const SellerSettingsPage = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'general': return <GeneralTab />;
       case 'notifications': return <NotificationsTab />;
       case 'payouts': return <PayoutsTab />;
       case 'store-profile': return <SellerShopProfilePage hideHeader={true} />;
