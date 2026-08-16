@@ -691,6 +691,16 @@ const StoreProfileTab = ({ onSave }) => {
   const [logoImage, setLogoImage] = useState(null);
   const [bannerImage, setBannerImage] = useState(null);
 
+  // Business Onboarding Data State
+  const [businessName, setBusinessName] = useState('');
+  const [businessType, setBusinessType] = useState('');
+  const [businessAddressLine1, setBusinessAddressLine1] = useState('');
+  const [businessAddressLine2, setBusinessAddressLine2] = useState('');
+  const [businessCity, setBusinessCity] = useState('');
+  const [businessState, setBusinessState] = useState('');
+  const [businessPincode, setBusinessPincode] = useState('');
+  const [businessCountry, setBusinessCountry] = useState('India');
+
   React.useEffect(() => {
     const fetchData = async () => {
       try {
@@ -719,6 +729,15 @@ const StoreProfileTab = ({ onSave }) => {
         setDeliveryRadius(p.deliveryRadius || '');
         setLogoImage(p.logoImage || null);
         setBannerImage(p.bannerImage || null);
+
+        setBusinessName(p.businessName || '');
+        setBusinessType(p.businessType || '');
+        setBusinessAddressLine1(p.businessAddressLine1 || '');
+        setBusinessAddressLine2(p.businessAddressLine2 || '');
+        setBusinessCity(p.businessCity || '');
+        setBusinessState(p.businessState || '');
+        setBusinessPincode(p.businessPincode || '');
+        setBusinessCountry(p.businessCountry || 'India');
       } catch (err) {
         toast.error("Failed to load store profile data");
       } finally {
@@ -781,7 +800,15 @@ const StoreProfileTab = ({ onSave }) => {
         deliveryRadius,
         isActive,
         logoImage,
-        bannerImage
+        bannerImage,
+        businessName,
+        businessType,
+        businessAddressLine1,
+        businessAddressLine2,
+        businessCity,
+        businessState,
+        businessPincode,
+        businessCountry
       });
       toast.success('Shop profile updated successfully!');
       if (onSave) onSave();
@@ -813,7 +840,15 @@ const StoreProfileTab = ({ onSave }) => {
         deliveryRadius,
         isActive: newStatus,
         logoImage,
-        bannerImage
+        bannerImage,
+        businessName,
+        businessType,
+        businessAddressLine1,
+        businessAddressLine2,
+        businessCity,
+        businessState,
+        businessPincode,
+        businessCountry
       });
       toast.success(newStatus ? 'Shop activated successfully!' : 'Shop deactivated successfully!');
     } catch (err) {
@@ -1081,82 +1116,126 @@ const StoreProfileTab = ({ onSave }) => {
                   className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
                 />
               </div>
+            </div>
+          </div>
 
-              {/* Divider */}
-              <div className="border-t border-gray-100 pt-6" />
+          {/* Card E: Business Details (Onboarding Info) */}
+          <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 flex flex-col gap-6">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center shrink-0">
+                <FileText size={16} strokeWidth={2.5} />
+              </div>
+              <div>
+                <h3 className="text-[15px] font-bold text-gray-900">Business Information</h3>
+                <p className="text-xs text-gray-500 mt-0.5 font-medium">Verified business details from onboarding.</p>
+              </div>
+            </div>
 
-              {/* Fulfillment Options */}
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center shrink-0">
-                    <ShoppingBag size={16} strokeWidth={2.5} />
-                  </div>
-                  <h3 className="text-[15px] font-bold text-gray-900">Fulfillment Options</h3>
+            <div className="flex flex-col gap-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <InputLabel>Business Name</InputLabel>
+                  <input
+                    type="text"
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                    placeholder="Business Name"
+                  />
                 </div>
-
-                <div className="flex flex-col sm:flex-row gap-6 mt-2">
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className="relative flex items-center justify-center">
-                      <input
-                        type="checkbox"
-                        checked={enableSelfPickup}
-                        onChange={() => setEnableSelfPickup(!enableSelfPickup)}
-                        className="sr-only"
-                      />
-                      <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                        enableSelfPickup
-                          ? 'bg-[#16A34A] border-[#16A34A] text-white shadow-sm shadow-[#16A34A]/25'
-                          : 'bg-white border-gray-300 group-hover:border-gray-400'
-                      }`}>
-                        {enableSelfPickup && <Check size={12} strokeWidth={3} />}
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-gray-800">Enable Self Pickup</span>
-                  </label>
-
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className="relative flex items-center justify-center">
-                      <input
-                        type="checkbox"
-                        checked={enableHomeDelivery}
-                        onChange={() => setEnableHomeDelivery(!enableHomeDelivery)}
-                        className="sr-only"
-                      />
-                      <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                        enableHomeDelivery
-                          ? 'bg-[#16A34A] border-[#16A34A] text-white shadow-sm shadow-[#16A34A]/25'
-                          : 'bg-white border-gray-300 group-hover:border-gray-400'
-                      }`}>
-                        {enableHomeDelivery && <Check size={12} strokeWidth={3} />}
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-gray-800">Enable Home Delivery</span>
-                  </label>
+                <div>
+                  <InputLabel>Business Type</InputLabel>
+                  <input
+                    type="text"
+                    value={businessType}
+                    onChange={(e) => setBusinessType(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                    placeholder="E.g. Sole Proprietorship"
+                  />
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="border-t border-gray-100 pt-6" />
+              <div>
+                <InputLabel>FSSAI License Number</InputLabel>
+                <input
+                  type="text"
+                  maxLength={14}
+                  value={fssaiNumber}
+                  onChange={(e) => setFssaiNumber(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                  placeholder="14-digit FSSAI Number"
+                />
+              </div>
 
-              {/* Delivery Radius */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center shrink-0">
-                    <Target size={16} strokeWidth={2.5} />
+              {/* Business Address Header */}
+              <div className="border-t border-gray-100 pt-6">
+                <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">Registered Business Address</h4>
+                <div className="flex flex-col gap-6">
+                  <div>
+                    <InputLabel>Address Line 1</InputLabel>
+                    <input
+                      type="text"
+                      value={businessAddressLine1}
+                      onChange={(e) => setBusinessAddressLine1(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                      placeholder="Address Line 1"
+                    />
                   </div>
-                  <h3 className="text-[15px] font-bold text-gray-900">Delivery Radius</h3>
+                  <div>
+                    <InputLabel>Address Line 2</InputLabel>
+                    <input
+                      type="text"
+                      value={businessAddressLine2}
+                      onChange={(e) => setBusinessAddressLine2(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                      placeholder="Address Line 2"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <InputLabel>City</InputLabel>
+                      <input
+                        type="text"
+                        value={businessCity}
+                        onChange={(e) => setBusinessCity(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                        placeholder="City"
+                      />
+                    </div>
+                    <div>
+                      <InputLabel>State</InputLabel>
+                      <input
+                        type="text"
+                        value={businessState}
+                        onChange={(e) => setBusinessState(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                        placeholder="State"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <InputLabel>Pincode</InputLabel>
+                      <input
+                        type="text"
+                        value={businessPincode}
+                        onChange={(e) => setBusinessPincode(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                        placeholder="Pincode"
+                      />
+                    </div>
+                    <div>
+                      <InputLabel>Country</InputLabel>
+                      <input
+                        type="text"
+                        value={businessCountry}
+                        onChange={(e) => setBusinessCountry(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                        placeholder="Country"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <select
-                  value={deliveryRadius}
-                  onChange={(e) => setDeliveryRadius(e.target.value)}
-                  className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A] w-28 text-center"
-                >
-                  <option>1 KM</option>
-                  <option>2 KM</option>
-                  <option>5 KM</option>
-                  <option>10 KM</option>
-                  <option>20 KM</option>
-                </select>
               </div>
 
             </div>

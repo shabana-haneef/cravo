@@ -581,7 +581,17 @@ export const sellerService = {
       enableHomeDelivery: seller.shop?.isDeliveryEnabled ?? false,
       deliveryRadius: seller.shop?.deliveryRadiusKm || 5,
       logoImage: seller.shop?.logoUrl || null,
-      bannerImage: seller.shop?.bannerUrl || null
+      bannerImage: seller.shop?.bannerUrl || null,
+      
+      // Onboarding Business Info
+      businessName: seller.businessName || '',
+      businessType: seller.businessType || '',
+      businessAddressLine1: seller.businessAddressLine1 || '',
+      businessAddressLine2: seller.businessAddressLine2 || '',
+      businessCity: seller.businessCity || '',
+      businessState: seller.businessState || '',
+      businessPincode: seller.businessPincode || '',
+      businessCountry: seller.businessCountry || 'India'
     };
   },
 
@@ -597,7 +607,7 @@ export const sellerService = {
 
       if (!seller) throw new AppError("Seller profile not found", 404);
 
-      // Update Seller pickup info
+      // Update Seller pickup info & business info
       await tx.seller.update({
         where: { id: seller.id },
         data: {
@@ -612,7 +622,17 @@ export const sellerService = {
           businessModel: data.businessModel,
           fssaiNumber: data.fssaiNumber,
           storeWebsite: data.storeWebsite,
-          supportEmail: data.supportEmail
+          supportEmail: data.supportEmail,
+
+          // Business Details
+          businessName: data.businessName,
+          businessType: data.businessType,
+          businessAddressLine1: data.businessAddressLine1,
+          businessAddressLine2: data.businessAddressLine2,
+          businessCity: data.businessCity,
+          businessState: data.businessState,
+          businessPincode: data.businessPincode,
+          businessCountry: data.businessCountry
         }
       });
 

@@ -87,7 +87,15 @@ export const shopService = {
       pickupCity: seller.pickupCity || '',
       pickupState: seller.pickupState || '',
       pickupPincode: seller.pickupPincode || '',
-      pickupPhone: seller.pickupPhone || ''
+      pickupPhone: seller.pickupPhone || '',
+      businessName: seller.businessName || '',
+      businessType: seller.businessType || '',
+      businessAddressLine1: seller.businessAddressLine1 || '',
+      businessAddressLine2: seller.businessAddressLine2 || '',
+      businessCity: seller.businessCity || '',
+      businessState: seller.businessState || '',
+      businessPincode: seller.businessPincode || '',
+      businessCountry: seller.businessCountry || 'India'
     };
   },
 
@@ -100,18 +108,21 @@ export const shopService = {
 
     let updates = { ...data };
 
-    // Handle seller pickup details separately
-    const sellerPickupUpdates = {};
-    const pickupFields = ['pickupLocationName', 'pickupAddress', 'pickupCity', 'pickupState', 'pickupPincode', 'pickupPhone'];
-    pickupFields.forEach(field => {
+    // Handle seller details separately
+    const sellerUpdates = {};
+    const sellerFields = [
+      'pickupLocationName', 'pickupAddress', 'pickupCity', 'pickupState', 'pickupPincode', 'pickupPhone',
+      'businessName', 'businessType', 'businessAddressLine1', 'businessAddressLine2', 'businessCity', 'businessState', 'businessPincode', 'businessCountry'
+    ];
+    sellerFields.forEach(field => {
       if (updates[field] !== undefined) {
-        sellerPickupUpdates[field] = updates[field];
+        sellerUpdates[field] = updates[field];
         delete updates[field];
       }
     });
 
-    if (Object.keys(sellerPickupUpdates).length > 0) {
-      await sellerRepository.update(seller.id, sellerPickupUpdates);
+    if (Object.keys(sellerUpdates).length > 0) {
+      await sellerRepository.update(seller.id, sellerUpdates);
     }
 
     const uploadTasks = [];
