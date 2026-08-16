@@ -321,6 +321,21 @@ export const productService = {
     return deletedProduct;
   },
 
+  async deleteProductByAdmin(productId) {
+    const product = await productRepository.findById(productId);
+    if (!product) throw new AppError("Product not found", 404);
+
+    const deletedProduct = await productRepository.update(product.id, { status: 'ARCHIVED' });
+    
+    _clearCatalogCache();
+    if (redis && redis.isOpen) {
+      redis.del(`catalog:product:${product.id}`).catch(()=>{});
+      redis.del(`catalog:product:${product.slug}`).catch(()=>{});
+    }
+
+    return deletedProduct;
+  },
+
   async getPendingApplications(status = 'PENDING_APPROVAL') {
     return productRepository.findPendingApplications(status);
   },

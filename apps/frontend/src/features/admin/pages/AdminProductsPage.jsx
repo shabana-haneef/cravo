@@ -126,9 +126,10 @@ const ProductCard = React.memo(({ product, onReview }) => {
 ProductCard.displayName = 'ProductCard';
 
 // ─── Review Modal ─────────────────────────────────────────────────────────────
-const ReviewModal = React.memo(({ product, onClose, onApprove, onReject }) => {
+const ReviewModal = React.memo(({ product, onClose, onApprove, onReject, onDelete }) => {
   const [rejectReason, setRejectReason] = useState('');
   const [isActing, setIsActing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleApprove = useCallback(async () => {
     setIsActing(true);
@@ -327,22 +328,73 @@ const ReviewModal = React.memo(({ product, onClose, onApprove, onReject }) => {
         </div>
 
         {/* Actions */}
-        {product.status === 'PENDING_APPROVAL' && (
-          <div className="sticky bottom-0 bg-gray-50 border-t border-gray-100 p-4 flex justify-end gap-3 rounded-b-2xl">
+        {/* Actions Footer */}
+        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-100 p-4 flex justify-between items-center rounded-b-2xl">
+          <div>
             <button
-              onClick={handleReject}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={isActing}
-              className="px-6 py-2.5 rounded-lg font-bold border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+              className="px-6 py-2.5 rounded-lg font-bold bg-red-600 text-white hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 text-sm flex items-center gap-1.5"
             >
-              Reject Product
+              Delete Product
             </button>
-            <button
-              onClick={handleApprove}
-              disabled={isActing}
-              className="px-6 py-2.5 rounded-lg font-bold bg-[#1E3A2B] text-white hover:bg-[#2a4f3c] transition-colors shadow-lg disabled:opacity-50"
-            >
-              Approve Product
-            </button>
+          </div>
+
+          {product.status === 'PENDING_APPROVAL' && (
+            <div className="flex gap-3">
+              <button
+                onClick={handleReject}
+                disabled={isActing}
+                className="px-6 py-2.5 rounded-lg font-bold border border-red-200 text-red-650 hover:bg-red-50 transition-colors disabled:opacity-50 text-sm"
+              >
+                Reject Product
+              </button>
+              <button
+                onClick={handleApprove}
+                disabled={isActing}
+                className="px-6 py-2.5 rounded-lg font-bold bg-[#1E3A2B] text-white hover:bg-[#2a4f3c] transition-colors shadow-lg disabled:opacity-50 text-sm"
+              >
+                Approve Product
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Custom Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-xs">
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-gray-150 flex flex-col gap-4 text-left">
+              <div className="flex items-center gap-3 text-red-600">
+                <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                  <X size={20} className="text-red-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 text-left">Delete Product</h3>
+              </div>
+              <p className="text-sm text-gray-500 font-semibold leading-relaxed">
+                Are you sure you want to permanently delete this product? This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3 mt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-4 py-2 border border-gray-200 text-gray-700 font-bold text-xs rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  onClick={async () => {
+                    setShowDeleteConfirm(false);
+                    setIsActing(true);
+                    await onDelete(product.id);
+                    setIsActing(false);
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white font-bold text-xs rounded-lg hover:bg-red-700 transition-colors shadow-sm shadow-red-200"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -408,6 +460,17 @@ export const AdminProductsPage = () => {
     }
   }, [filter, fetchProducts, closeModal]);
 
+  const handleDelete = useCallback(async (id) => {
+    try {
+      await adminService.deleteProduct(id);
+      toast.success('Product deleted successfully');
+      closeModal();
+      fetchProducts(filter);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete product');
+    }
+  }, [filter, fetchProducts, closeModal]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -465,6 +528,7 @@ export const AdminProductsPage = () => {
           onClose={closeModal}
           onApprove={handleApprove}
           onReject={handleReject}
+          onDelete={handleDelete}
         />
       )}
     </div>
