@@ -310,7 +310,17 @@ export const productService = {
 
   async deleteProduct(userId, productId) {
     const product = await this.getMyProductById(userId, productId);
-    const deletedProduct = await productRepository.update(product.id, { status: 'ARCHIVED' });
+    
+    await prisma.$transaction(async (tx) => {
+      // Delete associated cart items
+      await tx.cartItem.deleteMany({ where: { productId } });
+      // Delete associated wishlist items
+      await tx.wishlistItem.deleteMany({ where: { productId } });
+      // Delete associated order items
+      await tx.orderItem.deleteMany({ where: { productId } });
+      // Delete the product (cascades to images, variants, and inventory)
+      await tx.product.delete({ where: { id: productId } });
+    });
     
     await _clearCatalogCache();
     if (redis && redis.isOpen) {
@@ -318,14 +328,23 @@ export const productService = {
       await redis.del(`catalog:product:${product.slug}`).catch(()=>{});
     }
 
-    return deletedProduct;
+    return product;
   },
 
   async deleteProductByAdmin(productId) {
     const product = await productRepository.findById(productId);
     if (!product) throw new AppError("Product not found", 404);
 
-    const deletedProduct = await productRepository.update(product.id, { status: 'ARCHIVED' });
+    await prisma.$transaction(async (tx) => {
+      // Delete associated cart items
+      await tx.cartItem.deleteMany({ where: { productId: product.id } });
+      // Delete associated wishlist items
+      await tx.wishlistItem.deleteMany({ where: { productId: product.id } });
+      // Delete associated order items
+      await tx.orderItem.deleteMany({ where: { productId: product.id } });
+      // Delete the product (cascades to images, variants, and inventory)
+      await tx.product.delete({ where: { id: product.id } });
+    });
     
     await _clearCatalogCache();
     if (redis && redis.isOpen) {
@@ -333,7 +352,7 @@ export const productService = {
       await redis.del(`catalog:product:${product.slug}`).catch(()=>{});
     }
 
-    return deletedProduct;
+    return product;
   },
 
   async getPendingApplications(status = 'PENDING_APPROVAL') {
