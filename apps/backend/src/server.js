@@ -1,5 +1,4 @@
 import { createServer } from 'http';
-import app from './app.js';
 
 import { env } from './config/env.js';
 import { redis, pubClient, subClient } from './config/redis.js';
@@ -31,6 +30,7 @@ const startServer = async () => {
     initSitemapWorker();
     initCampaignExpiryWorker();
 
+    const { default: app } = await import('./app.js');
     httpServer = createServer(app);
     io = initSocket(httpServer);
 
