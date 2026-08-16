@@ -87,7 +87,10 @@ export const shopService = {
       pickupCity: seller.pickupCity || '',
       pickupState: seller.pickupState || '',
       pickupPincode: seller.pickupPincode || '',
-      pickupPhone: seller.pickupPhone || '',
+      pickupPhone: seller.pickupPhone || seller.supportPhone || '',
+      fssaiNumber: seller.fssaiNumber || '',
+      
+      // Onboarding Business Info
       businessName: seller.businessName || '',
       businessType: seller.businessType || '',
       businessAddressLine1: seller.businessAddressLine1 || '',

@@ -3,7 +3,7 @@ import {
   Store, Camera, Save, Info, CheckCircle2,
   AlertCircle, ShoppingBag, Plus, MapPin,
   ExternalLink, MoreHorizontal, Power, Upload,
-  Tag, Check, Target, FileText
+  Tag, Check, Target, FileText, PenLine
 } from 'lucide-react';
 import { shopApi } from '../../sellers/api/shop.api.js';
 import { useMyShop } from '../../sellers/hooks/useShopQueries.js';
@@ -87,6 +87,7 @@ export const SellerShopProfilePage = ({ hideHeader = false }) => {
   const [businessPincode, setBusinessPincode] = useState('');
   const [businessCountry, setBusinessCountry] = useState('India');
   const [fssaiNumber, setFssaiNumber] = useState('');
+  const [isEditingBusiness, setIsEditingBusiness] = useState(false);
 
   // Files & Previews
   const [logoFile, setLogoFile] = useState(null);
@@ -490,17 +491,42 @@ export const SellerShopProfilePage = ({ hideHeader = false }) => {
 
             </div>
           </div>
+        </div>
 
+        {/* Right Column: Business Info, Branding, Status */}
+        <div className="lg:col-span-5 flex flex-col gap-6">
+          
           {/* Card E: Business Details (Onboarding Info) */}
           <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 flex flex-col gap-6">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center shrink-0">
-                <FileText size={16} strokeWidth={2.5} />
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center shrink-0">
+                  <FileText size={16} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-bold text-gray-900">Business Information</h3>
+                  <p className="text-xs text-gray-500 mt-0.5 font-medium">Verified business details from onboarding.</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-[15px] font-bold text-gray-900">Business Information</h3>
-                <p className="text-xs text-gray-500 mt-0.5 font-medium">Verified business details from onboarding.</p>
-              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditingBusiness(!isEditingBusiness)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-xs font-bold transition-all shrink-0 ${
+                  isEditingBusiness
+                    ? 'bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100'
+                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {isEditingBusiness ? (
+                  <>
+                    <Check size={13} strokeWidth={2.5} /> Done
+                  </>
+                ) : (
+                  <>
+                    <PenLine size={13} strokeWidth={2.5} /> Edit
+                  </>
+                )}
+              </button>
             </div>
 
             <div className="flex flex-col gap-6">
@@ -509,9 +535,14 @@ export const SellerShopProfilePage = ({ hideHeader = false }) => {
                   <InputLabel>Business Name</InputLabel>
                   <input
                     type="text"
+                    disabled={!isEditingBusiness}
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                    className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                      isEditingBusiness
+                        ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                        : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                    }`}
                     placeholder="Business Name"
                   />
                 </div>
@@ -519,9 +550,14 @@ export const SellerShopProfilePage = ({ hideHeader = false }) => {
                   <InputLabel>Business Type</InputLabel>
                   <input
                     type="text"
+                    disabled={!isEditingBusiness}
                     value={businessType}
                     onChange={(e) => setBusinessType(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                    className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                      isEditingBusiness
+                        ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                        : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                    }`}
                     placeholder="E.g. Sole Proprietorship"
                   />
                 </div>
@@ -532,9 +568,14 @@ export const SellerShopProfilePage = ({ hideHeader = false }) => {
                 <input
                   type="text"
                   maxLength={14}
+                  disabled={!isEditingBusiness}
                   value={fssaiNumber}
                   onChange={(e) => setFssaiNumber(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                  className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                      isEditingBusiness
+                        ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                        : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                    }`}
                   placeholder="14-digit FSSAI Number"
                 />
               </div>
@@ -547,9 +588,14 @@ export const SellerShopProfilePage = ({ hideHeader = false }) => {
                     <InputLabel>Address Line 1</InputLabel>
                     <input
                       type="text"
+                      disabled={!isEditingBusiness}
                       value={businessAddressLine1}
                       onChange={(e) => setBusinessAddressLine1(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                      className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                        isEditingBusiness
+                          ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                          : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                      }`}
                       placeholder="Address Line 1"
                     />
                   </div>
@@ -557,9 +603,14 @@ export const SellerShopProfilePage = ({ hideHeader = false }) => {
                     <InputLabel>Address Line 2</InputLabel>
                     <input
                       type="text"
+                      disabled={!isEditingBusiness}
                       value={businessAddressLine2}
                       onChange={(e) => setBusinessAddressLine2(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                      className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                        isEditingBusiness
+                          ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                          : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                      }`}
                       placeholder="Address Line 2"
                     />
                   </div>
@@ -568,9 +619,14 @@ export const SellerShopProfilePage = ({ hideHeader = false }) => {
                       <InputLabel>City</InputLabel>
                       <input
                         type="text"
+                        disabled={!isEditingBusiness}
                         value={businessCity}
                         onChange={(e) => setBusinessCity(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                        className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                          isEditingBusiness
+                            ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                            : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                        }`}
                         placeholder="City"
                       />
                     </div>
@@ -578,9 +634,14 @@ export const SellerShopProfilePage = ({ hideHeader = false }) => {
                       <InputLabel>State</InputLabel>
                       <input
                         type="text"
+                        disabled={!isEditingBusiness}
                         value={businessState}
                         onChange={(e) => setBusinessState(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                        className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                          isEditingBusiness
+                            ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                            : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                        }`}
                         placeholder="State"
                       />
                     </div>
@@ -590,9 +651,14 @@ export const SellerShopProfilePage = ({ hideHeader = false }) => {
                       <InputLabel>Pincode</InputLabel>
                       <input
                         type="text"
+                        disabled={!isEditingBusiness}
                         value={businessPincode}
                         onChange={(e) => setBusinessPincode(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                        className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                          isEditingBusiness
+                            ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                            : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                        }`}
                         placeholder="Pincode"
                       />
                     </div>
@@ -600,9 +666,14 @@ export const SellerShopProfilePage = ({ hideHeader = false }) => {
                       <InputLabel>Country</InputLabel>
                       <input
                         type="text"
+                        disabled={!isEditingBusiness}
                         value={businessCountry}
                         onChange={(e) => setBusinessCountry(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                        className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                          isEditingBusiness
+                            ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                            : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                        }`}
                         placeholder="Country"
                       />
                     </div>
@@ -612,11 +683,7 @@ export const SellerShopProfilePage = ({ hideHeader = false }) => {
 
             </div>
           </div>
-        </div>
 
-        {/* Right Column: Branding, Status */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          
           {/* Card C: Branding */}
           <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 flex flex-col gap-6">
             <div className="flex items-start gap-3">
