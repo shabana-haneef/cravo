@@ -103,7 +103,7 @@ const ProductCard = React.memo(({ product, onReview }) => {
           {lowestPrice !== null && (
             <div className="flex items-center gap-1.5">
               <span className="font-semibold text-gray-700">
-                ₹{lowestPrice.toFixed(2)}
+                ₹{Number(lowestPrice).toFixed(2)}
                 {product.variants?.length > 1 && <span className="text-gray-400 font-normal"> onwards</span>}
               </span>
             </div>
@@ -206,7 +206,7 @@ const ReviewModal = React.memo(({ product, onClose, onApprove, onReject }) => {
                   {lowestVariant && (
                     <div className="flex justify-between">
                       <span className="text-gray-500">Price from:</span>
-                      <span className="font-semibold text-gray-900">₹{lowestVariant.price.toFixed(2)}</span>
+                      <span className="font-semibold text-gray-900">₹{Number(lowestVariant.price).toFixed(2)}</span>
                     </div>
                   )}
                   {product.labelImageUrl && (
@@ -277,9 +277,9 @@ const ReviewModal = React.memo(({ product, onClose, onApprove, onReject }) => {
                       <tr key={v.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3 font-medium text-gray-900">{v.name}</td>
                         <td className="px-4 py-3 text-gray-500 font-mono text-xs">{v.sku}</td>
-                        <td className="px-4 py-3 text-right font-semibold text-gray-900">₹{v.price.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-gray-900">₹{Number(v.price).toFixed(2)}</td>
                         <td className="px-4 py-3 text-right text-gray-400">
-                          {v.compareAtPrice ? `₹${v.compareAtPrice.toFixed(2)}` : '—'}
+                          {v.compareAtPrice ? `₹${Number(v.compareAtPrice).toFixed(2)}` : '—'}
                         </td>
                       </tr>
                     ))}
