@@ -54,7 +54,6 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/health || exit 1
 
-# Start the application natively (avoiding npm scripts to pass signals properly for graceful shutdown)
-# Note: we use "node src/server.js" rather than "node --env-file .env" as environment 
-# variables should be injected by the orchestrator (Docker/K8s/ECS) in production.
-CMD ["node", "src/server.js"]
+# Start the application natively (deploying migrations first)
+# Note: we use exec to pass signals properly for graceful shutdown
+CMD ["sh", "-c", "npx prisma migrate deploy && exec node src/server.js"]
