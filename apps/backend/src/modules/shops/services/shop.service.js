@@ -120,7 +120,8 @@ export const shopService = {
     const sellerUpdates = {};
     const sellerFields = [
       'pickupLocationName', 'pickupAddress', 'pickupCity', 'pickupState', 'pickupPincode', 'pickupPhone',
-      'businessName', 'businessType', 'businessAddressLine1', 'businessAddressLine2', 'businessCity', 'businessState', 'businessPincode', 'businessCountry'
+      'businessName', 'businessType', 'businessAddressLine1', 'businessAddressLine2', 'businessCity', 'businessState', 'businessPincode', 'businessCountry',
+      'fssaiNumber'
     ];
     sellerFields.forEach(field => {
       if (updates[field] !== undefined) {
