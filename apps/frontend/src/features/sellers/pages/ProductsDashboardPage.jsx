@@ -25,7 +25,7 @@ export const ProductsDashboardPage = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
-  const [showAllRows, setShowAllRows] = useState(false);
+  const [showAllRows, setShowAllRows] = useState(true);
   const [filterCategory, setFilterCategory] = useState('ALL');
   const [showAddModal, setShowAddModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
