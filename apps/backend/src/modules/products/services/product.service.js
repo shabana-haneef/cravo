@@ -84,15 +84,15 @@ const _clearCatalogCache = async () => {
     do {
       const result = await redis.scan(cursor, { MATCH: 'catalog:list:*', COUNT: 100 });
       cursor = result.cursor;
-      if (result.keys.length > 0) await redis.del(result.keys);
-    } while (cursor !== 0);
+      if (result.keys && result.keys.length > 0) await redis.del(result.keys);
+    } while (Number(cursor) !== 0);
 
     cursor = 0;
     do {
       const result = await redis.scan(cursor, { MATCH: 'catalog:suggestions:*', COUNT: 100 });
       cursor = result.cursor;
-      if (result.keys.length > 0) await redis.del(result.keys);
-    } while (cursor !== 0);
+      if (result.keys && result.keys.length > 0) await redis.del(result.keys);
+    } while (Number(cursor) !== 0);
   } catch (error) {
     console.error('Failed to clear catalog cache:', error);
   }
@@ -312,10 +312,10 @@ export const productService = {
     const product = await this.getMyProductById(userId, productId);
     const deletedProduct = await productRepository.update(product.id, { status: 'ARCHIVED' });
     
-    _clearCatalogCache();
+    await _clearCatalogCache();
     if (redis && redis.isOpen) {
-      redis.del(`catalog:product:${product.id}`).catch(()=>{});
-      redis.del(`catalog:product:${product.slug}`).catch(()=>{});
+      await redis.del(`catalog:product:${product.id}`).catch(()=>{});
+      await redis.del(`catalog:product:${product.slug}`).catch(()=>{});
     }
 
     return deletedProduct;
@@ -327,10 +327,10 @@ export const productService = {
 
     const deletedProduct = await productRepository.update(product.id, { status: 'ARCHIVED' });
     
-    _clearCatalogCache();
+    await _clearCatalogCache();
     if (redis && redis.isOpen) {
-      redis.del(`catalog:product:${product.id}`).catch(()=>{});
-      redis.del(`catalog:product:${product.slug}`).catch(()=>{});
+      await redis.del(`catalog:product:${product.id}`).catch(()=>{});
+      await redis.del(`catalog:product:${product.slug}`).catch(()=>{});
     }
 
     return deletedProduct;
