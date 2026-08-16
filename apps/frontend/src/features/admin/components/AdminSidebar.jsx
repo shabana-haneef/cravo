@@ -101,7 +101,11 @@ export const AdminSidebar = () => {
 
       <div className={`p-4 ${isCollapsed ? 'px-2' : 'px-4'} border-t border-gray-800 flex flex-row items-center justify-center gap-1.5`}>
         <button
-          onClick={() => logout()}
+          onClick={() => {
+            if (window.confirm("Are you sure you want to log out?")) {
+              logout();
+            }
+          }}
           disabled={isLoggingOut}
           title={isCollapsed ? 'Logout' : undefined}
           className={`${isCollapsed ? 'w-7 h-7 justify-center' : 'flex-1 gap-3 px-3 py-2.5'} flex items-center rounded-lg text-sm font-medium transition-all motion-reduce:transition-none text-red-400 hover:bg-red-500/10 hover:text-red-300 disabled:opacity-50`}

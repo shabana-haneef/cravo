@@ -116,7 +116,11 @@ export const SellerSidebar = () => {
 
         <div className={`flex flex-row items-center justify-center gap-1.5`}>
           <button
-            onClick={() => logout()}
+            onClick={() => {
+              if (window.confirm("Are you sure you want to log out?")) {
+                logout();
+              }
+            }}
             disabled={isLoggingOut}
             title={isCollapsed ? 'Logout' : undefined}
             className={`${isCollapsed ? 'w-7 h-7 justify-center' : 'flex-1 gap-3 px-3 py-2.5'} flex items-center rounded-lg text-sm font-medium transition-all motion-reduce:transition-none text-red-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-50`}

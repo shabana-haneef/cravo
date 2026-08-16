@@ -31,7 +31,9 @@ export const MainLayout = () => {
   }, []);
 
   const handleLogout = () => {
-    logout();
+    if (window.confirm("Are you sure you want to log out?")) {
+      logout();
+    }
   };
 
   const navLinkClass = ({ isActive }) =>

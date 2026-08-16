@@ -28,7 +28,17 @@ const ArrayInput = ({ label, placeholder, values = [], onChange }) => {
             }
           }}
         />
-        <button type="button" onClick={() => { if (inputValue.trim()) { onChange([...values, inputValue.trim()]); setInputValue(''); } }} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-200 transition-colors">Add</button>
+        <button 
+          type="button" 
+          onClick={() => { if (inputValue.trim()) { onChange([...values, inputValue.trim()]); setInputValue(''); } }} 
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+            inputValue.trim()
+              ? 'bg-[#1E3A2B] text-white hover:bg-[#162A1F] shadow-sm'
+              : 'bg-gray-100 text-gray-450 cursor-not-allowed'
+          }`}
+        >
+          Add
+        </button>
       </div>
       <div className="flex flex-wrap gap-2">
         {values.map((val, i) => (
