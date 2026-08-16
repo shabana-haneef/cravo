@@ -86,6 +86,7 @@ export const SellerShopProfilePage = ({ hideHeader = false }) => {
   const [businessState, setBusinessState] = useState('');
   const [businessPincode, setBusinessPincode] = useState('');
   const [businessCountry, setBusinessCountry] = useState('India');
+  const [fssaiNumber, setFssaiNumber] = useState('');
 
   // Files & Previews
   const [logoFile, setLogoFile] = useState(null);
@@ -119,6 +120,7 @@ export const SellerShopProfilePage = ({ hideHeader = false }) => {
       setBusinessState(shop.businessState || '');
       setBusinessPincode(shop.businessPincode || '');
       setBusinessCountry(shop.businessCountry || 'India');
+      setFssaiNumber(shop.fssaiNumber || '');
       setIsCreating(false);
     } else {
       setIsCreating(true);
@@ -197,6 +199,7 @@ export const SellerShopProfilePage = ({ hideHeader = false }) => {
     formData.append('businessState', businessState);
     formData.append('businessPincode', businessPincode);
     formData.append('businessCountry', businessCountry);
+    formData.append('fssaiNumber', fssaiNumber);
     
     if (logoFile) formData.append('logo', logoFile);
     if (bannerFile) formData.append('banner', bannerFile);
