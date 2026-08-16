@@ -80,6 +80,11 @@ export const shopService = {
     const shop = await shopRepository.findBySellerId(seller.id);
     if (!shop) throw new AppError("Shop not found", 404);
 
+    const userProfile = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true }
+    });
+
     return {
       ...shop,
       pickupLocationName: seller.pickupLocationName || '',
@@ -87,7 +92,7 @@ export const shopService = {
       pickupCity: seller.pickupCity || '',
       pickupState: seller.pickupState || '',
       pickupPincode: seller.pickupPincode || '',
-      pickupPhone: seller.pickupPhone || seller.supportPhone || '',
+      pickupPhone: seller.pickupPhone || seller.supportPhone || userProfile?.profile?.phone || '',
       fssaiNumber: seller.fssaiNumber || '',
       
       // Onboarding Business Info

@@ -557,7 +557,12 @@ export const sellerService = {
   async getStoreProfile(userId) {
     const seller = await prisma.seller.findUnique({
       where: { userId },
-      include: { shop: true }
+      include: {
+        shop: true,
+        user: {
+          include: { profile: true }
+        }
+      }
     });
 
     if (!seller) throw new AppError("Seller profile not found", 404);
@@ -572,7 +577,7 @@ export const sellerService = {
       supportEmail: seller.supportEmail || '',
       isActive: seller.shop?.status === 'ACTIVE',
       locationName: seller.pickupLocationName || '',
-      pickupPhone: seller.pickupPhone || seller.supportPhone || '',
+      pickupPhone: seller.pickupPhone || seller.supportPhone || seller.user?.profile?.phone || '',
       streetAddress: seller.pickupAddress || '',
       city: seller.pickupCity || '',
       state: seller.pickupState || '',
