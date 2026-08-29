@@ -17,4 +17,14 @@ router.post('/apply', upload.fields([
 
 router.get('/application', sellerController.getApplication);
 
+router.get('/settings/payout', sellerController.getPayoutSettings);
+router.post('/settings/payout/otp/request', sellerController.requestPayoutUpdateOtp);
+router.put('/settings/payout', sellerController.updatePayoutSettings);
+
+router.get('/settings/notifications', sellerController.getNotificationPreferences);
+router.put('/settings/notifications', sellerController.updateNotificationPreferences);
+
+router.get('/settings/profile', sellerController.getStoreProfile);
+router.put('/settings/profile', sellerController.updateStoreProfile);
+
 export default router;

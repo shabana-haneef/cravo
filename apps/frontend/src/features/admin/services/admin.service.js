@@ -93,6 +93,11 @@ export const adminService = {
     return response.data;
   },
 
+  async deleteProduct(id) {
+    const response = await api.delete(`/admin/products/${id}`);
+    return response.data;
+  },
+
   // Quick Actions & Diagnostics
   async clearCache() {
     const response = await api.post('/admin/quick-actions/clear-cache');

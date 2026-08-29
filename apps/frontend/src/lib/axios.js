@@ -27,6 +27,26 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
+// Subscribe to store state changes to resolve queue from cross-tab events
+useAuthStore.subscribe((state, prevState) => {
+  if (prevState.authStatus === 'restoring') {
+    if (state.authStatus === 'authenticated') {
+      // Another tab successfully refreshed.
+      // If this tab was also waiting in the queue, resolve it.
+      if (isRefreshing) {
+        isRefreshing = false;
+        processQueue(null, state.accessToken);
+      }
+    } else if (state.authStatus === 'unauthenticated') {
+      // Another tab failed to refresh.
+      if (isRefreshing) {
+        isRefreshing = false;
+        processQueue(new Error('Cross-tab refresh failed'), null);
+      }
+    }
+  }
+});
+
 // Request Interceptor: Attach Access Token
 api.interceptors.request.use(
   (config) => {
@@ -39,60 +59,86 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Handle 401 & Refresh Token
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // If error is 401, not a retry attempt, and not the login/refresh endpoint itself
-    const isAuthRoute = originalRequest.url && (originalRequest.url.endsWith('/auth/refresh-token') || originalRequest.url.endsWith('/auth/login'));
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry &&
-      !isAuthRoute
-    ) {
-      if (isRefreshing) {
-        // Queue the request until refresh completes
-        return new Promise(function (resolve, reject) {
-          failedQueue.push({ resolve, reject });
-        })
-          .then(token => {
-            originalRequest.headers['Authorization'] = 'Bearer ' + token;
-            return api(originalRequest);
-          })
-          .catch(err => Promise.reject(err));
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      let newToken = null;
-      try {
-        const { data } = await axios.post(`${BASE_URL}/auth/refresh-token`, {}, { withCredentials: true });
-        newToken = data.data.accessToken;
-
-        // Update zustand store
-        useAuthStore.getState().setAuth(useAuthStore.getState().user, newToken);
-
-        // Process queue
-        processQueue(null, newToken);
-      } catch (err) {
-        processQueue(err, null);
-        useAuthStore.getState().clearAuth(); // Force logout
-        if (window.location.pathname !== '/login' && originalRequest.url !== '/auth/me') {
-          window.location.href = '/login'; // Redirect to login page
-        }
-        isRefreshing = false;
-        return Promise.reject(err);
-      }
-      
-      isRefreshing = false;
-      // Retry original request outside of try-catch so its errors don't trigger logout
-      originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
-      return api(originalRequest);
+    // Reject immediately if no config or if it's not a 401
+    if (!originalRequest || error.response?.status !== 401) {
+      return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    // Never intercept the refresh or login endpoints themselves
+    const isAuthRoute = originalRequest.url && (originalRequest.url.endsWith('/auth/refresh-token') || originalRequest.url.endsWith('/auth/login'));
+    if (isAuthRoute) {
+      return Promise.reject(error);
+    }
+
+    // Prevent infinite loops by checking the retry marker
+    if (originalRequest._retry) {
+      return Promise.reject(error);
+    }
+
+    // Check if a refresh is already happening (either in this tab or marked by another tab)
+    if (isRefreshing || useAuthStore.getState().authStatus === 'restoring') {
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      })
+        .then((token) => {
+          originalRequest.headers['Authorization'] = `Bearer ${token}`;
+          return api(originalRequest);
+        })
+        .catch((err) => Promise.reject(err));
+    }
+
+    // Become the refresh owner for this tab
+    originalRequest._retry = true;
+    isRefreshing = true;
+
+    try {
+      // We delegate to restoreAuth in the store, forcing a network refresh
+      await useAuthStore.getState().restoreAuth(api, true);
+
+      const newToken = useAuthStore.getState().accessToken;
+      
+      // Retry the original request
+      originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+      
+      // Resolve any other requests that queued up in this tab while we were refreshing
+      processQueue(null, newToken);
+      
+      return api(originalRequest);
+    } catch (err) {
+      // Distinguish between a genuine refresh failure and a safe backend concurrency queue signal
+      if (err.response?.status === 401 && err.response?.data?.message === 'Concurrent refresh detected') {
+          // It's a concurrent request race condition on the backend.
+          // Another tab beat us to the DB lock. Queue this request and wait for cross-tab sync.
+          return new Promise((resolve, reject) => {
+              failedQueue.push({ resolve, reject });
+          })
+          .then((token) => {
+              originalRequest.headers['Authorization'] = `Bearer ${token}`;
+              return api(originalRequest);
+          })
+          .catch((queueErr) => Promise.reject(queueErr));
+      }
+
+      // Genuine refresh failure (revoked token, network failure during refresh, etc)
+      // Only clear auth on a definitive 401/403 from the refresh endpoint.
+      // Don't log out if it's a 5xx or Network Error.
+      if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+        processQueue(err, null);
+        // The restoreAuth method inside auth.store.js already calls clearAuth(), so we just reject.
+      } else {
+         // Network error or 5xx, reject the queue but do not forcibly logout
+         processQueue(err, null);
+      }
+      
+      return Promise.reject(err);
+    } finally {
+      // Always reset the single-tab lock
+      isRefreshing = false;
+    }
   }
 );

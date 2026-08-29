@@ -84,15 +84,15 @@ const _clearCatalogCache = async () => {
     do {
       const result = await redis.scan(cursor, { MATCH: 'catalog:list:*', COUNT: 100 });
       cursor = result.cursor;
-      if (result.keys.length > 0) await redis.del(result.keys);
-    } while (cursor !== 0);
+      if (result.keys && result.keys.length > 0) await redis.del(result.keys);
+    } while (Number(cursor) !== 0);
 
     cursor = 0;
     do {
       const result = await redis.scan(cursor, { MATCH: 'catalog:suggestions:*', COUNT: 100 });
       cursor = result.cursor;
-      if (result.keys.length > 0) await redis.del(result.keys);
-    } while (cursor !== 0);
+      if (result.keys && result.keys.length > 0) await redis.del(result.keys);
+    } while (Number(cursor) !== 0);
   } catch (error) {
     console.error('Failed to clear catalog cache:', error);
   }
@@ -310,15 +310,49 @@ export const productService = {
 
   async deleteProduct(userId, productId) {
     const product = await this.getMyProductById(userId, productId);
-    const deletedProduct = await productRepository.update(product.id, { status: 'ARCHIVED' });
     
-    _clearCatalogCache();
+    await prisma.$transaction(async (tx) => {
+      // Delete associated cart items
+      await tx.cartItem.deleteMany({ where: { productId } });
+      // Delete associated wishlist items
+      await tx.wishlistItem.deleteMany({ where: { productId } });
+      // Delete associated order items
+      await tx.orderItem.deleteMany({ where: { productId } });
+      // Delete the product (cascades to images, variants, and inventory)
+      await tx.product.delete({ where: { id: productId } });
+    });
+    
+    await _clearCatalogCache();
     if (redis && redis.isOpen) {
-      redis.del(`catalog:product:${product.id}`).catch(()=>{});
-      redis.del(`catalog:product:${product.slug}`).catch(()=>{});
+      await redis.del(`catalog:product:${product.id}`).catch(()=>{});
+      await redis.del(`catalog:product:${product.slug}`).catch(()=>{});
     }
 
-    return deletedProduct;
+    return product;
+  },
+
+  async deleteProductByAdmin(productId) {
+    const product = await productRepository.findById(productId);
+    if (!product) throw new AppError("Product not found", 404);
+
+    await prisma.$transaction(async (tx) => {
+      // Delete associated cart items
+      await tx.cartItem.deleteMany({ where: { productId: product.id } });
+      // Delete associated wishlist items
+      await tx.wishlistItem.deleteMany({ where: { productId: product.id } });
+      // Delete associated order items
+      await tx.orderItem.deleteMany({ where: { productId: product.id } });
+      // Delete the product (cascades to images, variants, and inventory)
+      await tx.product.delete({ where: { id: product.id } });
+    });
+    
+    await _clearCatalogCache();
+    if (redis && redis.isOpen) {
+      await redis.del(`catalog:product:${product.id}`).catch(()=>{});
+      await redis.del(`catalog:product:${product.slug}`).catch(()=>{});
+    }
+
+    return product;
   },
 
   async getPendingApplications(status = 'PENDING_APPROVAL') {

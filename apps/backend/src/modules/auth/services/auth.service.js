@@ -191,35 +191,71 @@ export const authService = {
     }
 
     const tokenHash = hashRefreshToken(rawRefreshToken);
-    const existingToken = await refreshTokenRepository.findByTokenHash(tokenHash);
+    
+    // Process rotation atomically inside a transaction
+    return await prisma.$transaction(async (tx) => {
+      const user = await userRepository.findById(decoded.id);
+      if (!user || user.status !== 'ACTIVE' || !user.isEmailVerified) {
+        throw new AppError("User account is no longer active", 403);
+      }
 
-    if (!existingToken) {
-      await refreshTokenRepository.deleteByUser(decoded.id);
-      throw new AppError("Invalid token family. All sessions revoked for security.", 401);
-    }
+      const payload = { id: user.id, role: user.role };
+      const newAccessToken = generateAccessToken(payload);
+      const newRefreshToken = generateRefreshToken(payload);
+      const newHash = hashRefreshToken(newRefreshToken);
 
-    const user = await userRepository.findById(decoded.id);
-    if (!user || user.status !== 'ACTIVE' || !user.isEmailVerified) {
-      throw new AppError("User account is no longer active", 403);
-    }
+      // Optimistic locking: Attempt to soft-revoke the token ONLY if it is currently active
+      const now = new Date();
+      const updateResult = await tx.refreshToken.updateMany({
+        where: { 
+          tokenHash,
+          revokedAt: null
+        },
+        data: { 
+          revokedAt: now,
+          replacedBy: newHash
+        }
+      });
 
-    await refreshTokenRepository.deleteByTokenHash(tokenHash);
+      if (updateResult.count === 0) {
+        // Token was either already revoked or doesn't exist
+        const existingToken = await refreshTokenRepository.findByTokenHash(tokenHash, tx);
 
-    const payload = { id: user.id, role: user.role };
-    const newAccessToken = generateAccessToken(payload);
-    const newRefreshToken = generateRefreshToken(payload);
+        if (!existingToken) {
+          // True replay attack: token doesn't exist
+          // Run revocation outside tx so it commits even if we throw
+          await refreshTokenRepository.deleteByUser(decoded.id);
+          throw new AppError("Invalid token family. All sessions revoked for security.", 401);
+        }
 
-    const newHash = hashRefreshToken(newRefreshToken);
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+        if (existingToken.revokedAt) {
+          // Token was already revoked during rotation. Check if it's a concurrent request.
+          const timeSinceRevocation = now.getTime() - existingToken.revokedAt.getTime();
+          const GRACE_PERIOD_MS = 30000; // 30 seconds
+          
+          if (timeSinceRevocation < GRACE_PERIOD_MS) {
+            // Legitimate concurrent request caused by race condition.
+            throw new AppError("Concurrent refresh detected", 401);
+          } else {
+            // Genuine replay attack outside grace period
+            // Run revocation outside tx so it commits even if we throw
+            await refreshTokenRepository.deleteByUser(decoded.id);
+            throw new AppError("Invalid token family. All sessions revoked for security.", 401);
+          }
+        }
+      }
 
-    await refreshTokenRepository.create({
-      userId: user.id,
-      tokenHash: newHash,
-      expiresAt
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      await refreshTokenRepository.create({
+        userId: user.id,
+        tokenHash: newHash,
+        expiresAt
+      }, tx);
+
+      return { accessToken: newAccessToken, refreshToken: newRefreshToken };
     });
-
-    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   },
 
   async logout(rawRefreshToken) {

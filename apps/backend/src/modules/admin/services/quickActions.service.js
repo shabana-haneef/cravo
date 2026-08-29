@@ -46,9 +46,13 @@ export const quickActionsService = {
 
     // Reset Redis cache keys
     if (redis && redis.isOpen) {
-      const keys = await redis.keys('cache:*');
-      if (keys.length > 0) {
-        clearedKeys = await redis.del(keys);
+      const cacheKeys = await redis.keys('cache:*');
+      const catalogKeys = await redis.keys('catalog:*');
+      const categoriesKeys = await redis.keys('categories:*');
+      const sitemapKeys = await redis.keys('sitemap:*');
+      const allKeys = [...cacheKeys, ...catalogKeys, ...categoriesKeys, ...sitemapKeys];
+      if (allKeys.length > 0) {
+        clearedKeys = await redis.del(allKeys);
       }
     }
 

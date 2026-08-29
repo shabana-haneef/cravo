@@ -1,13 +1,16 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Store, ShoppingCart, Star, Leaf } from 'lucide-react';
 import { useAddToCart } from '../../features/cart/hooks/useCartQueries.js';
+import { useAuthStore } from '../../store/auth.store.js';
 import { toast } from 'sonner';
 import { WishlistButton } from '../../features/wishlist/components/WishlistButton.jsx';
 import { optimizeImage } from '../../lib/cloudinary.js';
 
 export const ProductCard = React.memo(({ product, variant = 'simple' }) => {
+  const { isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
   const { name, slug, shop, variants, images, category } = product;
   const mainImage = optimizeImage(images?.[0]?.imageUrl, 400) || 'https://via.placeholder.com/400x400?text=No+Image';
   const defaultVariant = variants?.[0];
@@ -20,6 +23,11 @@ export const ProductCard = React.memo(({ product, variant = 'simple' }) => {
 
   const handleAddToCart = (e) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      toast.error('Please log in to add items to your cart.');
+      navigate('/login');
+      return;
+    }
     if (!defaultVariant) return;
 
     addToCart({ 

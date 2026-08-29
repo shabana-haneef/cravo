@@ -44,6 +44,7 @@ router.delete('/categories/:id', categoryController.deleteCategory);
 router.get('/products/pending', adminProductController.getPending);
 router.patch('/products/:id/approve', adminProductController.approve);
 router.patch('/products/:id/reject', adminProductController.reject);
+router.delete('/products/:id', adminProductController.deleteProduct);
 
 // Quick Actions & Diagnostics
 router.post('/quick-actions/clear-cache', systemController.clearCache);

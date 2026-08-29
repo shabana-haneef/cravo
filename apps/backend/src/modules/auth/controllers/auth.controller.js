@@ -13,11 +13,18 @@ import { governanceSettingsService } from '../../admin/services/governanceSettin
 import { logger } from '../../../shared/services/logger.js';
 import { z } from 'zod';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Production architectures (Vercel Frontend + Render Backend) often use different domains 
+// (e.g., cravo.in and cravo-api.onrender.com) which makes them strictly "Cross-Site".
+// To allow the browser to send the HTTP-only refresh token cross-site, we MUST use SameSite='none'.
+// This requires Secure=true. Local development (localhost) operates fine on 'lax'.
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
-  maxAge: 7 * 24 * 60 * 60 * 1000, 
+  secure: isProduction, // Required to be true if sameSite is 'none'
+  sameSite: isProduction ? 'none' : 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  path: '/', // Explicit path ensures it's sent to all /api/v1/auth routes
 };
 
 export const authController = {
@@ -202,7 +209,9 @@ export const authController = {
       res.cookie('refreshToken', refreshToken, cookieOptions);
       return successResponse(res, 'Token refreshed successfully', { accessToken });
     } catch (error) {
-      res.clearCookie('refreshToken');
+      if (error.message !== "Concurrent refresh detected") {
+        res.clearCookie('refreshToken');
+      }
       logger.error({ error: error.message }, 'Token refresh failed');
       next(error);
     }

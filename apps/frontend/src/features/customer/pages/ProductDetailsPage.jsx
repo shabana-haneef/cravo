@@ -12,8 +12,10 @@ import { toast } from 'sonner';
 
 import { WishlistButton } from '../../wishlist/components/WishlistButton.jsx';
 import { SEO } from '../../../components/shared/SEO.jsx';
+import { useAuthStore } from '../../../store/auth.store.js';
 
 export const ProductDetailsPage = () => {
+  const { isAuthenticated } = useAuthStore();
   const { slug } = useParams();
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useProduct(slug);
@@ -70,6 +72,11 @@ export const ProductDetailsPage = () => {
   };
 
   const executeAddToCart = () => {
+    if (!isAuthenticated) {
+      toast.error('Please log in to add items to your cart.');
+      navigate('/login');
+      return;
+    }
     addToCart({ 
       productId: product.id, 
       variantId: selectedVariant?.id, 
@@ -299,11 +306,11 @@ export const ProductDetailsPage = () => {
           {/* Price */}
           <div className="flex items-baseline gap-2 mb-5">
             <span className="text-3xl font-bold text-[#154D21] leading-none tracking-tight">
-              ₹{selectedVariant?.price?.toFixed(2) || '200.00'}
+              ₹{selectedVariant?.price ? Number(selectedVariant.price).toFixed(2) : '200.00'}
             </span>
             {selectedVariant?.compareAtPrice && (
               <span className="text-sm font-medium text-gray-400 line-through ml-2">
-                ₹{selectedVariant.compareAtPrice.toFixed(2)}
+                ₹{Number(selectedVariant.compareAtPrice).toFixed(2)}
               </span>
             )}
           </div>

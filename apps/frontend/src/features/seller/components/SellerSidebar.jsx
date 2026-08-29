@@ -51,6 +51,7 @@ const navGroups = [
 
 export const SellerSidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
 
   return (
@@ -116,7 +117,7 @@ export const SellerSidebar = () => {
 
         <div className={`flex flex-row items-center justify-center gap-1.5`}>
           <button
-            onClick={() => logout()}
+            onClick={() => setShowLogoutModal(true)}
             disabled={isLoggingOut}
             title={isCollapsed ? 'Logout' : undefined}
             className={`${isCollapsed ? 'w-7 h-7 justify-center' : 'flex-1 gap-3 px-3 py-2.5'} flex items-center rounded-lg text-sm font-medium transition-all motion-reduce:transition-none text-red-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-50`}
@@ -134,6 +135,42 @@ export const SellerSidebar = () => {
           </button>
         </div>
       </div>
+
+      {/* Custom Logout Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/55 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-gray-150 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200 text-left">
+            <div className="flex items-center gap-3 text-red-650">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                <LogOut size={20} className="text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 text-left">Log Out</h3>
+            </div>
+            <p className="text-sm text-gray-500 font-semibold leading-relaxed">
+              Are you sure you want to log out of your account?
+            </p>
+            <div className="flex justify-end gap-3 mt-2">
+              <button 
+                type="button" 
+                onClick={() => setShowLogoutModal(false)}
+                className="px-4 py-2 border border-gray-200 text-gray-705 font-bold text-xs rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                onClick={() => {
+                  setShowLogoutModal(false);
+                  logout();
+                }}
+                className="px-4 py-2 bg-red-600 text-white font-bold text-xs rounded-lg hover:bg-red-700 transition-colors shadow-sm shadow-red-200"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </aside>
   );

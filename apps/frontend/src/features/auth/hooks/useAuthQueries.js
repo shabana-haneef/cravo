@@ -61,7 +61,7 @@ export const useLogout = () => {
     mutationFn: authApi.logout,
     onSuccess: () => {
       clearAuth();
-      window.location.href = '/login';
+      // `<ProtectedRoute />` will automatically unmount and redirect the user safely to '/login'
     }
   });
 };

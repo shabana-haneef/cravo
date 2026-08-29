@@ -25,16 +25,20 @@ function App() {
   const setAuth = useAuthStore((state) => state.setAuth);
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const authStatus = useAuthStore((state) => state.authStatus);
 
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const { data } = await api.get('/auth/me');
-        const currentToken = useAuthStore.getState().accessToken;
-        setAuth(data.data.user, currentToken);
+        await useAuthStore.getState().restoreAuth(api);
+
+        const state = useAuthStore.getState();
+        if (state.accessToken || state.isAuthenticated) {
+           const { data } = await api.get('/auth/me');
+           setAuth(data.data.user, state.accessToken);
+        }
       } catch (error) {
         // Only log out on explicit 401 Unauthorized or 403 Forbidden.
-        // Ignore 5xx errors or Network Errors to prevent unexpected logouts during server restarts.
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
           clearAuth();
         }

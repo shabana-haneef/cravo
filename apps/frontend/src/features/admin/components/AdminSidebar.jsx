@@ -44,6 +44,7 @@ const navGroups = [
 
 export const AdminSidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
 
   return (
@@ -101,7 +102,7 @@ export const AdminSidebar = () => {
 
       <div className={`p-4 ${isCollapsed ? 'px-2' : 'px-4'} border-t border-gray-800 flex flex-row items-center justify-center gap-1.5`}>
         <button
-          onClick={() => logout()}
+          onClick={() => setShowLogoutModal(true)}
           disabled={isLoggingOut}
           title={isCollapsed ? 'Logout' : undefined}
           className={`${isCollapsed ? 'w-7 h-7 justify-center' : 'flex-1 gap-3 px-3 py-2.5'} flex items-center rounded-lg text-sm font-medium transition-all motion-reduce:transition-none text-red-400 hover:bg-red-500/10 hover:text-red-300 disabled:opacity-50`}
@@ -118,6 +119,43 @@ export const AdminSidebar = () => {
           {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
       </div>
+
+      {/* Custom Logout Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/55 backdrop-blur-sm p-4">
+          <div className="bg-[#1F2937] border border-gray-700 rounded-2xl p-6 max-w-sm w-full shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200 text-left">
+            <div className="flex items-center gap-3 text-red-450">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
+                <LogOut size={20} className="text-red-400" />
+              </div>
+              <h3 className="text-lg font-bold text-white text-left">Log Out</h3>
+            </div>
+            <p className="text-sm text-gray-400 font-semibold leading-relaxed">
+              Are you sure you want to log out of your account?
+            </p>
+            <div className="flex justify-end gap-3 mt-2">
+              <button 
+                type="button" 
+                onClick={() => setShowLogoutModal(false)}
+                className="px-4 py-2 border border-gray-700 text-gray-300 font-bold text-xs rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                onClick={() => {
+                  setShowLogoutModal(false);
+                  logout();
+                }}
+                className="px-4 py-2 bg-red-650 text-white font-bold text-xs rounded-lg hover:bg-red-700 transition-colors shadow-sm shadow-red-900"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </aside>
   );
 };

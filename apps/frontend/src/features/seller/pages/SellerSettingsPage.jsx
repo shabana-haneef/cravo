@@ -12,6 +12,7 @@ import { Modal } from '../../../components/ui/Modal.jsx';
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 import { SellerShopProfilePage } from './SellerShopProfilePage.jsx';
+import { api } from '../../../lib/axios.js';
 
 /* ─────────────────── Shared Sub-components ─────────────────── */
 
@@ -52,164 +53,79 @@ const CardHeader = ({ number, icon: Icon, title, subtitle }) => (
   </div>
 );
 
-/* ─────────────────── Tab Content: General ─────────────────── */
-const GeneralTab = () => {
-  const [enableStore, setEnableStore] = useState(true);
-  const [allowReviews, setAllowReviews] = useState(true);
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Order Settings */}
-      <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 h-fit">
-        <CardHeader number="1" icon={ShoppingBag} title="Order Settings" subtitle="Configure how your orders are managed." />
-        <div className="flex flex-col gap-5">
-          <div>
-            <InputLabel>Order ID Prefix</InputLabel>
-            <input type="text" defaultValue="CRV" className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]" />
-          </div>
-          <div>
-            <InputLabel>Auto Cancel Unpaid Orders</InputLabel>
-            <select className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]">
-              <option>After 24 Hours</option>
-              <option>After 48 Hours</option>
-              <option>After 72 Hours</option>
-            </select>
-          </div>
-          <div>
-            <InputLabel>Invoice Prefix</InputLabel>
-            <input type="text" defaultValue="INV" className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]" />
-          </div>
-        </div>
-      </div>
-
-      {/* Other Settings */}
-      <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 h-fit">
-        <CardHeader number="2" icon={SlidersHorizontal} title="Other Settings" subtitle="Additional preferences for your store." />
-        <div className="flex flex-col gap-6">
-          <div>
-            <InputLabel>Low Stock Alert Threshold</InputLabel>
-            <input type="text" defaultValue="10" className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]" />
-          </div>
-          <div className="flex flex-col justify-start">
-            <InputLabel>Enable Store</InputLabel>
-            <div className="flex items-center gap-3 mt-1.5">
-              <Toggle enabled={enableStore} onChange={() => setEnableStore(!enableStore)} />
-              <span className="text-[12px] font-medium text-gray-500">Your store is visible to customers.</span>
-            </div>
-          </div>
-          <div className="flex flex-col justify-start">
-            <InputLabel>Allow Product Reviews</InputLabel>
-            <div className="flex items-center gap-3 mt-1.5">
-              <Toggle enabled={allowReviews} onChange={() => setAllowReviews(!allowReviews)} />
-              <span className="text-[12px] font-medium text-gray-500">Customers can review products.</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 /* ─────────────────── Tab Content: Notifications ─────────────────── */
 const NotificationsTab = () => {
-  const sections = [
-    {
-      icon: ShoppingBag,
-      title: 'Order Notifications',
-      desc: 'Get notified about important order updates.',
-      items: [
-        { label: 'New Order Received', desc: 'When a new order is placed' },
-        { label: 'Order Cancelled', desc: 'When a customer cancels an order' },
-        { label: 'Order Delivered', desc: 'When an order is marked as delivered' },
-        { label: 'Payment Received', desc: 'When a payment is received' },
-      ],
-    },
-    {
-      icon: SlidersHorizontal,
-      title: 'Inventory Alerts',
-      desc: 'Stay informed about your stock levels.',
-      items: [
-        { label: 'Low Stock Alerts', desc: 'When stock falls below the threshold' },
-        { label: 'Out Of Stock Alerts', desc: 'When a product is out of stock' },
-      ],
-    },
-    {
-      icon: Store,
-      title: 'Product Notifications',
-      desc: 'Updates related to your products and reviews.',
-      items: [
-        { label: 'Product Approved', desc: 'When a product is approved' },
-        { label: 'Product Rejected', desc: 'When a product is rejected' },
-        { label: 'Product Review Received', desc: 'When a new review is received' },
-      ],
-    },
-    {
-      icon: Wallet,
-      title: 'Promotions & Ads',
-      desc: 'Get updated about your campaigns and promotions.',
-      items: [
-        { label: 'Campaign Approved', desc: 'When your campaign is approved' },
-        { label: 'Campaign Rejected', desc: 'When your campaign is rejected' },
-        { label: 'Campaign Expiring Soon', desc: 'When a campaign is about to expire' },
-      ],
-    },
-    {
-      icon: ChevronRight,
-      title: 'Delivery Updates',
-      desc: 'Get notified about shipping and delivery updates.',
-      items: [
-        { label: 'Shipment Picked Up', desc: 'When shipment is picked up' },
-        { label: 'Delivery Delayed', desc: 'When there is a delay in delivery' },
-        { label: 'Delivery Completed', desc: 'When the order is delivered successfully' },
-      ],
-    },
-    {
-      icon: Bell,
-      title: 'Notification Channels',
-      desc: 'Select how you want to receive notifications.',
-      items: [
-        { label: 'In-App Notifications', desc: 'Receive notifications inside the app' },
-        { label: 'Email Notifications', desc: 'Receive notifications on your email' },
-      ],
-    },
-  ];
+  const [preferences, setPreferences] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [checked, setChecked] = useState(() => {
-    const init = {};
-    sections.forEach(s => s.items.forEach(item => { init[item.label] = true; }));
-    return init;
-  });
+  React.useEffect(() => {
+    const fetchPrefs = async () => {
+      try {
+        const { data } = await api.get('/sellers/settings/notifications');
+        setPreferences(data.data);
+      } catch (err) {
+        toast.error('Failed to load notification preferences');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPrefs();
+  }, []);
+
+  const handleToggle = async (field) => {
+    const newVal = !preferences[field];
+    const original = { ...preferences };
+    setPreferences(prev => ({ ...prev, [field]: newVal }));
+
+    try {
+      await api.put('/sellers/settings/notifications', {
+        ...preferences,
+        [field]: newVal
+      });
+      toast.success('Preferences updated');
+    } catch (err) {
+      setPreferences(original);
+      toast.error('Failed to update preferences');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-[#16A34A] border-t-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 text-sm font-semibold text-gray-500">Loading preferences...</p>
+      </div>
+    );
+  }
+
+  const toggleRows = [
+    { id: 'orderEmails', label: 'Order Notifications', desc: 'Receive emails when new orders are placed or cancelled.' },
+    { id: 'inventoryAlerts', label: 'Inventory Alerts', desc: 'Get notified when products are running low or out of stock.' },
+    { id: 'payoutEmails', label: 'Payout Updates', desc: 'Receive emails when a payout is initiated or completed.' },
+    { id: 'marketingEmails', label: 'Marketing & Promotions', desc: 'Receive platform announcements and promotional offers.' }
+  ];
 
   return (
     <div>
       <p className="text-sm font-semibold text-gray-700 mb-4">Notification Settings</p>
-      <p className="text-xs text-gray-500 mb-6">Choose the updates and alerts you want to receive.</p>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {sections.map((section) => (
-          <div key={section.title} className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
-            <div className="flex items-center gap-3 mb-5">
-              <SectionIcon Icon={section.icon} />
-              <div>
-                <h3 className="text-[13px] font-bold text-gray-900">{section.title}</h3>
-                <p className="text-[11px] text-gray-500 mt-0.5">{section.desc}</p>
-              </div>
+      <p className="text-xs text-gray-500 mb-6">Choose the email updates and alerts you want to receive.</p>
+      <div className="flex flex-col gap-4 max-w-2xl">
+        {toggleRows.map((row) => (
+          <div key={row.id} className="bg-white border border-gray-100 rounded-xl shadow-sm p-5 flex items-center justify-between">
+            <div>
+              <p className="text-[13px] font-bold text-gray-900">{row.label}</p>
+              <p className="text-[12px] text-gray-500 mt-0.5">{row.desc}</p>
             </div>
-            <div className="flex flex-col gap-3">
-              {section.items.map(item => (
-                <label key={item.label} className="flex items-start gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={checked[item.label] ?? true}
-                    onChange={() => setChecked(prev => ({ ...prev, [item.label]: !prev[item.label] }))}
-                    className="mt-0.5 w-4 h-4 accent-[#16A34A] cursor-pointer"
-                  />
-                  <div>
-                    <p className="text-[12px] font-semibold text-gray-800">{item.label}</p>
-                    <p className="text-[11px] text-gray-500">{item.desc}</p>
-                  </div>
-                </label>
-              ))}
-            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={preferences?.[row.id] ?? false}
+                onChange={() => handleToggle(row.id)}
+              />
+              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#16A34A]"></div>
+            </label>
           </div>
         ))}
       </div>
@@ -219,20 +135,51 @@ const NotificationsTab = () => {
 
 /* ─────────────────── Tab Content: Payouts ─────────────────── */
 const PayoutsTab = () => {
+  const [isLoading, setIsLoading] = React.useState(true);
   const [payoutMethod, setPayoutMethod] = useState('bank');
   const [payoutSchedule, setPayoutSchedule] = useState('weekly');
   const [activeTabCard, setActiveTabCard] = useState(null);
 
   const [isEditingBank, setIsEditingBank] = useState(false);
-  const [bankHolder, setBankHolder] = useState('Nouri Ahmad');
-  const [bankName, setBankName] = useState('HDFC Bank');
-  const [bankAccountNum, setBankAccountNum] = useState('98765432104567');
-  const [bankIfsc, setBankIfsc] = useState('HDFC0001234');
+  const [bankHolder, setBankHolder] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [bankAccountNum, setBankAccountNum] = useState('');
+  const [verificationStatus, setVerificationStatus] = useState('');
 
   const [tempHolder, setTempHolder] = useState('');
   const [tempName, setTempName] = useState('');
   const [tempAccount, setTempAccount] = useState('');
   const [tempIfsc, setTempIfsc] = useState('');
+  
+  const [otp, setOtp] = useState('');
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [rawBankAccount, setRawBankAccount] = useState('');
+  const [rawIfsc, setRawIfsc] = useState('');
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const response = await api.get('/sellers/settings/payout');
+        const data = response.data?.data;
+        if (data) {
+          setBankHolder(data.accountHolderName || '');
+          setBankName(data.bankName || '');
+          setBankAccountNum(data.accountNumberMasked || '');
+          setRawBankAccount(data.accountNumber || '');
+          setRawIfsc(data.ifsc || '');
+          setVerificationStatus(data.verificationStatus || 'Not Configured');
+        }
+      } catch (error) {
+        console.error('Failed to fetch payout settings', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const schedules = [
     { id: 'weekly', label: 'Weekly', sub: 'Every Monday' },
@@ -252,21 +199,68 @@ const PayoutsTab = () => {
   };
 
   const startEditing = () => {
-    setTempHolder(bankHolder);
-    setTempName(bankName);
-    setTempAccount(bankAccountNum);
-    setTempIfsc(bankIfsc);
+    setTempHolder(bankHolder || '');
+    setTempName(bankName || '');
+    setTempAccount(rawBankAccount || ''); // Pre-fill with actual raw data
+    setTempIfsc(rawIfsc || '');
     setIsEditingBank(true);
+    setIsOtpSent(false);
+    setOtp('');
   };
 
-  const saveEditing = () => {
-    setBankHolder(tempHolder);
-    setBankName(tempName);
-    setBankAccountNum(tempAccount);
-    setBankIfsc(tempIfsc);
-    setIsEditingBank(false);
-    toast.success('Bank account details updated successfully!');
+  const handleRequestOtp = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      await api.post('/sellers/settings/payout/otp/request');
+      toast.success('OTP sent to your registered email');
+      setIsOtpSent(true);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to request OTP');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const handleVerifyAndUpdate = async (e) => {
+    e.preventDefault();
+    if (!otp || otp.length !== 6) {
+      toast.error('Please enter a valid 6-digit OTP');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await api.put('/sellers/settings/payout', {
+        otp,
+        bankData: {
+          accountHolderName: tempHolder,
+          bankName: tempName,
+          accountNumber: tempAccount,
+          ifsc: tempIfsc
+        }
+      });
+      toast.success('Bank account updated successfully');
+      setBankHolder(tempHolder);
+      setBankName(tempName);
+      setBankAccountNum('********' + tempAccount.slice(-4));
+      setIsEditingBank(false);
+      setIsOtpSent(false);
+      setOtp('');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update bank account');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-[#16A34A] border-t-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 text-sm font-semibold text-gray-500">Loading payout settings...</p>
+      </div>
+    );
+  }
 
   return (
     <section aria-labelledby="payouts-dashboard-title" className="flex flex-col gap-8">
@@ -368,7 +362,7 @@ const PayoutsTab = () => {
         }}
         title={
           activeTabCard === 'bank'
-            ? (isEditingBank ? 'Edit Bank Account' : 'Bank Account Details')
+            ? (isEditingBank ? (isOtpSent ? 'Verify OTP' : 'Update Bank Account') : 'Bank Account Details')
             : activeTabCard === 'summary'
             ? 'Payout Summary'
             : activeTabCard === 'preferences'
@@ -380,89 +374,147 @@ const PayoutsTab = () => {
       >
         {activeTabCard === 'bank' && (
           isEditingBank ? (
-            <form onSubmit={(e) => { e.preventDefault(); saveEditing(); }} className="flex flex-col gap-6">
-              <p className="text-xs text-gray-500 mb-2">Update your receiving bank account credentials.</p>
-              <div className="flex flex-col gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-800 mb-2">ACCOUNT HOLDER NAME</label>
-                  <input
-                    type="text"
-                    required
-                    value={tempHolder}
-                    onChange={(e) => setTempHolder(e.target.value)}
-                    className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
-                  />
+            isOtpSent ? (
+              <form onSubmit={handleVerifyAndUpdate} className="flex flex-col gap-6">
+                <p className="text-xs text-gray-500 mb-2">We have sent a 6-digit OTP to your registered email address. This is required to secure your financial details.</p>
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-800 mb-2">6-DIGIT OTP</label>
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      placeholder="Enter 6-digit code"
+                      className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-800 mb-2">BANK NAME</label>
-                  <input
-                    type="text"
-                    required
-                    value={tempName}
-                    onChange={(e) => setTempName(e.target.value)}
-                    className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
-                  />
+                <div className="flex gap-4 mt-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 bg-[#16A34A] text-white rounded-lg text-[13px] font-semibold hover:bg-[#148F40] transition-colors disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Verifying...' : 'Verify & Update'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingBank(false)}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-[13px] font-semibold hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-800 mb-2">ACCOUNT NUMBER</label>
-                  <input
-                    type="text"
-                    required
-                    value={tempAccount}
-                    onChange={(e) => setTempAccount(e.target.value)}
-                    className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
-                  />
+              </form>
+            ) : (
+              <form onSubmit={handleRequestOtp} className="flex flex-col gap-6">
+                <p className="text-xs text-gray-500 mb-2">Enter your new receiving bank account credentials.</p>
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-800 mb-2">ACCOUNT HOLDER NAME</label>
+                    <input
+                      type="text"
+                      required
+                      value={tempHolder}
+                      onChange={(e) => setTempHolder(e.target.value)}
+                      className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-800 mb-2">BANK NAME</label>
+                    <input
+                      type="text"
+                      required
+                      value={tempName}
+                      onChange={(e) => setTempName(e.target.value)}
+                      className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-800 mb-2">ACCOUNT NUMBER</label>
+                    <input
+                      type="text"
+                      required
+                      value={tempAccount}
+                      onChange={(e) => setTempAccount(e.target.value)}
+                      className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-800 mb-2">IFSC CODE</label>
+                    <input
+                      type="text"
+                      required
+                      value={tempIfsc}
+                      onChange={(e) => setTempIfsc(e.target.value)}
+                      className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-800 mb-2">IFSC CODE</label>
-                  <input
-                    type="text"
-                    required
-                    value={tempIfsc}
-                    onChange={(e) => setTempIfsc(e.target.value)}
-                    className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
-                  />
+                <div className="flex gap-4 mt-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 bg-[#16A34A] text-white rounded-lg text-[13px] font-semibold hover:bg-[#148F40] transition-colors disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Sending OTP...' : 'Request OTP'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingBank(false)}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-[13px] font-semibold hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
                 </div>
-              </div>
-              <div className="flex gap-4 mt-2">
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-[#16A34A] text-white rounded-lg text-[13px] font-semibold hover:bg-[#148F40] transition-colors"
-                >
-                  Save Details
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsEditingBank(false)}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-[13px] font-semibold hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+              </form>
+            )
           ) : (
-            <div className="flex flex-col gap-6">
-              <p className="text-xs text-gray-500 mb-2">This is where your earnings will be transferred.</p>
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-500">This is where your earnings will be transferred.</p>
+              {verificationStatus && (
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                  verificationStatus === 'verified' ? 'bg-green-100 text-green-700' :
+                  verificationStatus === 'pending' ? 'bg-orange-100 text-orange-700' :
+                  'bg-gray-100 text-gray-500'
+                }`}>
+                  {verificationStatus}
+                </span>
+              )}
+            </div>
+
+            {!bankAccountNum ? (
+              <div className="flex flex-col items-center justify-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                <Building2 size={32} className="text-gray-300 mb-3" />
+                <p className="text-sm font-bold text-gray-800">No bank account configured</p>
+                <p className="text-xs text-gray-500 mt-1 max-w-xs text-center">Add your bank details to start receiving payouts to your account.</p>
+              </div>
+            ) : (
               <ul className="flex flex-col divide-y divide-gray-100">
                 {[
                   { label: 'Account Holder Name', value: bankHolder },
                   { label: 'Bank Name', value: bankName },
-                  { label: 'Account Number', value: '**** **** **** ' + bankAccountNum.slice(-4) },
-                  { label: 'IFSC Code', value: bankIfsc },
+                  { label: 'Account Number', value: bankAccountNum },
                 ].map(row => (
                   <li key={row.label} className="flex items-center justify-between py-4">
                     <span className="text-[13px] text-gray-500 font-medium">{row.label}</span>
-                    <span className="text-[13px] font-semibold text-gray-800">{row.value}</span>
+                    <span className="text-[13px] font-semibold text-gray-800">{row.value || '--'}</span>
                   </li>
                 ))}
               </ul>
+            )}
+            
+            
               <button
                 type="button"
                 onClick={startEditing}
                 className="w-fit mt-4 flex items-center justify-center gap-2 px-4 py-2 border border-[#16A34A] text-[#16A34A] rounded-lg text-[13px] font-semibold hover:bg-[#F0FDF4] transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Update Bank Account
+                {bankAccountNum ? 'Change Bank Account' : 'Add Bank Account'}
               </button>
             </div>
           )
@@ -474,30 +526,29 @@ const PayoutsTab = () => {
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col gap-2">
                 <span className="text-[11px] text-gray-500 font-medium leading-tight">Available Balance</span>
-                <span className="text-[17px] font-bold text-[#16A34A] leading-tight">₹12,450.00</span>
+                <span className="text-[17px] font-bold text-[#16A34A] leading-tight">--</span>
               </div>
               <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col gap-2">
                 <span className="text-[11px] text-gray-500 font-medium leading-tight">Pending Balance</span>
-                <span className="text-[17px] font-bold text-orange-500 leading-tight">₹3,200.00</span>
+                <span className="text-[17px] font-bold text-orange-500 leading-tight">--</span>
               </div>
               <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col gap-2">
                 <span className="text-[11px] text-gray-500 font-medium leading-tight">Total Withdrawn</span>
-                <span className="text-[17px] font-bold text-gray-800 leading-tight">₹85,600.00</span>
+                <span className="text-[17px] font-bold text-gray-800 leading-tight">--</span>
               </div>
             </div>
             <div className="border border-gray-100 rounded-xl p-4 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-8 h-8 rounded-lg bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 text-gray-400 flex items-center justify-center shrink-0">
                   <Building2 size={16} strokeWidth={2} />
                 </div>
                 <div>
                   <p className="text-[13px] font-bold text-gray-800">Last Payout</p>
-                  <p className="text-[11px] text-gray-500">18 Jun 2026</p>
+                  <p className="text-[11px] text-gray-500">Not available</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[15px] font-bold text-gray-800">₹5,000.00</span>
-                <ChevronRight size={16} className="text-gray-400" />
+                <span className="text-[15px] font-bold text-gray-800">--</span>
               </div>
             </div>
           </div>
@@ -616,25 +667,86 @@ const DefaultBanner = () => (
 );
 
 const StoreProfileTab = ({ onSave }) => {
-  const [shopName, setShopName] = useState('Aametta Foods');
-  const [shopType, setShopType] = useState('Local Shop');
-  const [businessModel, setBusinessModel] = useState('Self-Operated');
-  const [shopDescription, setShopDescription] = useState('Healthy food, better lifestyle.');
-  const [isActive, setIsActive] = useState(true);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [shopName, setShopName] = useState('');
+  const [shopType, setShopType] = useState('');
+  const [businessModel, setBusinessModel] = useState('');
+  const [fssaiNumber, setFssaiNumber] = useState('');
+  const [storeWebsite, setStoreWebsite] = useState('');
+  const [supportEmail, setSupportEmail] = useState('');
+  const [shopDescription, setShopDescription] = useState('');
+  const [isActive, setIsActive] = useState(false);
   
-  const [locationName, setLocationName] = useState('Aametta Foods Outlet');
-  const [pickupPhone, setPickupPhone] = useState('9876543210');
-  const [streetAddress, setStreetAddress] = useState('12/1 Green Valley Road');
-  const [city, setCity] = useState('Kochi');
-  const [state, setState] = useState('Kerala');
-  const [pincode, setPincode] = useState('682001');
+  const [locationName, setLocationName] = useState('');
+  const [pickupPhone, setPickupPhone] = useState('');
+  const [streetAddress, setStreetAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [pincode, setPincode] = useState('');
 
-  const [enableSelfPickup, setEnableSelfPickup] = useState(true);
-  const [enableHomeDelivery, setEnableHomeDelivery] = useState(true);
-  const [deliveryRadius, setDeliveryRadius] = useState('5 KM');
+  const [enableSelfPickup, setEnableSelfPickup] = useState(false);
+  const [enableHomeDelivery, setEnableHomeDelivery] = useState(false);
+  const [deliveryRadius, setDeliveryRadius] = useState('');
 
   const [logoImage, setLogoImage] = useState(null);
   const [bannerImage, setBannerImage] = useState(null);
+
+  // Business Onboarding Data State
+  const [businessName, setBusinessName] = useState('');
+  const [businessType, setBusinessType] = useState('');
+  const [businessAddressLine1, setBusinessAddressLine1] = useState('');
+  const [businessAddressLine2, setBusinessAddressLine2] = useState('');
+  const [businessCity, setBusinessCity] = useState('');
+  const [businessState, setBusinessState] = useState('');
+  const [businessPincode, setBusinessPincode] = useState('');
+  const [businessCountry, setBusinessCountry] = useState('India');
+  const [isEditingBusiness, setIsEditingBusiness] = useState(false);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const { data } = await api.get('/sellers/settings/profile');
+        const p = data.data;
+        
+        setShopName(p.shopName || '');
+        setShopType(p.shopType || '');
+        setBusinessModel(p.businessModel || '');
+        setFssaiNumber(p.fssaiNumber || '');
+        setStoreWebsite(p.storeWebsite || '');
+        setSupportEmail(p.supportEmail || '');
+        setShopDescription(p.shopDescription || '');
+        setIsActive(p.isActive || false);
+        
+        setLocationName(p.locationName || '');
+        setPickupPhone(p.pickupPhone || '');
+        setStreetAddress(p.streetAddress || '');
+        setCity(p.city || '');
+        setState(p.state || '');
+        setPincode(p.pincode || '');
+
+        setEnableSelfPickup(p.enableSelfPickup || false);
+        setEnableHomeDelivery(p.enableHomeDelivery || false);
+        setDeliveryRadius(p.deliveryRadius || '');
+        setLogoImage(p.logoImage || null);
+        setBannerImage(p.bannerImage || null);
+
+        setBusinessName(p.businessName || '');
+        setBusinessType(p.businessType || '');
+        setBusinessAddressLine1(p.businessAddressLine1 || '');
+        setBusinessAddressLine2(p.businessAddressLine2 || '');
+        setBusinessCity(p.businessCity || '');
+        setBusinessState(p.businessState || '');
+        setBusinessPincode(p.businessPincode || '');
+        setBusinessCountry(p.businessCountry || 'India');
+      } catch (err) {
+        toast.error("Failed to load store profile data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
@@ -646,7 +758,7 @@ const StoreProfileTab = ({ onSave }) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         setLogoImage(event.target.result);
-        toast.success("Logo uploaded successfully!");
+        toast.success("Logo uploaded temporarily. Click Save Changes to commit.");
       };
       reader.readAsDataURL(file);
     }
@@ -662,22 +774,100 @@ const StoreProfileTab = ({ onSave }) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         setBannerImage(event.target.result);
-        toast.success("Banner uploaded successfully!");
+        toast.success("Banner uploaded temporarily. Click Save Changes to commit.");
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     if (e) e.preventDefault();
-    toast.success('Shop profile updated successfully!');
-    if (onSave) onSave();
+    try {
+      await api.put('/sellers/settings/profile', {
+        shopName,
+        shopDescription,
+        businessModel,
+        fssaiNumber,
+        storeWebsite,
+        supportEmail,
+        locationName,
+        pickupPhone,
+        streetAddress,
+        city,
+        state,
+        pincode,
+        enableSelfPickup,
+        enableHomeDelivery,
+        deliveryRadius,
+        isActive,
+        logoImage,
+        bannerImage,
+        businessName,
+        businessType,
+        businessAddressLine1,
+        businessAddressLine2,
+        businessCity,
+        businessState,
+        businessPincode,
+        businessCountry
+      });
+      toast.success('Shop profile updated successfully!');
+      if (onSave) onSave();
+    } catch (err) {
+      toast.error('Failed to update shop profile');
+    }
   };
 
-  const toggleStatus = () => {
-    setIsActive(!isActive);
-    toast.success(isActive ? 'Shop deactivated successfully!' : 'Shop activated successfully!');
+  const toggleStatus = async () => {
+    const newStatus = !isActive;
+    setIsActive(newStatus);
+    
+    try {
+      await api.put('/sellers/settings/profile', {
+        shopName,
+        shopDescription,
+        businessModel,
+        fssaiNumber,
+        storeWebsite,
+        supportEmail,
+        locationName,
+        pickupPhone,
+        streetAddress,
+        city,
+        state,
+        pincode,
+        enableSelfPickup,
+        enableHomeDelivery,
+        deliveryRadius,
+        isActive: newStatus,
+        logoImage,
+        bannerImage,
+        businessName,
+        businessType,
+        businessAddressLine1,
+        businessAddressLine2,
+        businessCity,
+        businessState,
+        businessPincode,
+        businessCountry
+      });
+      toast.success(newStatus ? 'Shop activated successfully!' : 'Shop deactivated successfully!');
+    } catch (err) {
+      setIsActive(!newStatus);
+      toast.error('Failed to change shop status');
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-[#16A34A] border-t-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 text-sm font-semibold text-gray-500">Loading store profile...</p>
+      </div>
+    );
+  }
+
+  // Allow rendering even if shopName is blank initially to let them set it up!
 
   return (
     <div className="flex flex-col gap-6">
@@ -801,6 +991,41 @@ const StoreProfileTab = ({ onSave }) => {
                   </select>
                 </div>
               </div>
+              
+              <div>
+                <InputLabel>FSSAI License Number</InputLabel>
+                <input
+                  type="text"
+                  maxLength={14}
+                  value={fssaiNumber}
+                  onChange={(e) => setFssaiNumber(e.target.value)}
+                  placeholder="14-digit FSSAI Number"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <InputLabel>Store Website</InputLabel>
+                  <input
+                    type="url"
+                    value={storeWebsite}
+                    onChange={(e) => setStoreWebsite(e.target.value)}
+                    placeholder="https://"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                  />
+                </div>
+                <div>
+                  <InputLabel>Support Email</InputLabel>
+                  <input
+                    type="email"
+                    value={supportEmail}
+                    onChange={(e) => setSupportEmail(e.target.value)}
+                    placeholder="support@store.com"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                  />
+                </div>
+              </div>
 
               <div className="relative">
                 <InputLabel>Shop Description</InputLabel>
@@ -892,90 +1117,201 @@ const StoreProfileTab = ({ onSave }) => {
                   className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
                 />
               </div>
-
-              {/* Divider */}
-              <div className="border-t border-gray-100 pt-6" />
-
-              {/* Fulfillment Options */}
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center shrink-0">
-                    <ShoppingBag size={16} strokeWidth={2.5} />
-                  </div>
-                  <h3 className="text-[15px] font-bold text-gray-900">Fulfillment Options</h3>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-6 mt-2">
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className="relative flex items-center justify-center">
-                      <input
-                        type="checkbox"
-                        checked={enableSelfPickup}
-                        onChange={() => setEnableSelfPickup(!enableSelfPickup)}
-                        className="sr-only"
-                      />
-                      <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                        enableSelfPickup
-                          ? 'bg-[#16A34A] border-[#16A34A] text-white shadow-sm shadow-[#16A34A]/25'
-                          : 'bg-white border-gray-300 group-hover:border-gray-400'
-                      }`}>
-                        {enableSelfPickup && <Check size={12} strokeWidth={3} />}
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-gray-800">Enable Self Pickup</span>
-                  </label>
-
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className="relative flex items-center justify-center">
-                      <input
-                        type="checkbox"
-                        checked={enableHomeDelivery}
-                        onChange={() => setEnableHomeDelivery(!enableHomeDelivery)}
-                        className="sr-only"
-                      />
-                      <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                        enableHomeDelivery
-                          ? 'bg-[#16A34A] border-[#16A34A] text-white shadow-sm shadow-[#16A34A]/25'
-                          : 'bg-white border-gray-300 group-hover:border-gray-400'
-                      }`}>
-                        {enableHomeDelivery && <Check size={12} strokeWidth={3} />}
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-gray-800">Enable Home Delivery</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div className="border-t border-gray-100 pt-6" />
-
-              {/* Delivery Radius */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center shrink-0">
-                    <Target size={16} strokeWidth={2.5} />
-                  </div>
-                  <h3 className="text-[15px] font-bold text-gray-900">Delivery Radius</h3>
-                </div>
-                <select
-                  value={deliveryRadius}
-                  onChange={(e) => setDeliveryRadius(e.target.value)}
-                  className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A] w-28 text-center"
-                >
-                  <option>1 KM</option>
-                  <option>2 KM</option>
-                  <option>5 KM</option>
-                  <option>10 KM</option>
-                  <option>20 KM</option>
-                </select>
-              </div>
-
             </div>
           </div>
         </div>
 
-        {/* Right Column: Branding, Status */}
+        {/* Right Column: Business Info, Branding, Status */}
         <div className="lg:col-span-5 flex flex-col gap-6">
+          
+          {/* Card E: Business Details (Onboarding Info) */}
+          <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 flex flex-col gap-6">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center shrink-0">
+                  <FileText size={16} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-bold text-gray-900">Business Information</h3>
+                  <p className="text-xs text-gray-500 mt-0.5 font-medium">Verified business details from onboarding.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditingBusiness(!isEditingBusiness)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-xs font-bold transition-all shrink-0 ${
+                  isEditingBusiness
+                    ? 'bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100'
+                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {isEditingBusiness ? (
+                  <>
+                    <Check size={13} strokeWidth={2.5} /> Done
+                  </>
+                ) : (
+                  <>
+                    <PenLine size={13} strokeWidth={2.5} /> Edit
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <InputLabel>Business Name</InputLabel>
+                  <input
+                    type="text"
+                    disabled={!isEditingBusiness}
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                      isEditingBusiness
+                        ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                        : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                    }`}
+                    placeholder="Business Name"
+                  />
+                </div>
+                <div>
+                  <InputLabel>Business Type</InputLabel>
+                  <input
+                    type="text"
+                    disabled={!isEditingBusiness}
+                    value={businessType}
+                    onChange={(e) => setBusinessType(e.target.value)}
+                    className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                      isEditingBusiness
+                        ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                        : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                    }`}
+                    placeholder="E.g. Sole Proprietorship"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <InputLabel>FSSAI License Number</InputLabel>
+                <input
+                  type="text"
+                  maxLength={14}
+                  disabled={!isEditingBusiness}
+                  value={fssaiNumber}
+                  onChange={(e) => setFssaiNumber(e.target.value)}
+                  className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                      isEditingBusiness
+                        ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                        : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                    }`}
+                  placeholder="14-digit FSSAI Number"
+                />
+              </div>
+
+              {/* Business Address Header */}
+              <div className="border-t border-gray-100 pt-6">
+                <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">Registered Business Address</h4>
+                <div className="flex flex-col gap-6">
+                  <div>
+                    <InputLabel>Address Line 1</InputLabel>
+                    <input
+                      type="text"
+                      disabled={!isEditingBusiness}
+                      value={businessAddressLine1}
+                      onChange={(e) => setBusinessAddressLine1(e.target.value)}
+                      className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                        isEditingBusiness
+                          ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                          : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                      }`}
+                      placeholder="Address Line 1"
+                    />
+                  </div>
+                  <div>
+                    <InputLabel>Address Line 2</InputLabel>
+                    <input
+                      type="text"
+                      disabled={!isEditingBusiness}
+                      value={businessAddressLine2}
+                      onChange={(e) => setBusinessAddressLine2(e.target.value)}
+                      className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                        isEditingBusiness
+                          ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                          : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                      }`}
+                      placeholder="Address Line 2"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <InputLabel>City</InputLabel>
+                      <input
+                        type="text"
+                        disabled={!isEditingBusiness}
+                        value={businessCity}
+                        onChange={(e) => setBusinessCity(e.target.value)}
+                        className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                          isEditingBusiness
+                            ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                            : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                        }`}
+                        placeholder="City"
+                      />
+                    </div>
+                    <div>
+                      <InputLabel>State</InputLabel>
+                      <input
+                        type="text"
+                        disabled={!isEditingBusiness}
+                        value={businessState}
+                        onChange={(e) => setBusinessState(e.target.value)}
+                        className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                          isEditingBusiness
+                            ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                            : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                        }`}
+                        placeholder="State"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <InputLabel>Pincode</InputLabel>
+                      <input
+                        type="text"
+                        disabled={!isEditingBusiness}
+                        value={businessPincode}
+                        onChange={(e) => setBusinessPincode(e.target.value)}
+                        className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                          isEditingBusiness
+                            ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                            : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                        }`}
+                        placeholder="Pincode"
+                      />
+                    </div>
+                    <div>
+                      <InputLabel>Country</InputLabel>
+                      <input
+                        type="text"
+                        disabled={!isEditingBusiness}
+                        value={businessCountry}
+                        onChange={(e) => setBusinessCountry(e.target.value)}
+                        className={`w-full px-4 py-2.5 border rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none transition-all ${
+                          isEditingBusiness
+                            ? 'bg-white border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]'
+                            : 'bg-gray-50/70 border-gray-200 cursor-not-allowed text-gray-400'
+                        }`}
+                        placeholder="Country"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
           {/* Card C: Branding */}
           <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 flex flex-col gap-6">
             <div className="flex items-start gap-3">
@@ -1084,11 +1420,8 @@ const SecurityTab = () => {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const [sessions, setSessions] = useState([
-    { id: 1, type: 'current', device: 'Current Device', os: 'Windows • Chrome', active: 'Just now', badge: 'This Device' },
-    { id: 2, type: 'mobile', device: 'Mobile Device', os: 'Android • Chrome', active: '2 hours ago' },
-    { id: 3, type: 'laptop', device: 'Laptop', os: 'Windows • Edge', active: '1 day ago' },
-  ]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [sessions, setSessions] = useState([]);
 
   const [is2faEnabled, setIs2faEnabled] = useState(false);
 
@@ -1122,13 +1455,25 @@ const SecurityTab = () => {
     toast.success(is2faEnabled ? '2FA disabled successfully' : '2FA enabled successfully!');
   };
 
-  const recentLogins = [
-    { time: 'Today, 10:24 AM', location: 'Kochi, Kerala, India', device: 'Windows • Chrome', ip: '103.21.244.XX' },
-    { time: 'Yesterday, 8:15 PM', location: 'Bangalore, Karnataka, India', device: 'Android • Chrome', ip: '103.45.67.XX' },
-    { time: 'May 16, 2025, 6:30 PM', location: 'Kochi, Kerala, India', device: 'Windows • Edge', ip: '103.21.244.XX' },
-    { time: 'May 15, 2025, 11:02 AM', location: 'Kochi, Kerala, India', device: 'Android • Chrome', ip: '103.21.244.XX' },
-    { time: 'May 14, 2025, 9:40 AM', location: 'Kochi, Kerala, India', device: 'Windows • Chrome', ip: '103.21.244.XX' },
-  ];
+  const [recentLogins, setRecentLogins] = useState([]);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      await new Promise(r => setTimeout(r, 800));
+      setIsLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-[#16A34A] border-t-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 text-sm font-semibold text-gray-500">Loading security settings...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -1238,7 +1583,7 @@ const SecurityTab = () => {
           </div>
 
           <div className="flex flex-col gap-4">
-            {sessions.map(s => (
+            {sessions.length > 0 ? sessions.map(s => (
               <div
                 key={s.id}
                 className={`rounded-xl p-4 flex items-center justify-between border transition-all duration-200 ${
@@ -1282,7 +1627,11 @@ const SecurityTab = () => {
                   </button>
                 )}
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-6 border border-dashed border-gray-200 rounded-xl bg-gray-50">
+                <p className="text-xs text-gray-500 font-medium">No active sessions found.</p>
+              </div>
+            )}
           </div>
 
           <div className="mt-auto">
@@ -1373,14 +1722,18 @@ const SecurityTab = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {recentLogins.map((row, i) => (
+                {recentLogins.length > 0 ? recentLogins.map((row, i) => (
                   <tr key={i} className="hover:bg-gray-50/50 transition-colors">
                     <td className="text-[11px] font-semibold text-gray-700 py-3 px-4 whitespace-nowrap">{row.time}</td>
                     <td className="text-[11px] font-semibold text-gray-700 py-3 px-4 whitespace-nowrap">{row.location}</td>
                     <td className="text-[11px] font-semibold text-gray-600 py-3 px-4 whitespace-nowrap">{row.device}</td>
                     <td className="text-[11px] font-semibold text-gray-400 py-3 px-4 whitespace-nowrap font-mono">{row.ip}</td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={4} className="text-center py-6 text-[11px] text-gray-500 font-medium">No recent login activity available.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -1404,6 +1757,9 @@ const SecurityTab = () => {
 
 /* ─────────────────── Tab Content: Billing ─────────────────── */
 const BillingTab = () => {
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [billingPlan, setBillingPlan] = useState('');
+  const [billingStatus, setBillingStatus] = useState('');
   const [paymentMethod, setPaymentMethod] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -1412,6 +1768,15 @@ const BillingTab = () => {
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvv, setCvv] = useState('');
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      await new Promise(r => setTimeout(r, 800));
+      setIsLoading(false);
+    };
+    fetchData();
+  }, []);
 
   const handleOpenModal = () => {
     setCardholderName('');
@@ -1467,6 +1832,15 @@ const BillingTab = () => {
     toast.success('Payment method removed successfully.');
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-[#16A34A] border-t-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 text-sm font-semibold text-gray-500">Loading billing settings...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Billing Overview Card */}
@@ -1484,14 +1858,21 @@ const BillingTab = () => {
         <ul className="flex flex-col divide-y divide-gray-100 mt-2">
           <li className="flex items-center justify-between py-4">
             <span className="text-[13px] text-gray-500 font-medium">Billing Status</span>
-            <span className="inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs font-bold bg-[#DCFCE7] text-[#15803D]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
-              Active
-            </span>
+            {billingStatus ? (
+              <span className="inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs font-bold bg-[#DCFCE7] text-[#15803D]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
+                {billingStatus}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                Inactive
+              </span>
+            )}
           </li>
           <li className="flex items-center justify-between py-4">
             <span className="text-[13px] text-gray-500 font-medium">Current Plan</span>
-            <span className="text-[13px] font-bold text-gray-900">Seller Plan</span>
+            <span className="text-[13px] font-bold text-gray-900">{billingPlan || 'No active plan'}</span>
           </li>
           <li className="flex items-center justify-between py-4">
             <span className="text-[13px] text-gray-500 font-medium">Next Billing Date</span>
@@ -1700,10 +2081,9 @@ const BillingTab = () => {
 
 /* ─────────────────── Main Page ─────────────────── */
 const TABS = [
-  { id: 'general', name: 'General', icon: Hexagon },
+  { id: 'store-profile', name: 'Store Profile', icon: Store },
   { id: 'notifications', name: 'Notifications', icon: Bell },
   { id: 'payouts', name: 'Payouts', icon: Wallet },
-  { id: 'store-profile', name: 'Store Profile', icon: Store },
   { id: 'security', name: 'Security', icon: Lock },
   { id: 'billing', name: 'Billing', icon: FileText },
 ];
@@ -1713,7 +2093,7 @@ export const SellerSettingsPage = () => {
   const tabParam = searchParams.get('tab');
   
   const [activeTab, setActiveTab] = useState(
-    tabParam && TABS.some(t => t.id === tabParam) ? tabParam : 'payouts'
+    tabParam && TABS.some(t => t.id === tabParam) ? tabParam : 'store-profile'
   );
 
   React.useEffect(() => {
@@ -1729,7 +2109,6 @@ export const SellerSettingsPage = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'general': return <GeneralTab />;
       case 'notifications': return <NotificationsTab />;
       case 'payouts': return <PayoutsTab />;
       case 'store-profile': return <SellerShopProfilePage hideHeader={true} />;

@@ -45,5 +45,20 @@ export const adminProductController = {
 
       return successResponse(res, 'Product rejected', { product });
     } catch (error) { next(error); }
+  },
+
+  async deleteProduct(req, res, next) {
+    try {
+      const product = await productService.deleteProductByAdmin(req.params.id);
+      logger.info({ adminId: req.user.id, productId: product.id }, 'Product deleted by admin');
+
+      await auditLogService.logFromRequest(req, {
+        actionType: 'PRODUCT_DELETION',
+        targetType: 'PRODUCT',
+        targetId: product.id
+      });
+
+      return successResponse(res, 'Product deleted successfully', { product });
+    } catch (error) { next(error); }
   }
 };
