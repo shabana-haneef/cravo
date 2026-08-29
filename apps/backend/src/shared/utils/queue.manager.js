@@ -16,19 +16,31 @@ queueConnection.on('error', (err) => {
 export const activeWorkers = [];
 
 /**
- * Creates a new queue with standard configurations.
+ * Creates a new queue with standard configurations tuned for low Redis command overhead.
  */
-export const createQueue = (queueName) => {
-  return new Queue(queueName, { connection: queueConnection });
+export const createQueue = (queueName, options = {}) => {
+  return new Queue(queueName, {
+    connection: queueConnection,
+    defaultJobOptions: {
+      removeOnComplete: { age: 3600, count: 100 },
+      removeOnFail: { age: 86400, count: 200 },
+      ...options.defaultJobOptions,
+    },
+    ...options,
+  });
 };
 
 /**
  * Creates a worker and registers it for graceful shutdown.
+ * Configured with drainDelay, stalledInterval, and lockDuration to minimize polling traffic on Redis (e.g. Upstash).
  */
 export const createWorker = (queueName, processor, options = {}) => {
   const worker = new Worker(queueName, processor, {
     connection: queueConnection,
-    ...options
+    drainDelay: 30,         // Wait 30 seconds when queue is empty before checking Redis again (default: 5s)
+    stalledInterval: 60000, // Check for stalled jobs every 60 seconds (default: 30s)
+    lockDuration: 60000,    // Extend lock duration to 60 seconds to reduce renewal pings
+    ...options,
   });
   
   worker.on('error', (err) => logger.error({ err, queueName }, 'Worker error'));
