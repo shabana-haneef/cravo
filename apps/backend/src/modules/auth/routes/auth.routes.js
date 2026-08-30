@@ -144,7 +144,7 @@ router.post('/resend-reset-otp', otpLimiter, authController.resendResetOtp);
 // ==========================================
 // Protected Auth Endpoints
 // ==========================================
-router.post('/logout', protect, authController.logout);
+router.post('/logout', authController.logout);
 router.post('/logout-all', protect, authController.logoutAll);
 router.get('/me', protect, authController.me);
 

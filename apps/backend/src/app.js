@@ -46,9 +46,9 @@ app.use(requestLoggerMiddleware);
 app.use(compression());
 
 // Parse allowed origins from environment variable, fallback to localhost for dev
-const allowedOrigins = process.env.FRONTEND_URLS 
-  ? process.env.FRONTEND_URLS.split(',').map(url => url.trim()) 
-  : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+const allowedOrigins = process.env.FRONTEND_URLS
+  ? process.env.FRONTEND_URLS.split(',').map(url => url.trim())
+  : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:4173'];
 
 app.use(
   cors({
@@ -90,10 +90,10 @@ app.get("/ready", async (req, res) => {
     // Check DB
     const { prisma } = await import("./config/prisma.js");
     await prisma.$queryRaw`SELECT 1`;
-    
+
     // Check Redis
     if (!redis.isOpen) throw new Error("Redis is not connected");
-    
+
     res.status(200).json({ status: "OK", database: "connected", redis: "connected" });
   } catch (error) {
     res.status(503).json({ status: "ERROR", message: error.message });
