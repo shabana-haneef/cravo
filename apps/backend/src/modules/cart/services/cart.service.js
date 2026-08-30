@@ -17,12 +17,13 @@ export const cartService = {
     }
 
     let subtotalPaise = 0;
-    let totalItems = cart.items.length;
+    const activeCartItems = (cart.items || []).filter(item => item.product && item.productVariant);
+    let totalItems = activeCartItems.length;
 
     // --- APPLY CAMPAIGN DISCOUNTS ---
-    await campaignHelper.applyDiscountsToCartItems(cart.shopId, cart.items);
+    await campaignHelper.applyDiscountsToCartItems(cart.shopId, activeCartItems);
 
-    const validatedItems = cart.items.map(item => {
+    const validatedItems = activeCartItems.map(item => {
       const price = Number(item.productVariant.price);
       const pricePaise = Math.round(price * 100);
       const itemTotalPaise = pricePaise * item.quantity;
@@ -30,7 +31,7 @@ export const cartService = {
       const itemTotal = itemTotalPaise / 100;
 
       const productImages = item.product.images || [];
-      const sortedImages = productImages.sort((a, b) => a.sortOrder - b.sortOrder);
+      const sortedImages = [...productImages].sort((a, b) => a.sortOrder - b.sortOrder);
       const imageUrl = sortedImages.length > 0 ? sortedImages[0].imageUrl : null;
 
       return {

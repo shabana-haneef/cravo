@@ -58,13 +58,12 @@ const _applyCampaignModifiers = async (products) => {
     if (maxDiscount > 0 && product.variants) {
       product.campaignDiscount = maxDiscount;
       product.variants.forEach(variant => {
-        // Only apply if there's no existing manual compareAtPrice discount that is better
-        const manualDiscount = variant.compareAtPrice ? ((variant.compareAtPrice - variant.price) / variant.compareAtPrice) * 100 : 0;
-        if (maxDiscount > manualDiscount) {
-          variant.originalPrice = variant.compareAtPrice || variant.price;
-          variant.price = variant.originalPrice * (1 - maxDiscount / 100);
-          variant.isCampaignDiscount = true;
-        }
+        const basePrice = Number(variant.price);
+        const discountedPrice = Number((basePrice * (1 - maxDiscount / 100)).toFixed(2));
+        variant.originalPrice = variant.compareAtPrice || basePrice;
+        variant.compareAtPrice = variant.compareAtPrice || basePrice;
+        variant.price = Math.min(basePrice, discountedPrice);
+        variant.isCampaignDiscount = true;
       });
     }
   });

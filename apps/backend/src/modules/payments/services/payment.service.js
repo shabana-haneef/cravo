@@ -6,6 +6,67 @@ import { AppError } from '../../../shared/errors/AppError.js';
 import { logger } from '../../../shared/services/logger.js';
 import prisma from '../../../lib/prisma.js';
 
+async function _postOrderPlacementActions(tx, orderId) {
+  const order = await tx.order.findUnique({
+    where: { id: orderId },
+    include: {
+      items: true,
+      shop: { select: { seller: { select: { userId: true } } } }
+    }
+  });
+
+  if (!order) return null;
+
+  // 1. Clear cart items for this customer
+  const userCart = await tx.cart.findUnique({ where: { userId: order.customerId } });
+  if (userCart) {
+    const purchasedVariantIds = order.items.map(i => i.productVariantId);
+    await tx.cartItem.deleteMany({
+      where: {
+        cartId: userCart.id,
+        productVariantId: { in: purchasedVariantIds }
+      }
+    });
+
+    const remainingCount = await tx.cartItem.count({ where: { cartId: userCart.id } });
+    if (remainingCount === 0) {
+      await tx.cart.update({ where: { id: userCart.id }, data: { shopId: null } });
+    }
+  }
+
+  // 2. Track campaign conversions
+  const shopId = order.shopId;
+  const productIds = order.items.map(item => item.productId);
+  const activeCampaigns = await tx.campaign.findMany({
+    where: {
+      status: 'ACTIVE',
+      shopId: shopId,
+      OR: [
+        { type: { in: ['STOREWIDE_OFFER', 'DISCOUNT_CAMPAIGN'] } },
+        { type: { in: ['PRODUCT_PROMOTION', 'FLASH_SALE'] }, targetProductIds: { hasSome: productIds } }
+      ]
+    },
+    select: { id: true, type: true, targetProductIds: true }
+  });
+
+  if (activeCampaigns.length > 0) {
+    const { campaignRepository } = await import('../../campaigns/repositories/campaign.repository.js');
+    for (const campaign of activeCampaigns) {
+      let campaignRevenue = 0;
+      order.items.forEach(item => {
+        if (['STOREWIDE_OFFER', 'DISCOUNT_CAMPAIGN'].includes(campaign.type) || campaign.targetProductIds.includes(item.productId)) {
+          campaignRevenue += Number(item.totalPrice);
+        }
+      });
+      if (campaignRevenue > 0) {
+        await campaignRepository.trackConversion(campaign.id, campaignRevenue, tx);
+      }
+    }
+  }
+
+  return order;
+}
+
 export const paymentService = {
   async verifyPayment(userId, razorpayOrderId, razorpayPaymentId, razorpaySignature) {
     // 1. Verify Signature
@@ -75,17 +136,22 @@ export const paymentService = {
         data: { status: 'PLACED' }
       });
       
+      const placedOrder = await _postOrderPlacementActions(tx, payment.orderId);
+
       logger.info({ userId, orderId: payment.orderId, razorpayPaymentId }, 'Payment successful and order placed');
 
       // Notify seller about new order (fire-and-forget)
-      const order = payment.order;
-      if (order?.shop?.seller?.userId) {
+      const sellerUserId = placedOrder?.shop?.seller?.userId || payment.order?.shop?.seller?.userId;
+      const orderNum = placedOrder?.orderNumber || payment.order?.orderNumber;
+      const totalAmount = placedOrder?.grandTotal || payment.order?.grandTotal;
+
+      if (sellerUserId) {
         notificationService.createAndEmit(
-          order.shop.seller.userId,
+          sellerUserId,
           'ORDER_PLACED',
           'New Order Received! 🛍️',
-          `Order #${order.orderNumber} has been placed. Amount: ₹${order.grandTotal.toFixed(2)}`,
-          { orderId: payment.orderId, orderNumber: order.orderNumber }
+          `Order #${orderNum} has been placed. Amount: ₹${Number(totalAmount).toFixed(2)}`,
+          { orderId: payment.orderId, orderNumber: orderNum }
         ).catch(() => {});
       }
 
@@ -93,13 +159,13 @@ export const paymentService = {
     });
   },
 
-  async handleWebhook(body, signature) {
-    const rawBody = JSON.stringify(body);
-    const isValid = razorpayService.verifyWebhookSignature(rawBody, signature);
+  async handleWebhook(rawBody, body, signature) {
+    const rawPayload = Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : (typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody));
+    const isValid = razorpayService.verifyWebhookSignature(rawPayload, signature);
     if (!isValid) throw new AppError("Invalid webhook signature", 400);
 
     const event = body.event;
-    const payload = body.payload.payment.entity;
+    const payload = body.payload?.payment?.entity || {};
 
     const payment = await paymentRepository.findByRazorpayOrderId(payload.order_id);
     if (!payment) return; // Ignore unmapped payments
@@ -119,6 +185,7 @@ export const paymentService = {
       }
 
       let isDuplicate = false;
+      let placedOrder = null;
       await prisma.$transaction(async (tx) => {
         const updateResult = await tx.payment.updateMany({
           where: { id: payment.id, status: 'PENDING' },
@@ -137,6 +204,8 @@ export const paymentService = {
           where: { id: payment.orderId, status: 'PENDING_PAYMENT' },
           data: { status: 'PLACED' }
         });
+
+        placedOrder = await _postOrderPlacementActions(tx, payment.orderId);
       });
       
       if (isDuplicate) return;
@@ -144,14 +213,14 @@ export const paymentService = {
       logger.info({ orderId: payment.orderId }, 'Webhook: Payment captured');
 
       // Notify seller (fire-and-forget)
-      const capturedOrder = await orderRepository.findById(payment.orderId);
-      if (capturedOrder?.shop?.seller?.userId) {
+      const sellerUserId = placedOrder?.shop?.seller?.userId;
+      if (sellerUserId) {
         notificationService.createAndEmit(
-          capturedOrder.shop.seller.userId,
+          sellerUserId,
           'ORDER_PLACED',
           'New Order Received! 🛍️',
-          `Order #${capturedOrder.orderNumber} has been placed. Amount: ₹${capturedOrder.grandTotal.toFixed(2)}`,
-          { orderId: payment.orderId, orderNumber: capturedOrder.orderNumber }
+          `Order #${placedOrder.orderNumber} has been placed. Amount: ₹${Number(placedOrder.grandTotal).toFixed(2)}`,
+          { orderId: payment.orderId, orderNumber: placedOrder.orderNumber }
         ).catch(() => {});
       }
     }

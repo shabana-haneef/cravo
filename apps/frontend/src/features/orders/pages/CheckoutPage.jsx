@@ -160,6 +160,8 @@ export const CheckoutPage = () => {
   const [editingAddress, setEditingAddress] = useState(null); // { id, data }
   const [showAll, setShowAll] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentNotice, setPaymentNotice] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('ONLINE'); // 'ONLINE' | 'COD'
   const [serviceability, setServiceability] = useState({ checked: false, deliverable: false, checking: false, error: null });
 
   const location = useLocation();
@@ -243,6 +245,7 @@ export const CheckoutPage = () => {
       toast.error('Your cart is empty');
       return;
     }
+    setPaymentNotice(null);
     setIsProcessing(true);
 
     const sdkLoaded = await loadRazorpay();
@@ -272,6 +275,14 @@ export const CheckoutPage = () => {
           if (!paymentKey) {
             throw new Error("Payment gateway key is missing. Please check your configuration.");
           }
+
+          const handleCancelCheckout = async () => {
+            try {
+              await api.post('/orders/checkout/cancel', { orderId: order.id });
+            } catch (e) {
+              // ignore
+            }
+          };
 
           const options = {
             key: paymentKey,
@@ -309,7 +320,9 @@ export const CheckoutPage = () => {
             theme: { color: '#16a34a' },
             modal: {
               ondismiss: () => {
-                toast.error('Payment cancelled');
+                handleCancelCheckout();
+                setPaymentNotice('Payment was not completed. Your items remain saved in your cart.');
+                toast.info('Payment was cancelled. You can retry whenever you are ready.');
                 setIsProcessing(false);
               }
             }
@@ -317,6 +330,8 @@ export const CheckoutPage = () => {
 
           const rzp = new window.Razorpay(options);
           rzp.on('payment.failed', () => {
+            handleCancelCheckout();
+            setPaymentNotice('Payment transaction failed. Your items remain saved in your cart.');
             toast.error('Payment failed. Please try again.');
             setIsProcessing(false);
           });
@@ -367,7 +382,24 @@ export const CheckoutPage = () => {
 
   return (
     <div className="max-w-6xl mx-auto pb-12">
-      <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-8">Checkout</h1>
+      <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-6">Checkout</h1>
+
+      {paymentNotice && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between gap-3 text-amber-900 animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold shrink-0">
+              ℹ
+            </div>
+            <p className="text-sm font-medium">{paymentNotice}</p>
+          </div>
+          <button 
+            onClick={() => setPaymentNotice(null)}
+            className="text-amber-500 hover:text-amber-700 p-1 text-xs font-semibold"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left Column */}
@@ -499,9 +531,58 @@ export const CheckoutPage = () => {
                     <p className="font-medium text-gray-900">{item.productName}</p>
                     <p className="text-sm text-gray-500">{item.variantName} × {item.quantity}</p>
                   </div>
-                  <span className="font-semibold text-[#154D21]">₹{item.totalPrice.toFixed(2)}</span>
+                  <span className="font-semibold text-[#154D21]">₹{Number(item.totalPrice || 0).toFixed(2)}</span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Payment Method Section */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <CreditCard size={20} className="text-primary-600" />
+              Payment Method
+            </h2>
+
+            <div className="space-y-3">
+              <div 
+                onClick={() => setPaymentMethod('ONLINE')}
+                className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-4 ${
+                  paymentMethod === 'ONLINE' ? 'border-[#154D21] bg-green-50/30' : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className={`w-5 h-5 rounded-full mt-0.5 border flex items-center justify-center ${
+                  paymentMethod === 'ONLINE' ? 'border-[#154D21] bg-[#154D21]' : 'border-gray-400'
+                }`}>
+                  {paymentMethod === 'ONLINE' && <div className="w-2 h-2 rounded-full bg-white" />}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-gray-900">Online Payment (Recommended)</span>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-800">Fast & Secure</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">UPI (GPay, PhonePe, Paytm), Credit/Debit Cards, NetBanking & Wallets</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-[10px] font-bold tracking-wider text-gray-600 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">UPI</span>
+                    <span className="text-[10px] font-bold tracking-wider text-gray-600 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">CARDS</span>
+                    <span className="text-[10px] font-bold tracking-wider text-gray-600 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">NETBANKING</span>
+                  </div>
+                </div>
+              </div>
+
+              <div 
+                className="p-4 rounded-xl border border-gray-200 bg-gray-50/70 opacity-80 flex items-start gap-4 cursor-not-allowed"
+                title="Cash on delivery is currently unavailable for this pin code"
+              >
+                <div className="w-5 h-5 rounded-full mt-0.5 border border-gray-300 bg-gray-100" />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-gray-600">Cash on Delivery</span>
+                    <span className="text-[11px] text-gray-500 font-medium">Currently Unavailable</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">Online payments enjoy 100% Buyer Protection & instant order confirmation.</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -514,17 +595,17 @@ export const CheckoutPage = () => {
             <div className="space-y-4 mb-6">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal ({cart?.summary?.totalItems} item{cart?.summary?.totalItems > 1 ? 's' : ''})</span>
-                <span className="font-medium text-[#154D21]">₹{deliverySummary?.subtotal?.toFixed(2)}</span>
+                <span className="font-medium text-[#154D21]">₹{Number(deliverySummary?.subtotal || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Delivery Charges</span>
                 <span className="font-medium text-[#154D21]">
-                  {deliverySummary?.deliveryCharge === null ? (
+                  {deliverySummary?.deliveryCharge === null || deliverySummary?.deliveryCharge === undefined ? (
                     <span className="text-sm font-normal text-gray-400">Calculated after address selection</span>
-                  ) : deliverySummary?.deliveryCharge === 0 ? (
+                  ) : Number(deliverySummary?.deliveryCharge) === 0 ? (
                     'FREE'
                   ) : (
-                    `₹${deliverySummary?.deliveryCharge?.toFixed(2)}`
+                    `₹${Number(deliverySummary?.deliveryCharge || 0).toFixed(2)}`
                   )}
                 </span>
               </div>
@@ -533,7 +614,7 @@ export const CheckoutPage = () => {
             <div className="border-t border-gray-100 pt-4 mb-6">
               <div className="flex justify-between items-center">
                 <span className="text-lg font-bold text-gray-900">Total</span>
-                <span className="text-2xl font-extrabold text-[#154D21]">₹{deliverySummary?.grandTotal?.toFixed(2)}</span>
+                <span className="text-2xl font-extrabold text-[#154D21]">₹{Number(deliverySummary?.grandTotal || 0).toFixed(2)}</span>
               </div>
               <p className="text-xs text-gray-400 mt-1">Final amount calculated securely at payment</p>
             </div>
@@ -551,7 +632,7 @@ export const CheckoutPage = () => {
               ) : (
                 <>
                   <CreditCard size={20} className="mr-2" />
-                  Pay ₹{deliverySummary?.grandTotal?.toFixed(2)}
+                  Pay ₹{Number(deliverySummary?.grandTotal || 0).toFixed(2)}
                 </>
               )}
             </Button>

@@ -11,10 +11,10 @@ export const useWishlist = (enabled = true) => {
     queryKey: WISHLIST_KEYS.all,
     queryFn: async () => {
       const res = await wishlistApi.getWishlist();
-      return res?.data?.wishlist || [];
+      return res?.data?.wishlist || res?.wishlist || (Array.isArray(res) ? res : []);
     },
     staleTime: 1000 * 60 * 5, // 5 mins
-    enabled,
+    enabled: Boolean(enabled),
   });
 };
 

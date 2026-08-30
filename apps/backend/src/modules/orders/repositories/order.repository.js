@@ -59,7 +59,10 @@ export const orderRepository = {
   async findCustomerOrders(customerId, page = 1, requestedLimit = 20) {
     const limit = Math.min(Number(requestedLimit) || 20, 100);
     const skip = (page - 1) * limit;
-    const where = { customerId };
+    const where = { 
+      customerId,
+      status: { not: 'PENDING_PAYMENT' }
+    };
     const [data, total] = await Promise.all([
       prisma.order.findMany({
         where,
@@ -100,7 +103,10 @@ export const orderRepository = {
   async findSellerOrders(shopId, page = 1, requestedLimit = 20) {
     const limit = Math.min(Number(requestedLimit) || 20, 100);
     const skip = (page - 1) * limit;
-    const where = { shopId };
+    const where = { 
+      shopId,
+      status: { not: 'PENDING_PAYMENT' }
+    };
     const [data, total] = await Promise.all([
       prisma.order.findMany({
         where,

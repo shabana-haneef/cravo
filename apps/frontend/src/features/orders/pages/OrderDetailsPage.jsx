@@ -36,15 +36,6 @@ export const OrderDetailsPage = () => {
 
   const { data: productsData } = useProducts({ limit: 4 });
   const relatedProducts = productsData?.data?.products || [];
-
-  if (isLoading) return <LoadingScreen message="Loading order details..." />;
-  if (isError || !data?.data?.order) return (
-    <div className="text-center py-20">
-      <h2 className="text-xl font-bold">Order not found</h2>
-      <button onClick={() => navigate('/orders')} className="text-blue-600 mt-4 underline">Go back to orders</button>
-    </div>
-  );
-
   const order = data?.data?.order;
 
   useEffect(() => {
@@ -53,6 +44,14 @@ export const OrderDetailsPage = () => {
       navigate('/orders', { replace: true });
     }
   }, [order, navigate]);
+
+  if (isLoading) return <LoadingScreen message="Loading order details..." />;
+  if (isError || !order) return (
+    <div className="text-center py-20">
+      <h2 className="text-xl font-bold">Order not found</h2>
+      <button onClick={() => navigate('/orders')} className="text-blue-600 mt-4 underline">Go back to orders</button>
+    </div>
+  );
 
   // Use first item for top summary (like Flipkart)
   const mainItem = order.items[0];
@@ -411,19 +410,19 @@ export const OrderDetailsPage = () => {
             <div className="space-y-3 text-[13px] text-gray-700">
               <div className="flex justify-between">
                 <span>Listing price</span>
-                <span className="line-through text-gray-400">₹{((order?.grandTotal || 0) + 100).toFixed(2)}</span>
+                <span className="line-through text-gray-400">₹{(Number(order?.grandTotal || 0) + 100).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Special price</span>
-                <span className="text-[#154D21] font-medium">₹{(order?.subTotal || 0).toFixed(2)}</span>
+                <span className="text-[#154D21] font-medium">₹{Number(order?.subTotal || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Shipping / Delivery</span>
-                <span className="text-[#154D21] font-medium">₹{(order?.shippingFee || 0).toFixed(2)}</span>
+                <span className="text-[#154D21] font-medium">₹{Number(order?.shippingFee || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between border-t border-gray-100 pt-3 font-bold text-[15px] text-gray-900">
                 <span>Total Amount</span>
-                <span className="text-[#154D21] font-extrabold">₹{(order?.grandTotal || 0).toFixed(2)}</span>
+                <span className="text-[#154D21] font-extrabold">₹{Number(order?.grandTotal || 0).toFixed(2)}</span>
               </div>
             </div>
           </div>

@@ -41,7 +41,7 @@ export const AdminDashboardPage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Revenue', value: `₹${stats.totalRevenue.toFixed(2)}`, icon: <IndianRupee size={20} className="text-indigo-500"/>, bg: 'bg-indigo-50' },
+          { label: 'Total Revenue', value: `₹${Number(stats.totalRevenue || 0).toFixed(2)}`, icon: <IndianRupee size={20} className="text-indigo-500"/>, bg: 'bg-indigo-50' },
           { label: 'Total Users', value: stats.totalUsers, icon: <Users size={20} className="text-emerald-500"/>, bg: 'bg-emerald-50' },
           { label: 'Active Sellers', value: stats.activeSellers, icon: <Store size={20} className="text-amber-500"/>, bg: 'bg-amber-50' },
           { label: 'Platform Growth', value: `${stats.platformGrowth}%`, icon: <TrendingUp size={20} className="text-purple-500"/>, bg: 'bg-purple-50' },

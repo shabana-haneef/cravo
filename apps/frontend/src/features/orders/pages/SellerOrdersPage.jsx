@@ -110,9 +110,10 @@ export const SellerOrdersPage = () => {
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
         const idMatch = o.id ? o.id.toLowerCase().includes(term) : false;
+        const orderNumMatch = o.orderNumber ? o.orderNumber.toLowerCase().includes(term) : false;
         const emailMatch = o.customer?.email ? o.customer.email.toLowerCase().includes(term) : false;
         const nameMatch = o.customer?.profile?.fullName ? o.customer.profile.fullName.toLowerCase().includes(term) : false;
-        return idMatch || emailMatch || nameMatch;
+        return idMatch || orderNumMatch || emailMatch || nameMatch;
       }
       
       return true;
@@ -152,11 +153,11 @@ export const SellerOrdersPage = () => {
     try {
       if (filteredOrders.length === 0) return toast.error("No orders to export");
       
-      const headers = ['Order ID', 'Date', 'Customer Name', 'Customer Email', 'Items Count', 'Total Amount', 'Status'];
+      const headers = ['Order Number', 'Date', 'Customer Name', 'Customer Email', 'Items Count', 'Total Amount', 'Status'];
       const csvRows = filteredOrders.map(o => {
-        const orderId = String(o.id || o._id || o.orderId || 'UNKNOWN');
+        const orderNum = o.orderNumber ? `#${o.orderNumber}` : `#${String(o.id || o._id || 'UNKNOWN').slice(-8).toUpperCase()}`;
         return [
-          `#${orderId.slice(-8).toUpperCase()}`,
+          `"${orderNum}"`,
           new Date(o.createdAt || Date.now()).toLocaleString(),
           `"${o.customer?.profile?.fullName || o.customer?.fullName || 'Guest User'}"`,
           o.customer?.email || '',
@@ -222,7 +223,7 @@ export const SellerOrdersPage = () => {
           <Search className="absolute left-3.5 top-3 text-gray-400" size={16} />
           <input 
             type="text" 
-            placeholder="Search Order ID, Customer, Email..." 
+            placeholder="Search Order Number, Customer, Email..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-[13px] font-medium text-gray-800 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A] transition-all bg-white"
@@ -260,7 +261,7 @@ export const SellerOrdersPage = () => {
             <thead>
               <tr className="border-b border-gray-200 text-[12px] uppercase tracking-wider text-gray-500 font-bold bg-[#FAFAFA]/50">
                 <th className="py-4 px-6">
-                  <div className="flex items-center gap-1.5 cursor-pointer hover:text-gray-700">Order ID <ChevronsUpDown size={14} className="text-gray-400"/></div>
+                  <div className="flex items-center gap-1.5 cursor-pointer hover:text-gray-700">Order # <ChevronsUpDown size={14} className="text-gray-400"/></div>
                 </th>
                 <th className="py-4 px-6">Customer</th>
                 <th className="py-4 px-6">
@@ -292,7 +293,7 @@ export const SellerOrdersPage = () => {
                     className="py-4 px-6 text-[13px] font-bold text-[#16A34A] cursor-pointer hover:underline"
                     onClick={() => setDetailsOrder(order)}
                   >
-                    #{order.id.slice(-8).toUpperCase()}
+                    #{order.orderNumber || order.id.slice(-8).toUpperCase()}
                   </td>
                   <td className="py-4 px-6">
                     <div className="text-[13px] font-bold text-gray-900 leading-tight">{order.customer?.profile?.fullName || 'Guest User'}</div>
@@ -302,7 +303,7 @@ export const SellerOrdersPage = () => {
                     {order.items?.reduce((acc, item) => acc + item.quantity, 0) || 0}
                   </td>
                   <td className="py-4 px-6 text-[13px] font-bold text-gray-800">
-                    ₹{order.grandTotal?.toFixed(2)}
+                    ₹{Number(order.grandTotal || 0).toFixed(2)}
                   </td>
                   <td className="py-4 px-6">{getStatusBadge(order.status)}</td>
                   <td className="py-4 px-6">{getPaymentBadge(order.status)}</td>
@@ -346,7 +347,7 @@ export const SellerOrdersPage = () => {
                 <h2 className="text-xl font-medium text-gray-900 flex items-center gap-2">
                   <Package size={24} className="text-[#1E3A2B]" /> Order Details
                 </h2>
-                <p className="text-sm text-gray-500 mt-1">Order #{detailsOrder.id.slice(-8).toUpperCase()} &bull; {new Date(detailsOrder.createdAt).toLocaleString()}</p>
+                <p className="text-sm text-gray-500 mt-1">Order #{detailsOrder.orderNumber || detailsOrder.id.slice(-8).toUpperCase()} &bull; {new Date(detailsOrder.createdAt).toLocaleString()}</p>
               </div>
               <button onClick={() => setDetailsOrder(null)} className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition-colors">
                 <X size={20} />
@@ -432,10 +433,10 @@ export const SellerOrdersPage = () => {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-gray-900 truncate">{item.product?.name || 'Unknown Product'}</p>
-                        <p className="text-xs text-gray-500 mt-1 font-medium">Qty: {item.quantity} &times; ₹{item.unitPrice?.toFixed(2)}</p>
+                        <p className="text-xs text-gray-500 mt-1 font-medium">Qty: {item.quantity} &times; ₹{Number(item.unitPrice || 0).toFixed(2)}</p>
                       </div>
                       <div className="text-right shrink-0">
-                         <p className="text-sm font-semibold text-gray-900">₹{(item.unitPrice * item.quantity).toFixed(2)}</p>
+                         <p className="text-sm font-semibold text-gray-900">₹{(Number(item.unitPrice || 0) * Number(item.quantity || 1)).toFixed(2)}</p>
                       </div>
                     </div>
                   ))}
@@ -446,7 +447,7 @@ export const SellerOrdersPage = () => {
             <div className="p-6 border-t border-gray-100 bg-white flex justify-between items-center shrink-0 rounded-b-2xl">
                <div>
                   <p className="text-[10px] text-gray-500 font-medium uppercase tracking-widest mb-1">Total Amount</p>
-                  <p className="text-2xl font-semibold text-[#1E3A2B]">₹{detailsOrder.grandTotal?.toFixed(2)}</p>
+                  <p className="text-2xl font-semibold text-[#1E3A2B]">₹{Number(detailsOrder.grandTotal || 0).toFixed(2)}</p>
                </div>
                {detailsOrder.status !== 'PENDING_PAYMENT' && (
                  <button onClick={() => { setDetailsOrder(null); setInvoiceOrder(detailsOrder); }} className="px-5 py-2.5 border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm">

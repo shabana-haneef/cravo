@@ -24,7 +24,7 @@ export const paymentController = {
       const signature = req.headers['x-razorpay-signature'];
       if (!signature) return errorResponse(res, 'Missing signature', 400);
 
-      await paymentService.handleWebhook(req.body, signature);
+      await paymentService.handleWebhook(req.rawBody || req.body, req.body, signature);
       return res.status(200).send('OK');
     } catch (error) { next(error); }
   }

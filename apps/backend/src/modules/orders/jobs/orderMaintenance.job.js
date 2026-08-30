@@ -13,6 +13,58 @@ export const initOrderMaintenanceWorker = () => {
     try {
       const settings = await orderSettingsService.get();
 
+      // 0. Auto Expire Abandoned Checkout Sessions ( PENDING_PAYMENT older than 15 minutes )
+      const checkoutExpiryCutoff = new Date(Date.now() - 15 * 60 * 1000);
+      const abandonedCheckouts = await prisma.order.findMany({
+        where: {
+          status: 'PENDING_PAYMENT',
+          createdAt: { lt: checkoutExpiryCutoff }
+        },
+        include: { items: true }
+      });
+
+      for (const order of abandonedCheckouts) {
+        try {
+          await prisma.$transaction(async (tx) => {
+            await tx.order.update({
+              where: { id: order.id },
+              data: { status: 'CANCELLED' }
+            });
+
+            // Release reserved stock back to availableStock
+            for (const item of order.items) {
+              const inventory = await tx.inventory.findUnique({
+                where: { productVariantId: item.productVariantId }
+              });
+              if (inventory) {
+                await tx.inventory.update({
+                  where: { id: inventory.id },
+                  data: {
+                    availableStock: inventory.availableStock + item.quantity,
+                    reservedStock: Math.max(0, inventory.reservedStock - item.quantity)
+                  }
+                });
+
+                await tx.inventoryTransaction.create({
+                  data: {
+                    inventoryId: inventory.id,
+                    type: 'ORDER_RELEASED',
+                    quantity: item.quantity,
+                    previousStock: inventory.availableStock,
+                    newStock: inventory.availableStock + item.quantity,
+                    reason: 'Abandoned checkout session auto-expired',
+                    createdBy: 'SYSTEM'
+                  }
+                });
+              }
+            }
+          });
+          logger.info({ orderId: order.id }, '[OrderMaintenanceWorker] Abandoned checkout session expired and stock released');
+        } catch (err) {
+          logger.error({ err: err.message, orderId: order.id }, '[OrderMaintenanceWorker] Failed to expire abandoned checkout');
+        }
+      }
+
       // 1. Auto Cancel Unconfirmed Orders ( remain PLACED after X minutes )
       const cancelCutoff = new Date(Date.now() - settings.autoCancelUnconfirmedMins * 60 * 1000);
       const unconfirmedOrders = await prisma.order.findMany({

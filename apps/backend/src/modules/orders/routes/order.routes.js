@@ -10,6 +10,7 @@ router.use(protect);
 // Customer Routes
 router.get('/checkout/preview', orderController.getPreview);
 router.post('/checkout', orderController.checkout);
+router.post('/checkout/cancel', orderController.cancelCheckout);
 router.get('/', orderController.getMyOrders);
 router.get('/:id', orderController.getOrderById);
 router.post('/:id/cancel', orderController.cancelOrder);

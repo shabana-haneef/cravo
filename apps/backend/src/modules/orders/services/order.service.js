@@ -71,6 +71,9 @@ export const orderService = {
 
       // Release reserved stock using Atomic SQL Updates
       for (const item of order.items) {
+        const inventoryBefore = await tx.inventory.findUnique({ where: { productVariantId: item.productVariantId } });
+        if (!inventoryBefore) continue;
+
         const updateResult = await tx.inventory.updateMany({
           where: { 
             productVariantId: item.productVariantId,
@@ -83,14 +86,13 @@ export const orderService = {
         });
         
         if (updateResult.count > 0) {
-          const inventory = await tx.inventory.findUnique({ where: { productVariantId: item.productVariantId } });
           await tx.inventoryTransaction.create({
             data: {
-              inventoryId: inventory.id,
+              inventoryId: inventoryBefore.id,
               type: 'ORDER_RELEASED',
               quantity: item.quantity,
-              previousStock: inventory.availableStock,
-              newStock: inventory.availableStock + item.quantity,
+              previousStock: inventoryBefore.availableStock,
+              newStock: inventoryBefore.availableStock + item.quantity,
               reason: 'Order cancelled by user',
               createdBy: userId
             }
@@ -153,6 +155,9 @@ export const orderService = {
       // If delivered, deduct stock from reserved (ORDER_COMPLETED) using Atomic SQL Updates
       if (status === 'DELIVERED') {
         for (const item of order.items) {
+          const inventoryBefore = await tx.inventory.findUnique({ where: { productVariantId: item.productVariantId } });
+          if (!inventoryBefore) continue;
+
           const updateResult = await tx.inventory.updateMany({
             where: { 
               productVariantId: item.productVariantId,
@@ -164,14 +169,13 @@ export const orderService = {
           });
           
           if (updateResult.count > 0) {
-            const inventory = await tx.inventory.findUnique({ where: { productVariantId: item.productVariantId } });
             await tx.inventoryTransaction.create({
               data: {
-                inventoryId: inventory.id,
+                inventoryId: inventoryBefore.id,
                 type: 'ORDER_COMPLETED',
                 quantity: item.quantity,
-                previousStock: inventory.availableStock,
-                newStock: inventory.availableStock,
+                previousStock: inventoryBefore.availableStock,
+                newStock: inventoryBefore.availableStock,
                 reason: 'Order delivered',
                 createdBy: userId
               }

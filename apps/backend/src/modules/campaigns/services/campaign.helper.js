@@ -62,16 +62,13 @@ export const campaignHelper = {
       const discount = discountMap.get(pid);
       if (discount && item.productVariant) {
         const variant = item.productVariant;
-        const compareAt = Number(variant.compareAtPrice || 0);
-        const price = Number(variant.price);
-        const manualDiscount = compareAt > 0 ? ((compareAt - price) / compareAt) * 100 : 0;
-        
-        if (discount > manualDiscount) {
-          variant.originalPrice = compareAt > 0 ? compareAt : price;
-          variant.price = variant.originalPrice * (1 - discount / 100);
-          variant.isCampaignDiscount = true;
-          variant.campaignDiscountPercentage = discount;
-        }
+        const basePrice = Number(variant.price);
+        const discountedPrice = Number((basePrice * (1 - discount / 100)).toFixed(2));
+        variant.originalPrice = variant.compareAtPrice || basePrice;
+        variant.compareAtPrice = variant.compareAtPrice || basePrice;
+        variant.price = Math.min(basePrice, discountedPrice);
+        variant.isCampaignDiscount = true;
+        variant.campaignDiscountPercentage = discount;
       }
     });
 

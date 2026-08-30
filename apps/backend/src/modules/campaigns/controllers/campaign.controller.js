@@ -13,7 +13,7 @@ export const campaignController = {
   async createProductPromotion(req, res, next) {
     try {
       const parsed = productPromotionSchema.safeParse(req.body);
-      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
+      if (!parsed.success) return errorResponse(res, parsed.error.errors?.[0]?.message || 'Validation error', 400);
 
       const result = await campaignService.createProductPromotion(req.user.id, parsed.data, req.file);
       return successResponse(res, 'Product Promotion drafted and order created', result, 201);
@@ -23,7 +23,7 @@ export const campaignController = {
   async createStorewideOffer(req, res, next) {
     try {
       const parsed = storewideOfferSchema.safeParse(req.body);
-      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
+      if (!parsed.success) return errorResponse(res, parsed.error.errors?.[0]?.message || 'Validation error', 400);
 
       const result = await campaignService.createStorewideOffer(req.user.id, parsed.data, req.file);
       return successResponse(res, 'Storewide Offer drafted and order created', result, 201);
@@ -33,7 +33,7 @@ export const campaignController = {
   async createDiscountCampaign(req, res, next) {
     try {
       const parsed = discountCampaignSchema.safeParse(req.body);
-      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
+      if (!parsed.success) return errorResponse(res, parsed.error.errors?.[0]?.message || 'Validation error', 400);
 
       const result = await campaignService.createDiscountCampaign(req.user.id, parsed.data, req.file);
       return successResponse(res, 'Discount Campaign drafted and order created', result, 201);
@@ -43,7 +43,7 @@ export const campaignController = {
   async createFlashSale(req, res, next) {
     try {
       const parsed = flashSaleSchema.safeParse(req.body);
-      if (!parsed.success) return errorResponse(res, parsed.error.errors[0].message, 400);
+      if (!parsed.success) return errorResponse(res, parsed.error.errors?.[0]?.message || 'Validation error', 400);
 
       const result = await campaignService.createFlashSale(req.user.id, parsed.data, req.file);
       return successResponse(res, 'Flash Sale drafted and order created', result, 201);

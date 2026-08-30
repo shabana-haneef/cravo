@@ -66,6 +66,16 @@ export const orderController = {
     } catch (error) { next(error); }
   },
 
+  async cancelCheckout(req, res, next) {
+    try {
+      const { orderId } = req.body;
+      if (!orderId) return errorResponse(res, 'Order ID is required', 400);
+
+      const result = await checkoutService.cancelCheckout(req.user.id, orderId);
+      return successResponse(res, result.message, result);
+    } catch (error) { next(error); }
+  },
+
   async updateOrderStatus(req, res, next) {
     try {
       const parsed = updateOrderStatusSchema.safeParse(req.body);

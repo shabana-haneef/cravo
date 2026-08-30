@@ -43,13 +43,19 @@ export const wishlistRepository = {
 
   async findAllByUser(userId) {
     return prisma.wishlistItem.findMany({
-      where: { userId },
+      where: { 
+        userId,
+        product: {
+          deletedAt: null,
+          status: 'APPROVED'
+        }
+      },
       take: 100, // Hard limit to prevent unbounded array DoS
       include: {
         product: {
           include: {
             images: { orderBy: { sortOrder: 'asc' } },
-            variants: { where: { isActive: true } },
+            variants: { where: { isActive: true, deletedAt: null } },
             category: true,
             shop: true
           }

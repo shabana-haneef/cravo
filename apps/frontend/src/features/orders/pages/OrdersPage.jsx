@@ -220,7 +220,7 @@ export const OrdersPage = () => {
                     </div>
                     <div>
                       <p className="text-gray-500 font-medium">Total</p>
-                      <p className="font-semibold text-[#154D21]">₹{(order.grandTotal || 0).toFixed(2)}</p>
+                      <p className="font-semibold text-[#154D21]">₹{Number(order.grandTotal || 0).toFixed(2)}</p>
                     </div>
                   </div>
                   <div className="text-right">

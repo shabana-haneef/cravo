@@ -15,29 +15,44 @@ describe('Campaigns API', () => {
       data: {
         email,
         passwordHash: 'hashedpassword',
-        firstName: 'Campaign',
-        lastName: 'Tester',
         role: 'SELLER',
-        isEmailVerified: true
+        isEmailVerified: true,
+        profile: {
+          create: {
+            fullName: 'Campaign Tester'
+          }
+        }
+      }
+    });
+
+    const seller = await prisma.seller.create({
+      data: {
+        userId: sellerUser.id,
+        businessName: 'Campaign Test Business',
+        pickupAddress: 'Test Address',
+        pickupCity: 'Kochi',
+        pickupState: 'Kerala',
+        pickupPincode: '682001',
+        pickupPhone: '9876543210',
+        status: 'APPROVED'
       }
     });
 
     // 2. Create a shop for the seller
     sellerShop = await prisma.shop.create({
       data: {
+        sellerId: seller.id,
         name: 'Campaign Test Shop',
+        slug: `campaign-test-shop-${Date.now()}`,
         description: 'Test shop for campaigns',
-        ownerId: sellerUser.id,
-        isApproved: true,
-        verificationStatus: 'VERIFIED'
+        shopType: 'GROCERY',
+        status: 'ACTIVE'
       }
     });
 
-    // 3. Login to get token (bypass bcrypt by just generating a token if possible, or use the app login if we know password)
-    // Actually, since we created it directly, we can just use authService to generate a token
-    const { authService } = await import('../src/modules/auth/services/auth.service.js');
-    const tokenData = authService.generateTokens(sellerUser.id, sellerUser.role);
-    accessToken = tokenData.accessToken;
+    // 3. Login to get token
+    const { generateAccessToken } = await import('../src/shared/utils/jwt.js');
+    accessToken = generateAccessToken({ id: sellerUser.id, role: sellerUser.role });
   });
 
   afterAll(async () => {
@@ -51,10 +66,10 @@ describe('Campaigns API', () => {
 
   it('should not allow creating a campaign without required fields', async () => {
     const res = await request(app)
-      .post('/api/v1/campaigns')
+      .post('/api/v1/campaigns/discount')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
-        // Missing required fields like type, targetId, budget
+        // Missing required fields like discount, etc.
         name: 'Invalid Campaign' 
       });
     
@@ -63,13 +78,10 @@ describe('Campaigns API', () => {
 
   it('should prevent unauthorized users from creating campaigns', async () => {
     const res = await request(app)
-      .post('/api/v1/campaigns')
+      .post('/api/v1/campaigns/discount')
       .send({
         name: 'No Auth Campaign',
-        type: 'STORE_PROMOTION',
-        budget: 1000,
-        startDate: new Date().toISOString(),
-        endDate: new Date().toISOString()
+        discount: 20
       });
     
     expect(res.statusCode).toBe(401);

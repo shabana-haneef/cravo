@@ -65,7 +65,8 @@ export const CartPage = () => {
   if (items.length === 0) return <EmptyCart />;
 
   const activeItems = items.filter(item => !unselectedItemIds.has(item.id));
-  const activeSubtotal = activeItems.reduce((acc, item) => acc + item.totalPrice, 0);
+  const activeSubtotalPaise = activeItems.reduce((acc, item) => acc + Math.round(Number(item.totalPrice || 0) * 100), 0);
+  const activeSubtotal = activeSubtotalPaise / 100;
   const activeTotalItems = activeItems.length;
 
   return (
@@ -115,7 +116,7 @@ export const CartPage = () => {
                         {item.productName}
                       </Link>
                       <div className="text-[18px] sm:text-[20px] font-bold text-[#154D21] shrink-0 text-right">
-                        ₹{item.unitPrice.toFixed(2)}
+                        ₹{Number(item.unitPrice || 0).toFixed(2)}
                       </div>
                     </div>
 

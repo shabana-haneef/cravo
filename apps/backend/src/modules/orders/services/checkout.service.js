@@ -86,7 +86,7 @@ async function _resolveCart(userId, buyNowParams) {
     const updatedPrice = Number(cart.items[0].productVariant.price);
     const updatedSubtotalPaise = Math.round(updatedPrice * 100) * buyNowParams.quantity;
     const updatedSubtotal = updatedSubtotalPaise / 100;
-    
+
     cart.items[0].unitPrice = updatedPrice;
     cart.items[0].totalPrice = updatedSubtotal;
 
@@ -139,11 +139,11 @@ async function _calculateShipping(cart, address, deliverySettings) {
       deliveryCharge = 0;
     } else if (address && address.postalCode) {
       const destPincode = address.postalCode;
-      
+
       const shop = await shopRepository.findByIdWithSeller(cart.shopId);
-      
+
       const originPincode = shop?.seller?.pickupPincode || '682001';
-      
+
       const totalWeightGrams = cart.items.reduce((sum, item) => {
         const itemWeight = item.weightGrams || 500;
         return sum + (itemWeight * item.quantity);
@@ -156,16 +156,16 @@ async function _calculateShipping(cart, address, deliverySettings) {
         deliverySettings.defaultDeliveryCharge
       );
     } else if (!address) {
-      deliveryCharge = null; 
+      deliveryCharge = null;
     }
   }
   return deliveryCharge;
 }
 
 async function _validateOrderLimits(userId, cart, grandTotal, settings) {
-  if (grandTotal < settings.minOrderValue) {
-    throw new AppError(`Order total must be at least ₹${settings.minOrderValue}`, 400);
-  }
+  // if (grandTotal < settings.minOrderValue) {
+  //   throw new AppError(`Order total must be at least ₹${settings.minOrderValue}`, 400);
+  // }
   if (grandTotal > settings.maxOrderValue) {
     throw new AppError(`Order total cannot exceed ₹${settings.maxOrderValue}`, 400);
   }
@@ -178,23 +178,23 @@ async function _validateOrderLimits(userId, cart, grandTotal, settings) {
   // Calculate Cumulative 24-Hour Purchase History
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  const variantIds = cart.items.map(i => i.productVariantId).filter(Boolean);
+  const variantIds = cart.items.map(i => i.variantId || i.productVariantId).filter(Boolean);
 
   // If no items have a variantId, skip the limit check entirely
   const recentPurchases = variantIds.length > 0
     ? await prisma.orderItem.groupBy({
-        by: ['productVariantId'],
-        where: {
-          order: {
-            customerId: userId,
-            createdAt: { gte: twentyFourHoursAgo },
-            // FAILED is not an OrderStatus — only CANCELLED and REFUNDED are terminal
-            status: { notIn: ['CANCELLED', 'REFUNDED'] }
-          },
-          productVariantId: { in: variantIds }
+      by: ['productVariantId'],
+      where: {
+        order: {
+          customerId: userId,
+          createdAt: { gte: twentyFourHoursAgo },
+          // FAILED is not an OrderStatus — only CANCELLED and REFUNDED are terminal
+          status: { notIn: ['CANCELLED', 'REFUNDED'] }
         },
-        _sum: { quantity: true }
-      })
+        productVariantId: { in: variantIds }
+      },
+      _sum: { quantity: true }
+    })
     : [];
 
   const purchasedMap = recentPurchases.reduce((acc, curr) => {
@@ -203,9 +203,10 @@ async function _validateOrderLimits(userId, cart, grandTotal, settings) {
   }, {});
 
   for (const item of cart.items) {
-    const historicalQty = purchasedMap[item.productVariantId] || 0;
+    const vId = item.variantId || item.productVariantId;
+    const historicalQty = purchasedMap[vId] || 0;
     const remainingAllowance = settings.maxQtyPerProduct - historicalQty;
-    
+
     if (item.quantity > remainingAllowance) {
       if (remainingAllowance <= 0) {
         throw new AppError(`You have reached the daily limit of ${settings.maxQtyPerProduct} for ${item.variantName || 'this item'}`, 400);
@@ -229,7 +230,7 @@ async function _reserveInventory(tx, cartItems, orderNumber, userId) {
 
     // ATOMIC CHECK-AND-SET using database native math
     const updateResult = await tx.inventory.updateMany({
-      where: { 
+      where: {
         id: inventory.id,
         availableStock: { gte: item.quantity }
       },
@@ -283,13 +284,13 @@ async function _createOrderRecord(tx, cart, subtotal, deliveryCharge, discount, 
 async function _clearCartIfApplicable(tx, cart, buyNowParams) {
   if (!buyNowParams.buyNow) {
     const itemIdsToDelete = cart.items.map(i => i.id);
-    await tx.cartItem.deleteMany({ 
-      where: { 
+    await tx.cartItem.deleteMany({
+      where: {
         cartId: cart.id,
         id: { in: itemIdsToDelete }
-      } 
+      }
     });
-    
+
     const remainingItems = await tx.cartItem.count({ where: { cartId: cart.id } });
     if (remainingItems === 0) {
       await tx.cart.update({ where: { id: cart.id }, data: { shopId: null } });
@@ -324,7 +325,7 @@ function _sendNotifications(sellerUserId, order) {
         'New Order Initiated 🛍️',
         `Order #${order.orderNumber} has been initiated (Pending Payment).`,
         { orderId: order.id, orderNumber: order.orderNumber }
-      ).catch(() => {});
+      ).catch(() => { });
     });
   }
 }
@@ -337,13 +338,13 @@ function _sendNotifications(sellerUserId, order) {
 export const checkoutService = {
   async getPreview(userId, buyNowParams = {}, addressId = null, unselectedItemIds = []) {
     let cart = await _resolveCart(userId, buyNowParams);
-    
+
     if (!buyNowParams.buyNow && unselectedItemIds && unselectedItemIds.length > 0) {
       cart.items = cart.items.filter(item => !unselectedItemIds.includes(item.id));
       if (cart.items.length === 0) {
         throw new AppError("No items selected for checkout", 400);
       }
-      
+
       const subtotalPaise = cart.items.reduce((sum, item) => sum + Math.round(item.totalPrice * 100), 0);
       const subtotal = subtotalPaise / 100;
       const totalItems = cart.items.length;
@@ -359,6 +360,9 @@ export const checkoutService = {
       throw new AppError("Delivery orders are currently disabled.", 400);
     }
 
+    console.log({ deliverySettings });
+
+
     let address = null;
     if (addressId) {
       address = await addressRepository.findByIdAndUserId(addressId, userId);
@@ -366,22 +370,22 @@ export const checkoutService = {
 
     const subtotal = cart.summary.subtotal;
     const deliveryCharge = await _calculateShipping(cart, address, deliverySettings);
-    
+
     const discount = 0;
-    
+
     const subtotalPaise = Math.round(subtotal * 100);
     const deliveryChargePaise = deliveryCharge ? Math.round(deliveryCharge * 100) : 0;
     const discountPaise = Math.round(discount * 100);
-    
+
     // Strict Financial Safety Assertions
     if (discountPaise < 0) throw new AppError("Invalid discount applied", 400);
     if (discountPaise > subtotalPaise + deliveryChargePaise) throw new AppError("Discount cannot exceed order total", 400);
 
     const grandTotalPaise = subtotalPaise + deliveryChargePaise - discountPaise;
-    
+
     if (grandTotalPaise < 0) throw new AppError("Order total cannot be negative", 400);
     if (!Number.isSafeInteger(grandTotalPaise)) throw new AppError("Mathematical overflow detected in cart totals", 400);
-    
+
     const grandTotal = grandTotalPaise / 100;
 
     return {
@@ -418,23 +422,23 @@ export const checkoutService = {
 
     // 4. Calculate Shipping
     const deliveryCharge = await _calculateShipping(cart, address, deliverySettings);
-    
+
     const subtotal = cart.summary.subtotal;
     const discount = 0;
     const subtotalPaise = Math.round(subtotal * 100);
     const deliveryChargePaise = deliveryCharge ? Math.round(deliveryCharge * 100) : 0;
     const discountPaise = Math.round(discount * 100);
-    
+
     // Strict Financial Safety Assertions
     if (discountPaise < 0) throw new AppError("Invalid discount applied", 400);
     if (discountPaise > subtotalPaise + deliveryChargePaise) throw new AppError("Discount cannot exceed order total", 400);
 
     const grandTotalPaise = subtotalPaise + deliveryChargePaise - discountPaise;
-    
+
     // Gateway Requirement: Razorpay minimum is 1 INR (100 paise)
     if (grandTotalPaise < 100) throw new AppError("Order total must be at least ₹1", 400);
     if (!Number.isSafeInteger(grandTotalPaise)) throw new AppError("Mathematical overflow detected in cart totals", 400);
-    
+
     const grandTotal = grandTotalPaise / 100;
 
     // 5. Order Value Limits Checks
@@ -449,59 +453,16 @@ export const checkoutService = {
       // 7. Create Order
       const order = await _createOrderRecord(tx, cart, subtotal, deliveryCharge, discount, grandTotal, addressId, orderNumber, userId);
 
-      // 8. Track Campaign Conversions
-      const shopId = cart.shopId;
-      const productIds = cart.items.map(item => item.productId);
-      const activeCampaigns = await tx.campaign.findMany({
-        where: {
-          status: 'ACTIVE',
-          shopId: shopId,
-          OR: [
-            { type: { in: ['STOREWIDE_OFFER', 'DISCOUNT_CAMPAIGN'] } },
-            { type: { in: ['PRODUCT_PROMOTION', 'FLASH_SALE'] }, targetProductIds: { hasSome: productIds } }
-          ]
-        },
-        select: { id: true, type: true, targetProductIds: true }
-      });
-
-      if (activeCampaigns.length > 0) {
-        // dynamic import to avoid circular dependencies
-        const { campaignRepository } = await import('../../campaigns/repositories/campaign.repository.js');
-        for (const campaign of activeCampaigns) {
-          let campaignRevenue = 0;
-          cart.items.forEach(item => {
-            if (['STOREWIDE_OFFER', 'DISCOUNT_CAMPAIGN'].includes(campaign.type) || campaign.targetProductIds.includes(item.productId)) {
-              campaignRevenue += item.totalPrice; // item total price
-            }
-          });
-          if (campaignRevenue > 0) {
-            await campaignRepository.trackConversion(campaign.id, campaignRevenue, tx);
-          }
-        }
-      }
-
-      // 8. Clear Cart
-      await _clearCartIfApplicable(tx, cart, buyNowParams);
-
-      // 9. Create Razorpay Order & DB Payment Rec
+      // 8. Create Razorpay Order & DB Payment Rec
       const { rzpOrder } = await _initializePayment(tx, order.id, grandTotal);
 
       logger.info({ userId, orderId: order.id }, 'Order initialized and stock reserved');
 
-      const shop = await tx.shop.findUnique({
-        where: { id: cart.shopId },
-        select: { seller: { select: { userId: true } } }
-      });
-
       return {
         order,
-        rzpOrder,
-        sellerUserId: shop?.seller?.userId
+        rzpOrder
       };
     });
-
-    // 10. Send Notifications
-    _sendNotifications(result.sellerUserId, result.order);
 
     return {
       order: result.order,
@@ -512,5 +473,71 @@ export const checkoutService = {
         keyId: process.env.RAZORPAY_KEY_ID
       }
     };
+  },
+
+  async cancelCheckout(userId, orderId) {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true }
+    });
+
+    if (!order) {
+      throw new AppError("Order not found", 404);
+    }
+
+    if (order.customerId !== userId) {
+      throw new AppError("Unauthorized", 403);
+    }
+
+    if (order.status !== 'PENDING_PAYMENT') {
+      return { message: "Order is not in pending payment stage" };
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const updateResult = await tx.order.updateMany({
+        where: { id: orderId, status: 'PENDING_PAYMENT' },
+        data: { status: 'CANCELLED' }
+      });
+
+      if (updateResult.count === 0) {
+        return { message: "Order already updated" };
+      }
+
+      // Release reserved stock back to availableStock
+      for (const item of order.items) {
+        const inventoryBefore = await tx.inventory.findUnique({
+          where: { productVariantId: item.productVariantId }
+        });
+        if (!inventoryBefore) continue;
+
+        const updated = await tx.inventory.updateMany({
+          where: {
+            productVariantId: item.productVariantId,
+            reservedStock: { gte: item.quantity }
+          },
+          data: {
+            availableStock: { increment: item.quantity },
+            reservedStock: { decrement: item.quantity }
+          }
+        });
+
+        if (updated.count > 0) {
+          await tx.inventoryTransaction.create({
+            data: {
+              inventoryId: inventoryBefore.id,
+              type: 'ORDER_RELEASED',
+              quantity: item.quantity,
+              previousStock: inventoryBefore.availableStock,
+              newStock: inventoryBefore.availableStock + item.quantity,
+              reason: 'Checkout cancelled by customer',
+              createdBy: userId
+            }
+          });
+        }
+      }
+
+      logger.info({ userId, orderId }, 'Pending checkout session cancelled and stock released');
+      return { success: true, message: "Checkout cancelled and stock released" };
+    });
   }
 };

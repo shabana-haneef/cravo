@@ -6,15 +6,56 @@ import { Heart, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-export const WishlistPage = () => {
-  const { data: wishlist = [], isLoading } = useWishlist();
+import { useAuthStore } from '../../../store/auth.store.js';
 
-  if (isLoading) {
+export const WishlistPage = () => {
+  const { isAuthenticated, user, isInitializing } = useAuthStore();
+  const isCustomer = isAuthenticated && user?.role === 'CUSTOMER';
+  const { data: wishlist = [], isLoading, isError, refetch } = useWishlist(isCustomer);
+
+  if (isInitializing || (isCustomer && isLoading)) {
     return <LoadingScreen message="Loading your wishlist..." />;
   }
 
+  if (isError) {
+    return (
+      <div className="max-w-4xl mx-auto py-16 px-4 text-center">
+        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
+          <Heart size={24} />
+        </div>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Failed to load wishlist</h2>
+        <p className="text-gray-500 text-sm mb-6">Something went wrong while fetching your wishlist. Please try again.</p>
+        <button 
+          onClick={() => refetch()}
+          className="bg-[#154D21] hover:bg-[#103B19] text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-sm transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  if (isAuthenticated && !isCustomer) {
+    return (
+      <div className="max-w-4xl mx-auto py-16 px-4 text-center">
+        <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-100">
+          <Heart size={24} />
+        </div>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Wishlist is for customers</h2>
+        <p className="text-gray-500 text-sm mb-6">You are logged in as a {user?.role?.toLowerCase() || 'seller'}. Wishlists are available for customer accounts.</p>
+        <Link 
+          to="/"
+          className="bg-[#154D21] hover:bg-[#103B19] text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-sm transition-colors inline-block"
+        >
+          Go to Home
+        </Link>
+      </div>
+    );
+  }
+
   // extract the products from the wishlist items
-  const wishlistedProducts = wishlist.map(item => item.product).filter(Boolean);
+  const rawList = Array.isArray(wishlist) ? wishlist : [];
+  const wishlistedProducts = rawList.map(item => item?.product).filter(Boolean);
 
   const containerVariants = {
     hidden: { opacity: 0 },
