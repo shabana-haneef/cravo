@@ -4,13 +4,13 @@ import crypto from "crypto";
 
 export const generateAccessToken = (payload) => {
   return jwt.sign(payload, env.JWT_ACCESS_SECRET, {
-    expiresIn: "2h",
+    expiresIn: env.JWT_ACCESS_EXPIRES_IN,
   });
 };
 
 export const generateRefreshToken = (payload) => {
   return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
-    expiresIn: "7d",
+    expiresIn: env.JWT_REFRESH_EXPIRES_IN,
     jwtid: crypto.randomUUID()
   });
 };

@@ -9,6 +9,7 @@ import { redis } from "./config/redis.js";
 import routes from "./routes/v1/index.js";
 import delhiveryRoutes from "./modules/delivery/routes/delhivery.routes.js";
 import seoRoutes from "./modules/seo/routes/seo.routes.js";
+import { env } from "./config/env.js";
 
 import { notFound } from "./shared/middleware/notFound.middleware.js";
 import { errorHandler } from "./shared/middleware/error.middleware.js";
@@ -19,10 +20,10 @@ import { allowRoles } from "./shared/middleware/role.middleware.js";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger.js";
 
-// General API rate limiter — 100 requests per 15 minutes per IP
+// General API rate limiter — configurable via RATE_LIMIT_GENERAL_* env vars
 const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: env.RATE_LIMIT_GENERAL_WINDOW_MS,
+  max: env.RATE_LIMIT_GENERAL_MAX,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' },
@@ -45,9 +46,9 @@ app.use(requestLoggerMiddleware);
 
 app.use(compression());
 
-// Parse allowed origins from environment variable, fallback to localhost for dev
-const allowedOrigins = process.env.FRONTEND_URLS
-  ? process.env.FRONTEND_URLS.split(',').map(url => url.trim())
+// Parse allowed origins from FRONTEND_URLS env var (comma-separated)
+const allowedOrigins = env.FRONTEND_URLS
+  ? env.FRONTEND_URLS.split(',').map(url => url.trim())
   : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:4173'];
 
 app.use(

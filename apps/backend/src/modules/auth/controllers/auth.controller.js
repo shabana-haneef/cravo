@@ -13,6 +13,8 @@ import { governanceSettingsService } from '../../admin/services/governanceSettin
 import { logger } from '../../../shared/services/logger.js';
 import { z } from 'zod';
 
+import { env } from '../../../config/env.js';
+
 const isProduction = process.env.NODE_ENV === 'production';
 
 // Production architectures (Vercel Frontend + Render Backend) often use different domains 
@@ -23,7 +25,7 @@ const cookieOptions = {
   httpOnly: true,
   secure: isProduction, // Required to be true if sameSite is 'none'
   sameSite: isProduction ? 'none' : 'lax',
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  maxAge: env.COOKIE_MAX_AGE_MS,
   path: '/', // Explicit path ensures it's sent to all /api/v1/auth routes
 };
 
