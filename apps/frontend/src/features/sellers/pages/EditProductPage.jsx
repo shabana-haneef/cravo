@@ -30,24 +30,28 @@ export const EditProductPage = () => {
   // Format product data to match form structure
   const initialData = {
     id: product.id,
-    name: product.name,
-    categoryId: product.categoryId,
+    name: product.name || '',
+    categoryId: product.categoryId || '',
     shortDescription: product.shortDescription || '',
     description: product.description || '',
-    isFeatured: product.isFeatured,
-    images: product.images || [], // { url, publicId } objects
+    features: Array.isArray(product.features) ? product.features : [],
+    tags: Array.isArray(product.tags) ? product.tags : [],
+    ingredients: product.ingredients || '',
+    isFeatured: Boolean(product.isFeatured),
+    images: product.images || [], // { id, imageUrl, publicId, sortOrder }
     variants: product.variants?.map(v => ({
       id: v.id,
-      variantName: v.variantName,
-      price: v.price,
-      compareAtPrice: v.compareAtPrice || '',
-      initialStock: v.stock, // backend might return 'stock' or 'initialStock'
+      variantName: v.name || v.variantName || '',
+      price: v.price !== null && v.price !== undefined ? String(v.price) : '',
+      compareAtPrice: v.compareAtPrice !== null && v.compareAtPrice !== undefined ? String(v.compareAtPrice) : '',
+      initialStock: v.inventory?.availableStock ?? v.stock ?? v.initialStock ?? 0,
+      weight: v.weight !== null && v.weight !== undefined ? String(v.weight) : '',
     })) || [],
   };
 
   return (
-    <div className="py-8">
-      <ProductForm initialData={initialData} isEditing={true} />
+    <div className="py-6 max-w-5xl mx-auto">
+      <ProductForm initialData={initialData} isEditing={true} key={product.id} />
     </div>
   );
 };

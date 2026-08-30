@@ -22,7 +22,7 @@ const PreviewItem = ({ fileOrObj, idx, onRemove, onMakeCover }) => {
         URL.revokeObjectURL(url);
       };
     } else {
-      setPreviewUrl(fileOrObj.url);
+      setPreviewUrl(fileOrObj.imageUrl || fileOrObj.url || (typeof fileOrObj === 'string' ? fileOrObj : ''));
     }
   }, [fileOrObj]);
 

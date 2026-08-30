@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,9 +16,9 @@ const ArrayInput = ({ label, placeholder, values = [], onChange }) => {
     <div>
       <label className="block text-sm font-semibold text-gray-700 mb-1">{label}</label>
       <div className="flex gap-2 mb-2">
-        <input 
-          value={inputValue} 
-          onChange={(e) => setInputValue(e.target.value)} 
+        <input
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
           className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#1E3A2B] focus:ring-1 focus:ring-[#1E3A2B]/30 outline-none"
           placeholder={placeholder}
           onKeyDown={(e) => {
@@ -28,14 +28,13 @@ const ArrayInput = ({ label, placeholder, values = [], onChange }) => {
             }
           }}
         />
-        <button 
-          type="button" 
-          onClick={() => { if (inputValue.trim()) { onChange([...values, inputValue.trim()]); setInputValue(''); } }} 
-          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-            inputValue.trim()
+        <button
+          type="button"
+          onClick={() => { if (inputValue.trim()) { onChange([...values, inputValue.trim()]); setInputValue(''); } }}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${inputValue.trim()
               ? 'bg-[#1E3A2B] text-white hover:bg-[#162A1F] shadow-sm'
               : 'bg-gray-100 text-gray-450 cursor-not-allowed'
-          }`}
+            }`}
         >
           Add
         </button>
@@ -44,7 +43,7 @@ const ArrayInput = ({ label, placeholder, values = [], onChange }) => {
         {values.map((val, i) => (
           <div key={i} className="flex items-center gap-1 bg-white border border-gray-200 px-3 py-1 rounded-full text-xs font-medium text-gray-700 shadow-sm">
             {val}
-            <button type="button" onClick={() => onChange(values.filter((_, idx) => idx !== i))} className="text-gray-400 hover:text-red-500"><X size={12}/></button>
+            <button type="button" onClick={() => onChange(values.filter((_, idx) => idx !== i))} className="text-gray-400 hover:text-red-500"><X size={12} /></button>
           </div>
         ))}
       </div>
@@ -100,50 +99,81 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
   const [newCategoryImage, setNewCategoryImage] = useState(null);
   const [newCategoryError, setNewCategoryError] = useState('');
 
-  // Store actual File objects OUTSIDE of react-hook-form to avoid any Zod/resolver interference
+  // Store actual File objects or existing image objects
   const [selectedImages, setSelectedImages] = useState(initialData?.images || []);
   const [imageError, setImageError] = useState('');
-  
+
   const [labelImage, setLabelImage] = useState(null);
 
-  const DRAFT_KEY = isEditing ? `cravo_product_draft_${initialData?.id}` : 'cravo_product_draft_new';
+  const DRAFT_KEY = isEditing ? null : 'cravo_product_draft_new';
 
-  const getInitialValues = () => {
-    try {
-      const saved = localStorage.getItem(DRAFT_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error('Failed to parse draft', e);
+  const getInitialValues = useCallback(() => {
+    if (isEditing && initialData) {
+      return {
+        name: initialData.name || '',
+        categoryId: initialData.categoryId || '',
+        shortDescription: initialData.shortDescription || '',
+        description: initialData.description || '',
+        features: Array.isArray(initialData.features) ? initialData.features : [],
+        tags: Array.isArray(initialData.tags) ? initialData.tags : [],
+        ingredients: initialData.ingredients || '',
+        isFeatured: Boolean(initialData.isFeatured),
+        variants: initialData.variants?.length > 0 ? initialData.variants : [{ variantName: '', price: '', compareAtPrice: '', initialStock: 0, weight: '' }],
+      };
     }
-    return {
-      name: initialData?.name || '',
-      categoryId: initialData?.categoryId || '',
-      shortDescription: initialData?.shortDescription || '',
-      description: initialData?.description || '',
-      features: initialData?.features || [],
-      tags: initialData?.tags || [],
-      ingredients: initialData?.ingredients || '',
-      isFeatured: initialData?.isFeatured || false,
-      variants: initialData?.variants?.length > 0 ? initialData.variants : [{ variantName: '', price: '', compareAtPrice: '', initialStock: 0, weight: '' }],
-    };
-  };
 
-  const { register, handleSubmit, control, trigger, watch, setValue, formState: { errors } } = useForm({
+    if (!isEditing && DRAFT_KEY) {
+      try {
+        const saved = localStorage.getItem(DRAFT_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse draft', e);
+      }
+    }
+
+    return {
+      name: '',
+      categoryId: '',
+      shortDescription: '',
+      description: '',
+      features: [],
+      tags: [],
+      ingredients: '',
+      isFeatured: false,
+      variants: [{ variantName: '', price: '', compareAtPrice: '', initialStock: 0, weight: '' }],
+    };
+  }, [initialData, isEditing, DRAFT_KEY]);
+
+  const { register, handleSubmit, control, trigger, watch, setValue, reset, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: getInitialValues(),
   });
 
+  // Re-sync form default values when initialData arrives or changes
+  useEffect(() => {
+    if (initialData) {
+      reset(getInitialValues());
+      if (initialData.images) {
+        setSelectedImages(initialData.images);
+      }
+    }
+  }, [initialData, reset, getInitialValues]);
+
   const formValues = watch();
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(formValues));
-    }, 500);
-    return () => clearTimeout(timeout);
-  }, [formValues, DRAFT_KEY]);
+    if (!isEditing && DRAFT_KEY) {
+      const timeout = setTimeout(() => {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(formValues));
+      }, 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [formValues, DRAFT_KEY, isEditing]);
 
   const handleCancel = () => {
-    localStorage.removeItem(DRAFT_KEY);
+    if (!isEditing && DRAFT_KEY) {
+      localStorage.removeItem(DRAFT_KEY);
+    }
     if (onClose) onClose(); else navigate('/seller/products');
   };
 
@@ -152,11 +182,26 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
   const watchDesc = watch('description') || '';
   const watchIngredients = watch('ingredients') || '';
 
+  const goToStep = async (targetStep) => {
+    if (targetStep < currentStep) {
+      setCurrentStep(targetStep);
+      return;
+    }
+    const fields = STEPS[currentStep].fields;
+    const isStepValid = fields.length === 0 ? true : await trigger(fields);
+    if (isStepValid) {
+      setCurrentStep(targetStep);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      toast.error('Please resolve the required fields before proceeding.');
+    }
+  };
+
   const nextStep = async () => {
     // Validate images step manually
     if (currentStep === 3) {
-      const newFiles = selectedImages.filter(img => img instanceof File);
-      if (!isEditing && newFiles.length === 0) {
+      const hasImages = selectedImages.length > 0;
+      if (!hasImages) {
         setImageError('At least one product image is required');
         return;
       }
@@ -170,8 +215,7 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
       setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      console.log('Validation failed on Step 0. Errors:', errors);
-      toast.error('Please check the red error messages above to continue.');
+      toast.error('Please check the required fields to continue.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -181,12 +225,13 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
   };
 
   const onSubmit = async (data) => {
-    // Final image guard before sending to backend
     const newFiles = selectedImages.filter(img => img instanceof File);
-    if (!isEditing && newFiles.length === 0) {
+    const existingImages = selectedImages.filter(img => !(img instanceof File));
+
+    if (selectedImages.length === 0) {
       setImageError('At least one product image is required');
       setCurrentStep(3); // go back to images step
-      toast.error('Please select at least one product image.');
+      toast.error('Please provide at least one product image.');
       return;
     }
 
@@ -212,7 +257,7 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
         const catFormData = new FormData();
         catFormData.append('name', newCategoryName);
         catFormData.append('image', newCategoryImage);
-        
+
         const catRes = await createCategoryMut.mutateAsync(catFormData);
         activeCategoryId = catRes?.data?.category?.id || catRes?.category?.id;
         if (!activeCategoryId) throw new Error('Failed to create new category');
@@ -221,14 +266,14 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
       const formData = new FormData();
       formData.append('name', data.name);
       formData.append('categoryId', activeCategoryId);
-      if (data.shortDescription) formData.append('shortDescription', data.shortDescription);
-      if (data.description) formData.append('description', data.description);
-      formData.append('ingredients', data.ingredients);
-      if (data.features && data.features.length > 0) formData.append('features', JSON.stringify(data.features));
-      if (data.tags && data.tags.length > 0) formData.append('tags', JSON.stringify(data.tags));
-      formData.append('isFeatured', data.isFeatured);
+      if (data.shortDescription !== undefined) formData.append('shortDescription', data.shortDescription);
+      if (data.description !== undefined) formData.append('description', data.description);
+      formData.append('ingredients', data.ingredients || '');
+      formData.append('features', JSON.stringify(data.features || []));
+      formData.append('tags', JSON.stringify(data.tags || []));
+      formData.append('isFeatured', data.isFeatured ? 'true' : 'false');
 
-      // Append File objects directly from our state (never touched by Zod)
+      // Append File objects directly from our state
       newFiles.forEach(img => formData.append('images', img));
       if (labelImage) formData.append('labelImage', labelImage);
 
@@ -265,17 +310,17 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
           }
         }
         toast.success('Product created successfully');
-        localStorage.removeItem(DRAFT_KEY);
+        if (DRAFT_KEY) localStorage.removeItem(DRAFT_KEY);
       } else {
         await updateProductMut.mutateAsync({ id: initialData.id, formData });
-        
+
         for (const variant of variants) {
           const payload = {
             name: variant.variantName,
-            price: variant.price,
-            compareAtPrice: variant.compareAtPrice,
-            initialStock: variant.initialStock,
-            weight: variant.weight
+            price: Number(variant.price),
+            compareAtPrice: variant.compareAtPrice ? Number(variant.compareAtPrice) : null,
+            initialStock: Number(variant.initialStock || 0),
+            weight: variant.weight ? Number(variant.weight) : null
           };
           if (variant.id) {
             await updateVariantMut.mutateAsync({ productId: initialData.id, variantId: variant.id, payload });
@@ -284,7 +329,6 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
           }
         }
         toast.success('Product updated successfully');
-        localStorage.removeItem(DRAFT_KEY);
       }
 
       if (onClose) onClose(); else navigate('/seller/products');
@@ -309,7 +353,7 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
       <div className="mb-8">
         <div className="flex items-center justify-between relative">
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-200 rounded-full z-0"></div>
-          <div 
+          <div
             className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-[#1E3A2B] rounded-full z-0 transition-all duration-300"
             style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
           ></div>
@@ -318,34 +362,38 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
             const isCompleted = currentStep > idx;
             const isCurrent = currentStep === idx;
             return (
-              <div key={step.id} className="relative z-10 flex flex-col items-center gap-2">
-                <div 
-                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border-2 transition-colors ${
-                    isCompleted 
-                      ? 'bg-[#1E3A2B] border-[#1E3A2B] text-white' 
+              <button
+                type="button"
+                key={step.id}
+                onClick={() => goToStep(idx)}
+                className="relative z-10 flex flex-col items-center gap-2 group cursor-pointer focus:outline-none"
+              >
+                <div
+                  className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs border-2 transition-all ${isCompleted
+                      ? 'bg-[#1E3A2B] border-[#1E3A2B] text-white shadow-sm'
                       : isCurrent
-                        ? 'bg-white border-[#1E3A2B] text-[#1E3A2B]'
-                        : 'bg-white border-gray-300 text-gray-400'
-                  }`}
+                        ? 'bg-white border-[#1E3A2B] text-[#1E3A2B] ring-4 ring-[#1E3A2B]/10 shadow-sm scale-105'
+                        : 'bg-white border-gray-300 text-gray-400 group-hover:border-gray-400'
+                    }`}
                 >
                   {isCompleted ? <Check size={14} /> : idx + 1}
                 </div>
-                <span className={`text-[11px] font-bold absolute -bottom-5 whitespace-nowrap ${isCurrent ? 'text-[#1E3A2B]' : 'text-gray-500'}`}>
+                <span className={`text-[12px] font-bold absolute -bottom-6 whitespace-nowrap transition-colors ${isCurrent ? 'text-[#1E3A2B]' : 'text-gray-500 group-hover:text-gray-700'}`}>
                   {step.title}
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 mt-10">
-        
+      <form className="space-y-6 mt-10">
+
         {/* Step 0: Basic Info */}
         <div className={currentStep === 0 ? 'block animate-in fade-in slide-in-from-right-4 duration-300' : 'hidden'}>
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
             <h2 className="text-base font-bold text-gray-800">Basic Information</h2>
-            
+
             <div className="grid grid-cols-1 gap-5">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Product Name *</label>
@@ -461,8 +509,8 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
                 control={control}
                 name="features"
                 render={({ field }) => (
-                  <ArrayInput 
-                    label="Features (Bullet Points)" 
+                  <ArrayInput
+                    label="Features (Bullet Points)"
                     placeholder="e.g. 100% Organic, Freshly picked..."
                     values={field.value}
                     onChange={field.onChange}
@@ -490,8 +538,8 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
                 control={control}
                 name="tags"
                 render={({ field }) => (
-                  <ArrayInput 
-                    label="Tags" 
+                  <ArrayInput
+                    label="Tags"
                     placeholder="e.g. organic, vegetables, local..."
                     values={field.value}
                     onChange={field.onChange}
@@ -519,16 +567,16 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
             <div className="mt-8 pt-6 border-t border-gray-100">
               <h2 className="text-base font-bold text-gray-800 mb-1">Food Label / Hygiene Info</h2>
               <p className="text-xs text-gray-500 mb-4">Upload an image of the product's nutritional label or hygiene certification. (Optional but recommended)</p>
-              
+
               <div className="flex items-center gap-4">
                 {labelImage || initialData?.labelImageUrl ? (
                   <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-                    <img 
-                      src={labelImage ? URL.createObjectURL(labelImage) : initialData.labelImageUrl} 
-                      alt="Label" 
-                      className="w-full h-full object-cover" 
+                    <img
+                      src={labelImage ? URL.createObjectURL(labelImage) : initialData.labelImageUrl}
+                      alt="Label"
+                      className="w-full h-full object-cover"
                     />
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setLabelImage(null)}
                       className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-md hover:bg-gray-100 text-red-500 transition-colors"
@@ -545,9 +593,9 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
                     <span className="text-sm font-semibold text-[#1E3A2B]">Click to upload label image</span>
                     <span className="block text-[11px] text-gray-400 mt-0.5">PNG, JPG up to 5MB</span>
                   </div>
-                  <input 
-                    type="file" 
-                    className="hidden" 
+                  <input
+                    type="file"
+                    className="hidden"
                     accept="image/*"
                     onChange={(e) => {
                       if (e.target.files?.[0]) setLabelImage(e.target.files[0]);
@@ -576,7 +624,7 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
           >
             {currentStep === 0 ? 'Cancel' : 'Back'}
           </button>
-          
+
           {currentStep < STEPS.length - 1 ? (
             <button
               type="button"
@@ -587,7 +635,8 @@ export const ProductForm = ({ initialData, isEditing = false, onClose }) => {
             </button>
           ) : (
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit(onSubmit)}
               disabled={isSubmitting}
               className="flex items-center gap-2 px-6 py-2 rounded-full font-bold text-sm text-white bg-[#1E3A2B] hover:bg-[#162A1F] transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
             >

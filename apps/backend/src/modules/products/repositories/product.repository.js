@@ -15,7 +15,7 @@ export const productRepository = {
       where: { id },
       include: {
         images: { orderBy: { sortOrder: 'asc' }, take: 10 },
-        variants: { take: 50 },
+        variants: { include: { inventory: true }, take: 50 },
         category: true,
         shop: { select: { id: true, name: true, slug: true, seller: { select: { id: true, userId: true, user: { select: { email: true } } } } } }
       }

@@ -51,11 +51,38 @@ export const productVariantService = {
 
   async updateVariant(userId, productId, variantId, data) {
     await productService.getMyProductById(userId, productId); // Auth
-    
+
     const variant = await productVariantRepository.findById(variantId);
     if (!variant || variant.productId !== productId) throw new AppError("Variant not found", 404);
 
-    return productVariantRepository.update(variantId, data);
+    const { initialStock, ...variantData } = data;
+
+    const updatedVariant = await productVariantRepository.update(variantId, variantData);
+
+    // Update inventory stock if provided, using upsert to handle variants
+    // that may be missing an inventory record (legacy data)
+    if (initialStock !== undefined) {
+      await prisma.inventory.upsert({
+        where: { productVariantId: variantId },
+        update: { availableStock: initialStock },
+        create: {
+          productVariantId: variantId,
+          availableStock: initialStock,
+          transactions: {
+            create: {
+              type: 'STOCK_IN',
+              quantity: initialStock,
+              previousStock: 0,
+              newStock: initialStock,
+              reason: 'Stock set during product edit',
+              createdBy: userId
+            }
+          }
+        }
+      });
+    }
+
+    return updatedVariant;
   },
 
   async deleteVariant(userId, productId, variantId) {
