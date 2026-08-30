@@ -210,7 +210,7 @@ export const authController = {
       return successResponse(res, 'Token refreshed successfully', { accessToken });
     } catch (error) {
       if (error.message !== "Concurrent refresh detected") {
-        res.clearCookie('refreshToken');
+        res.clearCookie('refreshToken', cookieOptions);
       }
       logger.error({ error: error.message }, 'Token refresh failed');
       next(error);
@@ -225,7 +225,7 @@ export const authController = {
       if (token) {
         await authService.logout(token);
       }
-      res.clearCookie('refreshToken');
+      res.clearCookie('refreshToken', cookieOptions);
       
       logger.info('User logged out successfully');
       return successResponse(res, 'Logged out successfully');
@@ -237,7 +237,7 @@ export const authController = {
   async logoutAll(req, res, next) {
     try {
       await authService.logoutAll(req.user.id);
-      res.clearCookie('refreshToken');
+      res.clearCookie('refreshToken', cookieOptions);
       
       logger.info({ userId: req.user.id }, 'User logged out of all devices');
       return successResponse(res, 'Logged out of all devices successfully');

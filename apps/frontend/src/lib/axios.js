@@ -13,39 +13,23 @@ export const api = axios.create({
   withCredentials: true, // For httpOnly cookies like refreshToken
 });
 
-let isRefreshing = false;
-let failedQueue = [];
+// Singleton in-flight refresh promise shared across all parallel 401s
+let refreshPromise = null;
 
-const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
-
-// Subscribe to store state changes to resolve queue from cross-tab events
-useAuthStore.subscribe((state, prevState) => {
-  if (prevState.authStatus === 'restoring') {
-    if (state.authStatus === 'authenticated') {
-      // Another tab successfully refreshed.
-      // If this tab was also waiting in the queue, resolve it.
-      if (isRefreshing) {
-        isRefreshing = false;
-        processQueue(null, state.accessToken);
+const getFreshToken = async () => {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        await useAuthStore.getState().restoreAuth(api, true);
+        const token = useAuthStore.getState().accessToken;
+        return token;
+      } finally {
+        refreshPromise = null;
       }
-    } else if (state.authStatus === 'unauthenticated') {
-      // Another tab failed to refresh.
-      if (isRefreshing) {
-        isRefreshing = false;
-        processQueue(new Error('Cross-tab refresh failed'), null);
-      }
-    }
+    })();
   }
-});
+  return refreshPromise;
+};
 
 // Request Interceptor: Attach Access Token
 api.interceptors.request.use(
@@ -59,6 +43,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Response Interceptor: Seamless Auto-Refresh on 401
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -70,8 +55,8 @@ api.interceptors.response.use(
     }
 
     // Never intercept the refresh or login endpoints themselves
-    const isAuthRoute = originalRequest.url && (originalRequest.url.endsWith('/auth/refresh-token') || originalRequest.url.endsWith('/auth/login'));
-    if (isAuthRoute) {
+    const url = originalRequest.url || '';
+    if (url.includes('/auth/refresh-token') || url.includes('/auth/login') || url.includes('/auth/logout')) {
       return Promise.reject(error);
     }
 
@@ -79,66 +64,19 @@ api.interceptors.response.use(
     if (originalRequest._retry) {
       return Promise.reject(error);
     }
-
-    // Check if a refresh is already happening (either in this tab or marked by another tab)
-    if (isRefreshing || useAuthStore.getState().authStatus === 'restoring') {
-      return new Promise((resolve, reject) => {
-        failedQueue.push({ resolve, reject });
-      })
-        .then((token) => {
-          originalRequest.headers['Authorization'] = `Bearer ${token}`;
-          return api(originalRequest);
-        })
-        .catch((err) => Promise.reject(err));
-    }
-
-    // Become the refresh owner for this tab
     originalRequest._retry = true;
-    isRefreshing = true;
 
     try {
-      // We delegate to restoreAuth in the store, forcing a network refresh
-      await useAuthStore.getState().restoreAuth(api, true);
+      const newToken = await getFreshToken();
+      if (!newToken) {
+        return Promise.reject(error);
+      }
 
-      const newToken = useAuthStore.getState().accessToken;
-      
-      // Retry the original request
       originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-      
-      // Resolve any other requests that queued up in this tab while we were refreshing
-      processQueue(null, newToken);
-      
       return api(originalRequest);
-    } catch (err) {
-      // Distinguish between a genuine refresh failure and a safe backend concurrency queue signal
-      if (err.response?.status === 401 && err.response?.data?.message === 'Concurrent refresh detected') {
-          // It's a concurrent request race condition on the backend.
-          // Another tab beat us to the DB lock. Queue this request and wait for cross-tab sync.
-          return new Promise((resolve, reject) => {
-              failedQueue.push({ resolve, reject });
-          })
-          .then((token) => {
-              originalRequest.headers['Authorization'] = `Bearer ${token}`;
-              return api(originalRequest);
-          })
-          .catch((queueErr) => Promise.reject(queueErr));
-      }
-
-      // Genuine refresh failure (revoked token, network failure during refresh, etc)
-      // Only clear auth on a definitive 401/403 from the refresh endpoint.
-      // Don't log out if it's a 5xx or Network Error.
-      if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-        processQueue(err, null);
-        // The restoreAuth method inside auth.store.js already calls clearAuth(), so we just reject.
-      } else {
-         // Network error or 5xx, reject the queue but do not forcibly logout
-         processQueue(err, null);
-      }
-      
-      return Promise.reject(err);
-    } finally {
-      // Always reset the single-tab lock
-      isRefreshing = false;
+    } catch (refreshErr) {
+      return Promise.reject(refreshErr);
     }
   }
 );
+

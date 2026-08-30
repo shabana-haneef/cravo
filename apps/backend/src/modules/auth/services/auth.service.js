@@ -234,8 +234,9 @@ export const authService = {
           const GRACE_PERIOD_MS = 30000; // 30 seconds
           
           if (timeSinceRevocation < GRACE_PERIOD_MS) {
-            // Legitimate concurrent request caused by race condition.
-            throw new AppError("Concurrent refresh detected", 401);
+            // Legitimate concurrent request caused by race condition during token rotation.
+            // Return a valid access token so concurrent requests succeed immediately without failing or logging out.
+            return { accessToken: newAccessToken, refreshToken: rawRefreshToken };
           } else {
             // Genuine replay attack outside grace period
             // Run revocation outside tx so it commits even if we throw

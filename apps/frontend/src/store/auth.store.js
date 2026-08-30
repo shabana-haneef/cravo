@@ -102,16 +102,19 @@ export const useAuthStore = create(
           const newToken = data.data.accessToken;
           
           get().setAuth(state.user, newToken, true);
+          return newToken;
         } catch (error) {
-          if (error.response?.status === 401 && error.response?.data?.message === 'Concurrent refresh detected') {
-             // Let the watchdog or actual cross-tab event resolve this
-             set({ _isRestoring: false, authStatus: 'restoring' });
-             return;
+          // If definitive auth failure (401 or 403), logout
+          if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            broadcast('AUTH_REFRESH_FAILED');
+            get().clearAuth(false);
+          } else {
+            // Transient network failure: reset restoring flag without clearing session
+            set({ _isRestoring: false, authStatus: 'idle', isInitializing: false });
           }
-          
-          broadcast('AUTH_REFRESH_FAILED');
-          get().clearAuth(false);
           throw error;
+        } finally {
+          set({ _isRestoring: false });
         }
       }
     }),
@@ -126,7 +129,7 @@ export const useAuthStore = create(
 );
 
 if (authChannel) {
-  // Handshake: ask if anyone is currently refreshing
+  // Handshake: ask if anyone is currently authenticated
   broadcast('AUTH_STATE_REQUEST');
 
   authChannel.onmessage = (event) => {
@@ -142,8 +145,8 @@ if (authChannel) {
     // Ignore our own messages
     if (data.tabId === TAB_ID) return;
 
-    // Ignore extremely stale messages (e.g. > 1 minute old)
-    if (data.timestamp && Date.now() - data.timestamp > 60000) return;
+    // Ignore stale messages
+    if (data.timestamp && Date.now() - data.timestamp > 30000) return;
 
     switch (data.type) {
       case 'AUTH_LOGOUT':
@@ -151,40 +154,23 @@ if (authChannel) {
         break;
 
       case 'AUTH_REFRESH_COMPLETED':
-        if (watchdogTimer) clearTimeout(watchdogTimer);
         if (data.token) {
           store.setAuth(data.user || store.user, data.token, false);
         }
         break;
 
-      case 'AUTH_REFRESH_STARTED':
-        // Another tab is refreshing. We wait.
-        if (watchdogTimer) clearTimeout(watchdogTimer);
-        useAuthStore.setState({ authStatus: 'restoring', _isRestoring: true, _foreignRefreshOwner: data.tabId });
-        
-        // 10 second watchdog
-        watchdogTimer = setTimeout(() => {
-          useAuthStore.getState()._watchdogTimeout();
-        }, 10000);
-        break;
-
       case 'AUTH_REFRESH_FAILED':
-        if (watchdogTimer) clearTimeout(watchdogTimer);
-        // If the owner tab failed, we clear auth too
-        if (store._foreignRefreshOwner === data.tabId || !store._foreignRefreshOwner) {
+        if (store.isAuthenticated) {
           store.clearAuth(false);
         }
         break;
 
       case 'AUTH_STATE_REQUEST':
-        // A new tab opened. If WE are currently refreshing, tell them!
-        if (store._isRestoring && store._foreignRefreshOwner === TAB_ID) {
-          broadcast('AUTH_REFRESH_STARTED');
-        } else if (store.authStatus === 'authenticated' && store.accessToken) {
-          // Or if we are already fully authenticated, sync the token so they don't have to hit the network
+        if (store.authStatus === 'authenticated' && store.accessToken) {
           broadcast('AUTH_REFRESH_COMPLETED', { token: store.accessToken, user: store.user });
         }
         break;
     }
   };
 }
+
