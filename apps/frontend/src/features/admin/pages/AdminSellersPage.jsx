@@ -276,14 +276,28 @@ export const AdminSellersPage = () => {
                     <div key={doc.id} className="border border-gray-200 rounded-xl overflow-hidden group">
                       <div className="bg-gray-100 p-3 flex justify-between items-center border-b border-gray-200">
                         <span className="font-medium text-gray-700 text-sm">{doc.type.replace('_', ' ')}</span>
-                        <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline">View Full</a>
+                        <a 
+                          href={doc.fileUrl?.endsWith('.pdf') ? doc.fileUrl.replace('/upload/', '/upload/fl_attachment/') : doc.fileUrl} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="text-sm text-indigo-600 hover:underline"
+                        >
+                          View Full
+                        </a>
                       </div>
                       <div className="h-48 bg-gray-50 flex items-center justify-center p-2 relative">
-                        <img 
-                          src={doc.fileUrl} 
-                          alt={doc.type} 
-                          className="max-h-full max-w-full object-contain rounded drop-shadow-sm group-hover:scale-105 transition-transform"
-                        />
+                        {(doc.fileUrl?.endsWith('.pdf') || doc.publicId?.includes('pdf')) ? (
+                          <div className="flex flex-col items-center justify-center text-gray-400">
+                            <FileText size={48} className="text-red-500 mb-2" />
+                            <span className="text-xs font-medium">PDF Document</span>
+                          </div>
+                        ) : (
+                          <img 
+                            src={doc.fileUrl} 
+                            alt={doc.type} 
+                            className="max-h-full max-w-full object-contain rounded drop-shadow-sm group-hover:scale-105 transition-transform"
+                          />
+                        )}
                       </div>
                     </div>
                   ))}
