@@ -6,7 +6,7 @@ import { useMyShop } from '../features/sellers/hooks/useShopQueries.js';
 import { AlertTriangle, ArrowRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const MotionLink = motion(Link);
+const MotionLink = motion.create(Link);
 
 export const SellerLayout = () => {
   const { data: shop, isLoading, isError } = useMyShop();

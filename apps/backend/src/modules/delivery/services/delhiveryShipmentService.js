@@ -42,6 +42,54 @@ async function fetchWithRetry(fn, retries = 3, delay = 1000) {
 }
 
 export const delhiveryShipmentService = {
+  /**
+   * Register Seller Pickup Location / Warehouse with Delhivery Client Warehouse API
+   */
+  async registerPickupLocation(seller) {
+    if (!getToken()) {
+      logger.warn('Delhivery API key missing. Skipping automated warehouse registration.');
+      return false;
+    }
+    if (!seller || !seller.pickupLocationName) {
+      logger.warn('Seller missing pickupLocationName. Skipping Delhivery warehouse registration.');
+      return false;
+    }
+
+    try {
+      const delhiveryClient = createDelhiveryClient();
+      // Delhivery Client Warehouse creation payload
+      const warehousePayload = {
+        name: seller.pickupLocationName,
+        email: seller.supportEmail || seller.user?.email || 'seller@cravomarketplace.com',
+        phone: seller.pickupPhone || seller.supportPhone || '9876543210',
+        address: seller.pickupAddress || '',
+        city: seller.pickupCity || '',
+        state: seller.pickupState || '',
+        country: 'India',
+        pin: seller.pickupPincode || '',
+        return_address: seller.pickupAddress || '',
+        return_city: seller.pickupCity || '',
+        return_state: seller.pickupState || '',
+        return_country: 'India',
+        return_pin: seller.pickupPincode || ''
+      };
+
+      const response = await delhiveryClient.post('/api/backend/clientwarehouse/create/', warehousePayload, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (response.data && (response.data.success || response.data.status)) {
+        logger.info({ pickupLocationName: seller.pickupLocationName }, 'Successfully registered/synced pickup location with Delhivery.');
+        return true;
+      }
+      logger.info({ data: response.data }, 'Delhivery Warehouse Creation Response');
+      return true;
+    } catch (error) {
+      logger.warn({ err: error.message, locationName: seller.pickupLocationName }, 'Delhivery Warehouse Creation call warning (Location may already exist).');
+      return false;
+    }
+  },
+
   async createShipment(order, seller, deliveryAddress) {
     if (!getToken()) {
       // Return a mock payload if no key exists (useful for development)
@@ -56,6 +104,18 @@ export const delhiveryShipmentService = {
     }
     const delhiveryClient = createDelhiveryClient();
 
+    // Calculate total weight in grams from items or fallback
+    const totalWeightGrams = (order.items || []).reduce((sum, item) => {
+      const itemWeight = item.productVariant?.weight || item.weightGrams || 500;
+      return sum + (itemWeight * (item.quantity || 1));
+    }, 0) || 500;
+
+    const grandTotal = Math.round(Number(order.grandTotal) || 500);
+    const productsDesc = (order.items || [])
+      .map(i => i.product?.name || i.productName || 'Item')
+      .filter(Boolean)
+      .join(', ') || 'General Marketplace Order';
+
     const payloadData = {
       shipments: [
         {
@@ -68,6 +128,10 @@ export const delhiveryShipmentService = {
           phone: deliveryAddress.phone,
           order: order.orderNumber,
           payment_mode: order.payments?.length > 0 ? 'Pre-paid' : 'COD',
+          weight: totalWeightGrams.toString(),
+          declared_value: grandTotal.toString(),
+          products_desc: productsDesc,
+          pickup_location: seller.pickupLocationName, // REQUIRED by Delhivery: String matching registered warehouse
           return_pin: seller.pickupPincode,
           return_city: seller.pickupCity,
           return_phone: seller.pickupPhone,

@@ -11,6 +11,7 @@ import crypto from 'crypto';
 import { maskAccountNumber } from '../../../shared/utils/masking.js';
 import { otpService } from '../../auth/services/otp.service.js';
 import { emailService } from '../../auth/services/email.service.js';
+import { delhiveryShipmentService } from '../../delivery/services/delhiveryShipmentService.js';
 
 export const sellerService = {
   /**
@@ -656,6 +657,19 @@ export const sellerService = {
             bannerUrl: data.bannerImage
           }
         });
+      }
+
+      // Sync pickup location with Delhivery (fire and forget)
+      if (data.locationName && data.pincode) {
+        delhiveryShipmentService.registerPickupLocation({
+          pickupLocationName: data.locationName,
+          pickupAddress: data.streetAddress,
+          pickupCity: data.city,
+          pickupState: data.state,
+          pickupPincode: data.pincode,
+          pickupPhone: data.pickupPhone,
+          supportEmail: data.supportEmail
+        }).catch(() => {});
       }
 
       return { success: true };
