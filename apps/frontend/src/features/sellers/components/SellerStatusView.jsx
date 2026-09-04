@@ -16,7 +16,7 @@ const DocumentPreview = ({ doc }) => {
 
   return (
     <a
-      href={doc.fileUrl}
+      href={isPdf ? doc.fileUrl.replace('/upload/', '/upload/fl_attachment/') : doc.fileUrl}
       target="_blank"
       rel="noopener noreferrer"
       className="flex items-center gap-3 p-4 bg-gray-50 border border-gray-100 rounded-xl hover:border-[#1E3A2B] hover:bg-[#F0F8F3] transition-colors group"

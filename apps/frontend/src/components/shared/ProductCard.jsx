@@ -39,7 +39,7 @@ export const ProductCard = React.memo(({ product, variant = 'simple' }) => {
         const variantSuffix = variantName && variantName.toLowerCase() !== 'default'
           ? ` (${variantName})`
           : '';
-        toast.success(`Added 1x "${name}"${variantSuffix} to cart`);
+        toast.success('Added to Cart');
       },
       onError: (error) => {
         const msg = error.response?.data?.message || 'Failed to add item to cart';

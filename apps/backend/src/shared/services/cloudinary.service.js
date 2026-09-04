@@ -16,11 +16,11 @@ export const cloudinaryService = {
    * @param {string} folder - The destination folder in Cloudinary
    * @returns {Promise<Object>} The Cloudinary upload result
    */
-  uploadBuffer(buffer, folder) {
+  uploadBuffer(buffer, folder, options = {}) {
     return new Promise((resolve, reject) => {
 
       const uploadStream = cloudinary.uploader.upload_stream(
-        { folder, resource_type: 'auto' },
+        { folder, resource_type: 'auto', ...options },
         (error, result) => {
           if (error) return reject(error);
           resolve(result);

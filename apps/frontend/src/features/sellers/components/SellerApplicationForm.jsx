@@ -442,8 +442,8 @@ export const SellerApplicationForm = ({ onSuccess, onCancel }) => {
                   <span className="text-sm text-gray-700 leading-relaxed">
                     I accept the{' '}
                     <a href="/terms" target="_blank" className="text-[#B88645] hover:underline font-medium">Terms & Conditions</a>,{' '}
-                    <a href="/seller-agreement" target="_blank" className="text-[#B88645] hover:underline font-medium">Seller Agreement</a>, and{' '}
-                    <a href="/privacy-policy" target="_blank" className="text-[#B88645] hover:underline font-medium">Privacy Policy Consent</a>. 
+                    <a href="/seller-terms" target="_blank" className="text-[#B88645] hover:underline font-medium">Seller Agreement</a>, and{' '}
+                    <a href="/privacy" target="_blank" className="text-[#B88645] hover:underline font-medium">Privacy Policy Consent</a>. 
                     I declare that the information provided is accurate and authentic.
                   </span>
                 </label>
