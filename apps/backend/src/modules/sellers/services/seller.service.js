@@ -11,6 +11,7 @@ import crypto from 'crypto';
 import { maskAccountNumber } from '../../../shared/utils/masking.js';
 import { otpService } from '../../auth/services/otp.service.js';
 import { emailService } from '../../auth/services/email.service.js';
+import { delhiveryShipmentService } from '../../delivery/services/delhiveryShipmentService.js';
 
 export const sellerService = {
   /**
@@ -69,8 +70,9 @@ export const sellerService = {
     }
 
     if (files.fssaiLicense && files.fssaiLicense[0]) {
+      const fssaiOptions = files.fssaiLicense[0].mimetype === 'application/pdf' ? { format: 'jpg' } : {};
       uploadTasks.push(
-        cloudinaryService.uploadBuffer(files.fssaiLicense[0].buffer, 'cravo/sellers/documents/fssai')
+        cloudinaryService.uploadBuffer(files.fssaiLicense[0].buffer, 'cravo/sellers/documents/fssai', fssaiOptions)
           .then(res => {
             if (res.public_id) publicIdsToClean.push(res.public_id);
             return { type: 'FSSAI_LICENSE', fileUrl: res.secure_url, publicId: res.public_id };
@@ -258,7 +260,7 @@ export const sellerService = {
         }
         
         return seller;
-      });
+      }, { maxWait: 10000, timeout: 20000 });
     } catch (error) {
       // Clean up orphaned Cloudinary files if the database transaction fails
       if (publicIdsToClean.length > 0) {
@@ -656,6 +658,19 @@ export const sellerService = {
             bannerUrl: data.bannerImage
           }
         });
+      }
+
+      // Sync pickup location with Delhivery (fire and forget)
+      if (data.locationName && data.pincode) {
+        delhiveryShipmentService.registerPickupLocation({
+          pickupLocationName: data.locationName,
+          pickupAddress: data.streetAddress,
+          pickupCity: data.city,
+          pickupState: data.state,
+          pickupPincode: data.pincode,
+          pickupPhone: data.pickupPhone,
+          supportEmail: data.supportEmail
+        }).catch(() => {});
       }
 
       return { success: true };

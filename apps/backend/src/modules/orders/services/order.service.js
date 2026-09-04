@@ -2,6 +2,7 @@ import { orderRepository } from '../repositories/order.repository.js';
 import { shopRepository } from '../../shops/repositories/shop.repository.js';
 import { sellerRepository } from '../../sellers/repositories/seller.repository.js';
 import { deliveryService } from '../../delivery/services/delivery.service.js';
+import { delhiveryShipmentService } from '../../delivery/services/delhiveryShipmentService.js';
 import { notificationService } from '../../notifications/services/notification.service.js';
 import { orderSettingsService } from '../../admin/services/orderSettings.service.js';
 import { AppError } from '../../../shared/errors/AppError.js';
@@ -197,8 +198,43 @@ export const orderService = {
       { orderId, orderNumber: order.orderNumber, status }
     ).catch(() => {});
 
-    // Outside transaction, trigger delivery if confirmed
-    if (status === 'CONFIRMED') {
+    // Outside transaction, trigger delivery / shipment creation
+    if (status === 'READY_FOR_PICKUP') {
+      (async () => {
+        try {
+          const fullOrder = await prisma.order.findUnique({
+            where: { id: orderId },
+            include: {
+              payments: true,
+              items: { include: { product: true } },
+              shop: { include: { seller: true } },
+              address: true
+            }
+          });
+
+          if (fullOrder && !fullOrder.shipmentCreated && fullOrder.shop?.seller && fullOrder.address) {
+            logger.info({ orderId, orderNumber: fullOrder.orderNumber }, 'Triggering Delhivery shipment creation on READY_FOR_PICKUP.');
+            const result = await delhiveryShipmentService.createShipment(fullOrder, fullOrder.shop.seller, fullOrder.address);
+            
+            if (result && result.trackingNumber) {
+              await prisma.order.update({
+                where: { id: orderId },
+                data: {
+                  shipmentCreated: true,
+                  shipmentCreatedAt: new Date(),
+                  awbNumber: result.trackingNumber,
+                  delhiveryShipmentId: result.shipmentId,
+                  trackingStatus: (result.status || 'BOOKED').toLowerCase()
+                }
+              });
+              logger.info({ orderId, awbNumber: result.trackingNumber }, 'Delhivery shipment created successfully on READY_FOR_PICKUP');
+            }
+          }
+        } catch (err) {
+          logger.error({ err: err.message, orderId }, 'Failed to create Delhivery shipment on READY_FOR_PICKUP');
+        }
+      })();
+    } else if (status === 'CONFIRMED') {
       // Execute asynchronously, don't wait or block response
       deliveryService.initiateDelivery(orderId).catch(err => {
         logger.error({ err: err.message, orderId }, 'Failed to initiate delivery on CONFIRM');

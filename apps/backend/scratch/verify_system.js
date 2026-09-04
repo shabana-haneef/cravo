@@ -1,8 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import { governanceSettingsService } from '../src/modules/admin/services/governanceSettings.service.js';
 import { paymentSettingsService } from '../src/modules/admin/services/paymentSettings.service.js';
-import { delhiveryShipmentService } from '../src/services/delhiveryShipmentService.js';
-import { delhiveryShipmentController } from '../src/controllers/delhiveryShipmentController.js';
+import { delhiveryShipmentService } from '../src/modules/delivery/services/delhiveryShipmentService.js';
+import { delhiveryShipmentController } from '../src/modules/delivery/controllers/delhiveryShipmentController.js';
 import { logger } from '../src/shared/services/logger.js';
 
 const prisma = new PrismaClient();

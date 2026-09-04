@@ -72,7 +72,7 @@ export const OrdersPage = () => {
           ? ` (${variantName})`
           : '';
         const displayName = productName ? `"${productName}"${variantSuffix}` : (variantName || 'item');
-        toast.success(`Added ${displayName} back to cart!`);
+        toast.success('Added to Cart');
       },
       onError: (err) => {
         toast.error(err.response?.data?.message || 'Failed to add item to cart');

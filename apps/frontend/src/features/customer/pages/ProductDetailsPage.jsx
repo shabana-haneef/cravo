@@ -86,7 +86,7 @@ export const ProductDetailsPage = () => {
         const variantSuffix = selectedVariant?.name && selectedVariant.name.toLowerCase() !== 'default'
           ? ` (${selectedVariant.name})`
           : '';
-        toast.success(`Added ${quantity}x "${product.name}"${variantSuffix} to cart`);
+        toast.success('Added to Cart');
         setShowClearCartModal(false);
       },
       onError: (error) => {
