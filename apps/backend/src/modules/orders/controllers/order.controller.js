@@ -39,6 +39,16 @@ export const orderController = {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 20;
       const result = await orderService.getMyOrders(req.user.id, page, limit);
+      
+      // Prevent Buyer Shipping Label Data Leak
+      if (result.data) {
+        result.data.forEach(order => {
+          if (order.delivery && order.customerId === req.user.id) {
+            delete order.delivery.shippingLabelUrl;
+          }
+        });
+      }
+      
       return successResponse(res, 'Orders retrieved', { orders: result.data, meta: result.meta });
     } catch (error) { next(error); }
   },
@@ -46,6 +56,12 @@ export const orderController = {
   async getOrderById(req, res, next) {
     try {
       const order = await orderService.getOrderById(req.user.id, req.params.id);
+      
+      // Prevent Buyer Shipping Label Data Leak
+      if (order.delivery && order.customerId === req.user.id) {
+        delete order.delivery.shippingLabelUrl;
+      }
+      
       return successResponse(res, 'Order retrieved', { order });
     } catch (error) { next(error); }
   },

@@ -47,9 +47,38 @@ export const deliveryController = {
     } catch (error) { next(error); }
   },
 
+  async retryShipment(req, res, next) {
+    try {
+      const result = await deliveryService.retryShipment(req.params.id, req.user.id);
+      return successResponse(res, 'Shipment retried successfully', { delivery: result });
+    } catch (error) { next(error); }
+  },
+
+  async retryPickup(req, res, next) {
+    try {
+      const result = await deliveryService.retryPickup(req.params.id, req.user.id);
+      return successResponse(res, result.message, result.pickupData);
+    } catch (error) { next(error); }
+  },
+
+  async retryLabel(req, res, next) {
+    try {
+      const result = await deliveryService.retryLabel(req.params.id, req.user.id);
+      return successResponse(res, result.message, { shippingLabelUrl: result.shippingLabelUrl });
+    } catch (error) { next(error); }
+  },
+
   async handleWebhook(req, res, next) {
     try {
-      // In production, verify signature before processing
+      // Validate Webhook Signature/Token
+      const authHeader = req.headers['authorization'];
+      const expectedToken = process.env.DELHIVERY_API_TOKEN || process.env.DELHIVERY_API_KEY;
+      
+      // Delhivery usually authenticates via Authorization: Token <TOKEN> or Bearer <TOKEN>
+      if (!authHeader || !authHeader.includes(expectedToken)) {
+        return res.status(401).json({ success: false, error: 'Unauthorized webhook' });
+      }
+
       await deliveryService.handleWebhookEvent(req.body);
       return res.status(200).send('OK');
     } catch (error) { next(error); }

@@ -29,16 +29,26 @@ const formatOrderDate = (dateString) => {
 const getStatusBadge = (status) => {
   switch (status) {
     case 'PLACED':
-      return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-orange-500 bg-orange-50 w-max"><Clock size={12} /> Pending Payment</span>;
-    case 'CONFIRMED':
+    case 'PAID':
+      return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-orange-500 bg-orange-50 w-max"><Clock size={12} /> New Order</span>;
+    case 'SELLER_ACCEPTED':
+    case 'PROCESSING':
     case 'PREPARING':
       return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-blue-500 bg-blue-50 w-max"><RefreshCw size={12} /> Processing</span>;
     case 'READY_FOR_PICKUP':
-    case 'OUT_FOR_DELIVERY':
+    case 'SHIPPED':
       return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-purple-600 bg-purple-50 w-max"><Truck size={12} /> Shipped</span>;
+    case 'OUT_FOR_DELIVERY':
+      return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-orange-600 bg-orange-50 w-max"><Truck size={12} /> Out for Delivery</span>;
     case 'DELIVERED':
       return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-green-600 bg-green-50 w-max"><CheckCircle2 size={12} /> Delivered</span>;
+    case 'NDR':
+      return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-red-600 bg-red-50 w-max"><AlertCircle size={12} /> Delivery Attempt Failed (NDR)</span>;
+    case 'RTO':
+    case 'RETURNED':
+      return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-orange-600 bg-orange-50 w-max"><AlertCircle size={12} /> Returning to Origin</span>;
     case 'CANCELLED':
+    case 'SELLER_REJECTED':
       return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-red-500 bg-red-50 w-max"><XCircle size={12} /> Cancelled</span>;
     default:
       return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-gray-500 bg-gray-50 w-max">{status}</span>;
@@ -78,21 +88,21 @@ export const SellerOrdersPage = () => {
   }, [ordersData]);
 
   const counts = useMemo(() => {
-    const c = { 'All': 0, 'Pending Payment': 0, 'Processing': 0, 'Shipped': 0, 'Delivered': 0, 'Cancelled': 0 };
+    const c = { 'All': 0, 'New Orders': 0, 'Processing': 0, 'Shipped': 0, 'Delivered': 0, 'Cancelled': 0 };
     combinedOrders.forEach(o => {
       c['All']++;
-      if (o.status === 'PLACED') c['Pending Payment']++;
-      else if (o.status === 'CONFIRMED' || o.status === 'PREPARING') c['Processing']++;
-      else if (o.status === 'READY_FOR_PICKUP' || o.status === 'OUT_FOR_DELIVERY') c['Shipped']++;
+      if (['PLACED', 'PAID'].includes(o.status)) c['New Orders']++;
+      else if (['SELLER_ACCEPTED', 'PROCESSING', 'PREPARING'].includes(o.status)) c['Processing']++;
+      else if (['READY_FOR_PICKUP', 'SHIPPED', 'OUT_FOR_DELIVERY'].includes(o.status)) c['Shipped']++;
       else if (o.status === 'DELIVERED') c['Delivered']++;
-      else if (o.status === 'CANCELLED') c['Cancelled']++;
+      else if (['CANCELLED', 'SELLER_REJECTED'].includes(o.status)) c['Cancelled']++;
     });
     return c;
   }, [combinedOrders]);
 
   const tabs = [
     { label: 'All', count: counts['All'], color: 'text-gray-900' },
-    { label: 'Pending Payment', count: counts['Pending Payment'], color: 'text-orange-500' },
+    { label: 'New Orders', count: counts['New Orders'], color: 'text-orange-500' },
     { label: 'Processing', count: counts['Processing'], color: 'text-blue-600' },
     { label: 'Shipped', count: counts['Shipped'], color: 'text-purple-600' },
     { label: 'Delivered', count: counts['Delivered'], color: 'text-green-600' },
@@ -101,11 +111,11 @@ export const SellerOrdersPage = () => {
 
   const filteredOrders = useMemo(() => {
     return combinedOrders.filter(o => {
-      if (activeTab === 'Pending Payment' && o.status !== 'PLACED') return false;
-      if (activeTab === 'Processing' && !['CONFIRMED', 'PREPARING'].includes(o.status)) return false;
-      if (activeTab === 'Shipped' && !['READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'].includes(o.status)) return false;
+      if (activeTab === 'New Orders' && !['PLACED', 'PAID'].includes(o.status)) return false;
+      if (activeTab === 'Processing' && !['SELLER_ACCEPTED', 'PROCESSING', 'PREPARING'].includes(o.status)) return false;
+      if (activeTab === 'Shipped' && !['READY_FOR_PICKUP', 'SHIPPED', 'OUT_FOR_DELIVERY'].includes(o.status)) return false;
       if (activeTab === 'Delivered' && o.status !== 'DELIVERED') return false;
-      if (activeTab === 'Cancelled' && o.status !== 'CANCELLED') return false;
+      if (activeTab === 'Cancelled' && !['CANCELLED', 'SELLER_REJECTED'].includes(o.status)) return false;
 
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
@@ -364,52 +374,69 @@ export const SellerOrdersPage = () => {
                    </div>
                    
                    <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                      {detailsOrder.status === 'PLACED' && (
+                      {(detailsOrder.status === 'PLACED' || detailsOrder.status === 'PAID') && (
                         <>
-                          <button onClick={() => handleUpdateStatus(detailsOrder.id, 'CANCELLED')} disabled={isUpdating} className="px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 font-medium rounded-xl text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-                            <XCircle size={16} /> Cancel
+                          <button onClick={() => handleUpdateStatus(detailsOrder.id, 'SELLER_REJECTED')} disabled={isUpdating} className="px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 font-medium rounded-xl text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                            <XCircle size={16} /> Reject Order
                           </button>
-                          <button onClick={() => handleUpdateStatus(detailsOrder.id, 'CONFIRMED')} disabled={isUpdating} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm">
-                            <CheckCircle size={16} /> Confirm Order
+                          <button onClick={() => handleUpdateStatus(detailsOrder.id, 'SELLER_ACCEPTED')} disabled={isUpdating} className="px-5 py-2 bg-[#16A34A] hover:bg-[#15803d] text-white font-medium rounded-xl text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm">
+                            <CheckCircle size={16} /> Accept & Ship
                           </button>
                         </>
                       )}
                       
-                      {detailsOrder.status === 'CONFIRMED' && (
-                        <>
-                          <button onClick={() => handleUpdateStatus(detailsOrder.id, 'PREPARING')} disabled={isUpdating} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm">
-                            <Box size={16} /> Start Preparing
-                          </button>
-                          {detailsOrder.shipmentCreated ? (
-                            <div className="px-5 py-2 bg-green-50 text-green-700 border border-green-200 font-semibold rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm">
-                              <CheckCircle size={16} /> Shipment Created (AWB: {detailsOrder.awbNumber})
-                            </div>
-                          ) : (
-                            <button onClick={() => handleCreateShipment(detailsOrder.id)} disabled={isCreatingShipment} className="px-5 py-2 bg-[#16A34A] hover:bg-[#15803d] text-white font-medium rounded-xl text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm">
-                              {isCreatingShipment ? <Loader2 size={16} className="animate-spin" /> : <Truck size={16} />} Create Shipment
-                            </button>
-                          )}
-                        </>
-                      )}
-                      
-                      {detailsOrder.status === 'PREPARING' && (
-                        <>
-                          <button onClick={() => handleUpdateStatus(detailsOrder.id, 'READY_FOR_PICKUP')} disabled={isUpdating} className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm">
-                            <Package size={16} /> Ready for Pickup
-                          </button>
-                          <button onClick={() => handleUpdateStatus(detailsOrder.id, 'OUT_FOR_DELIVERY')} disabled={isUpdating} className="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-xl text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm">
-                            <Truck size={16} /> Ship Order
-                          </button>
-                        </>
+                      {['SELLER_ACCEPTED', 'PROCESSING', 'PREPARING', 'READY_FOR_PICKUP', 'SHIPPED', 'OUT_FOR_DELIVERY', 'NDR'].includes(detailsOrder.status) && (
+                        <div className="flex flex-col gap-3 w-full">
+                           <div className="flex flex-wrap items-center gap-3">
+                             {detailsOrder.delivery?.trackingNumber && (
+                               <div className="px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 font-semibold rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm">
+                                 <Truck size={16} /> AWB: {detailsOrder.delivery.trackingNumber}
+                               </div>
+                             )}
+                             {detailsOrder.delivery?.shippingLabelUrl ? (
+                               <a href={detailsOrder.delivery.shippingLabelUrl} target="_blank" rel="noreferrer" className="px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white font-medium rounded-xl text-sm transition-colors flex items-center justify-center gap-2 shadow-sm">
+                                 <Download size={16} /> Label
+                               </a>
+                             ) : (
+                               detailsOrder.delivery?.trackingNumber && (
+                                 <button onClick={() => toast.info('Retry Label Generation is implemented via API. Hooking up frontend mutation later.')} className="px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 border border-orange-200 font-medium rounded-xl text-sm transition-colors flex items-center justify-center gap-2 shadow-sm">
+                                   <RefreshCw size={16} /> Retry Label
+                                 </button>
+                               )
+                             )}
+                             {detailsOrder.delivery?.status === 'FAILED' ? (
+                               <button onClick={() => toast.info('Retry Shipment is implemented via API.')} className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 border border-red-200 font-medium rounded-xl text-sm transition-colors flex items-center justify-center gap-2 shadow-sm">
+                                 <RefreshCw size={16} /> Retry Shipment
+                               </button>
+                             ) : (
+                               <p className="text-sm font-medium text-gray-500 bg-gray-100 px-4 py-2 rounded-xl border border-gray-200 flex items-center gap-2">
+                                 <RefreshCw size={16} /> Logistics managed automatically.
+                               </p>
+                             )}
+                           </div>
+                           
+                           {/* Pickup Details Section */}
+                           {detailsOrder.delivery && detailsOrder.delivery.status !== 'FAILED' && (
+                             <div className="mt-1 flex flex-wrap items-center gap-3">
+                               {detailsOrder.delivery.pickupDate ? (
+                                 <div className="flex items-center gap-2 text-[13px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-xl w-max shadow-sm">
+                                   <Calendar size={15} /> 
+                                   Scheduled Pickup: {detailsOrder.delivery.pickupDate} 
+                                   {detailsOrder.delivery.pickupSlot && ` (${detailsOrder.delivery.pickupSlot})`}
+                                 </div>
+                               ) : (
+                                 <div className="flex items-center gap-2 text-[13px] font-semibold text-red-700 bg-red-50 border border-red-100 px-4 py-2 rounded-xl w-max shadow-sm">
+                                   <AlertCircle size={15} /> 
+                                   Pickup slot is currently unavailable.
+                                   <button onClick={() => toast.info('Retry Pickup API available')} className="ml-2 underline hover:text-red-800">Retry</button>
+                                 </div>
+                               )}
+                             </div>
+                           )}
+                        </div>
                       )}
 
-                      {(detailsOrder.status === 'READY_FOR_PICKUP' || detailsOrder.status === 'OUT_FOR_DELIVERY') && (
-                        <button onClick={() => handleUpdateStatus(detailsOrder.id, 'DELIVERED')} disabled={isUpdating} className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm">
-                          <CheckCircle size={16} /> Mark as Delivered
-                        </button>
-                      )}
-
-                      {(detailsOrder.status === 'DELIVERED' || detailsOrder.status === 'CANCELLED') && (
+                      {(detailsOrder.status === 'DELIVERED' || detailsOrder.status === 'CANCELLED' || detailsOrder.status === 'SELLER_REJECTED' || detailsOrder.status === 'RTO' || detailsOrder.status === 'RETURNED') && (
                         <p className="text-sm font-medium text-gray-500 bg-gray-100 px-4 py-2 rounded-xl border border-gray-200">
                            No further actions available.
                         </p>

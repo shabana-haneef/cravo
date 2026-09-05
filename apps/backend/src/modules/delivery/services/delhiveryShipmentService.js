@@ -186,6 +186,119 @@ export const delhiveryShipmentService = {
     }
   },
 
+  async createPickupRequest(seller, expectedPackageCount = 1) {
+    if (!getToken()) {
+      logger.warn('Delhivery API key missing. Skipping pickup request.');
+      return {
+        success: true,
+        pickupId: `MOCK_PICKUP_${Date.now()}`,
+        pickupDate: null,
+        pickupTime: null,
+        remarks: 'Mock pickup created'
+      };
+    }
+    const delhiveryClient = createDelhiveryClient();
+
+    // We do not send pickup_time and pickup_date to allow Delhivery to auto-assign 
+    // the next available slot based on the warehouse's internal configuration.
+    const payload = {
+      pickup_location: seller.pickupLocationName,
+      expected_package_count: expectedPackageCount.toString()
+    };
+
+    const apiCall = () => delhiveryClient.post('/fm/request/new/', payload, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    try {
+      const response = await fetchWithRetry(apiCall);
+      const data = response.data;
+      
+      // Delhivery usually returns pr_id or pickup_id on success
+      if (data && !data.error && (data.pickup_id || data.pr_id)) {
+        const startTime = data.pickup_start_time || data.pickup_time;
+        const endTime = data.pickup_end_time;
+        let pDate = data.pickup_date || null;
+        let pSlot = null;
+
+        if (startTime) {
+          if (!pDate && startTime.includes('T')) pDate = startTime.split('T')[0];
+          
+          const startStr = startTime.includes('T') ? startTime.split('T')[1].substring(0,5) : startTime;
+          const endStr = endTime && endTime.includes('T') ? endTime.split('T')[1].substring(0,5) : null;
+          pSlot = endStr ? `${startStr} - ${endStr}` : startStr;
+        }
+
+        return {
+          success: true,
+          pickupId: data.pickup_id || data.pr_id || null,
+          pickupDate: pDate,
+          pickupTime: pSlot, // Maps to pickupSlot in delivery.service
+          remarks: data.remarks || 'Pickup scheduled'
+        };
+      }
+      throw new AppError(`Failed to schedule pickup: ${data?.error || JSON.stringify(data)}`, 400);
+    } catch (error) {
+      logger.error({ err: error.message }, 'Delhivery Pickup Request API Error');
+      throw new AppError(`Pickup slot unavailable: ${error.message}`, 400);
+    }
+  },
+
+  async generateShippingLabel(trackingNumber) {
+    if (!getToken() || trackingNumber.startsWith('MOCK_')) {
+      return `https://mock-label-url.com/label/${trackingNumber}.pdf`;
+    }
+
+    try {
+      const delhiveryClient = createDelhiveryClient();
+      // Returns JSON with a link to the PDF
+      const response = await delhiveryClient.get('/api/p/packing_slip', {
+        params: { wbns: trackingNumber, pdf: 'true' }
+      });
+      
+      const data = response.data;
+      if (data && data.packages && data.packages.length > 0) {
+        const pkg = data.packages.find(p => p.wbn === trackingNumber);
+        if (pkg && pkg.pdf_download_link) {
+          return pkg.pdf_download_link;
+        }
+      }
+      throw new AppError('Shipping label not found or generated yet', 404);
+    } catch (error) {
+      logger.error({ err: error.message, trackingNumber }, 'Delhivery Label Generation Error');
+      throw new AppError(`Failed to generate shipping label: ${error.message}`, 500);
+    }
+  },
+
+  async findShipmentByOrderNumber(orderNumber) {
+    if (!getToken()) return null;
+    
+    try {
+      const delhiveryClient = createDelhiveryClient();
+      const response = await delhiveryClient.get('/api/v1/packages/json/', {
+        params: { ref_ids: orderNumber }
+      });
+      
+      const data = response.data;
+      if (data && data.ShipmentData && data.ShipmentData.length > 0) {
+        const shipment = data.ShipmentData[0].Shipment;
+        if (shipment) {
+          return {
+            success: true,
+            trackingNumber: shipment.AWB,
+            status: shipment.Status?.Status || 'CREATED'
+          };
+        }
+      }
+      return null; // Not found
+    } catch (error) {
+      logger.warn({ err: error.message, orderNumber }, 'Delhivery shipment search failed');
+      return null;
+    }
+  },
+
+
+
   async trackShipment(trackingNumber) {
     if (!getToken()) {
       // Mock tracking response

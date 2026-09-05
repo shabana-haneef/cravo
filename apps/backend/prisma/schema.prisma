@@ -378,7 +378,7 @@ model Order {
   status              OrderStatus        @default(PENDING_PAYMENT)
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
-  awbNumber           String?
+  awbNumber           String?            @unique
   delhiveryShipmentId String?
   pickupRequested     Boolean            @default(false)
   shipmentCreated     Boolean            @default(false)
@@ -454,8 +454,17 @@ model Delivery {
   trackingNumber        String?                 @unique
   delhiveryShipmentId   String?
   courierPartner        CourierPartner          @default(DELHIVERY)
-  status                DeliveryStatus          @default(PENDING)
+  status                DeliveryStatus          @default(NOT_CREATED)
+  pickupRequestId       String?                 @unique
+  pickupDate            String?
+  pickupSlot            String?
+  shippingLabelUrl      String?
   estimatedDeliveryDate DateTime?
+  pickedUpAt            DateTime?
+  shippedAt             DateTime?
+  outForDeliveryAt      DateTime?
+  deliveredAt           DateTime?
+  deliveryVerifiedAt    DateTime?
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
   order                 Order                   @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -749,12 +758,20 @@ enum NotificationType {
 enum OrderStatus {
   PENDING_PAYMENT
   PLACED
+  PAID
   CONFIRMED
+  SELLER_ACCEPTED
+  SELLER_REJECTED
   PREPARING
+  PROCESSING
   READY_FOR_PICKUP
+  SHIPPED
   OUT_FOR_DELIVERY
   DELIVERED
   CANCELLED
+  RETURN_REQUESTED
+  RETURNED
+  RTO
   REFUNDED
 }
 
@@ -767,13 +784,20 @@ enum PaymentStatus {
 
 enum DeliveryStatus {
   PENDING
+  NOT_CREATED
+  CREATING
+  CREATED
   BOOKED
+  PICKUP_SCHEDULED
+  READY_FOR_PICKUP
   PICKED_UP
   IN_TRANSIT
   OUT_FOR_DELIVERY
   DELIVERED
   FAILED
+  NDR
   RETURNED
+  RTO
   CANCELLED
 }
 

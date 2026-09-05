@@ -12,6 +12,10 @@ router.post('/webhook', deliveryController.handleWebhook);
 router.use(protect);
 
 router.get('/orders/:id/tracking', deliveryController.getTracking);
+router.post('/orders/:id/retry-shipment', allowRoles('SELLER'), deliveryController.retryShipment);
+router.post('/orders/:id/retry-pickup', allowRoles('SELLER'), deliveryController.retryPickup);
+router.post('/orders/:id/retry-label', allowRoles('SELLER'), deliveryController.retryLabel);
+
 router.get('/seller/deliveries', allowRoles('SELLER'), deliveryController.getSellerDeliveries);
 router.get('/admin/deliveries', allowRoles('ADMIN'), deliveryController.getAdminDeliveries);
 

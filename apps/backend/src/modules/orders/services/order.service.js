@@ -119,7 +119,7 @@ export const orderService = {
   },
 
   async updateOrderStatus(userId, orderId, status) {
-    // Only sellers can update status forward
+    // Only sellers can update status forward manually for Accept/Reject
     const seller = await sellerRepository.findByUserId(userId);
     if (!seller) throw new AppError("Unauthorized", 403);
     
@@ -128,13 +128,17 @@ export const orderService = {
     
     if (!order || order.shopId !== shop.id) throw new AppError("Order not found", 404);
 
+    // In the new automated logistics workflow, sellers can ONLY accept or reject orders manually.
+    // Logistics statuses (SHIPPED, OUT_FOR_DELIVERY, DELIVERED) are automated via Webhooks.
+    if (!['SELLER_ACCEPTED', 'SELLER_REJECTED'].includes(status)) {
+      throw new AppError(`Sellers cannot manually set status to ${status}. This is managed automatically.`, 400);
+    }
+
     const settings = await orderSettingsService.get();
     const transitions = settings.allowedTransitions || {
-      'PLACED': ['CONFIRMED', 'CANCELLED'],
-      'CONFIRMED': ['PREPARING'],
-      'PREPARING': ['READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'],
-      'READY_FOR_PICKUP': ['DELIVERED'],
-      'OUT_FOR_DELIVERY': ['DELIVERED']
+      'PAID': ['SELLER_ACCEPTED', 'SELLER_REJECTED'],
+      'PLACED': ['SELLER_ACCEPTED', 'SELLER_REJECTED'],
+      'PENDING_PAYMENT': ['SELLER_REJECTED']
     };
 
     const result = await prisma.$transaction(async (tx) => {
@@ -150,39 +154,7 @@ export const orderService = {
       });
 
       if (updateResult.count === 0) {
-        throw new AppError(`Cannot transition order to ${status} at this stage`, 400);
-      }
-
-      // If delivered, deduct stock from reserved (ORDER_COMPLETED) using Atomic SQL Updates
-      if (status === 'DELIVERED') {
-        for (const item of order.items) {
-          const inventoryBefore = await tx.inventory.findUnique({ where: { productVariantId: item.productVariantId } });
-          if (!inventoryBefore) continue;
-
-          const updateResult = await tx.inventory.updateMany({
-            where: { 
-              productVariantId: item.productVariantId,
-              reservedStock: { gte: item.quantity }
-            },
-            data: {
-              reservedStock: { decrement: item.quantity }
-            }
-          });
-          
-          if (updateResult.count > 0) {
-            await tx.inventoryTransaction.create({
-              data: {
-                inventoryId: inventoryBefore.id,
-                type: 'ORDER_COMPLETED',
-                quantity: item.quantity,
-                previousStock: inventoryBefore.availableStock,
-                newStock: inventoryBefore.availableStock,
-                reason: 'Order delivered',
-                createdBy: userId
-              }
-            });
-          }
-        }
+        throw new AppError(`Cannot transition order to ${status} at this stage (Order might already be accepted/rejected)`, 400);
       }
 
       logger.info({ userId, orderId, status }, 'Order status updated by seller');
@@ -194,50 +166,15 @@ export const orderService = {
       order.customerId,
       'ORDER_STATUS_UPDATED',
       'Order Update 📦',
-      `Your order #${order.orderNumber} status is now: ${status.replace(/_/g, ' ')}.`,
+      `Your order #${order.orderNumber} has been ${status === 'SELLER_ACCEPTED' ? 'accepted by the seller' : 'rejected'}.`,
       { orderId, orderNumber: order.orderNumber, status }
     ).catch(() => {});
 
-    // Outside transaction, trigger delivery / shipment creation
-    if (status === 'READY_FOR_PICKUP') {
-      (async () => {
-        try {
-          const fullOrder = await prisma.order.findUnique({
-            where: { id: orderId },
-            include: {
-              payments: true,
-              items: { include: { product: true } },
-              shop: { include: { seller: true } },
-              address: true
-            }
-          });
-
-          if (fullOrder && !fullOrder.shipmentCreated && fullOrder.shop?.seller && fullOrder.address) {
-            logger.info({ orderId, orderNumber: fullOrder.orderNumber }, 'Triggering Delhivery shipment creation on READY_FOR_PICKUP.');
-            const result = await delhiveryShipmentService.createShipment(fullOrder, fullOrder.shop.seller, fullOrder.address);
-            
-            if (result && result.trackingNumber) {
-              await prisma.order.update({
-                where: { id: orderId },
-                data: {
-                  shipmentCreated: true,
-                  shipmentCreatedAt: new Date(),
-                  awbNumber: result.trackingNumber,
-                  delhiveryShipmentId: result.shipmentId,
-                  trackingStatus: (result.status || 'BOOKED').toLowerCase()
-                }
-              });
-              logger.info({ orderId, awbNumber: result.trackingNumber }, 'Delhivery shipment created successfully on READY_FOR_PICKUP');
-            }
-          }
-        } catch (err) {
-          logger.error({ err: err.message, orderId }, 'Failed to create Delhivery shipment on READY_FOR_PICKUP');
-        }
-      })();
-    } else if (status === 'CONFIRMED') {
-      // Execute asynchronously, don't wait or block response
+    // Outside transaction, trigger delivery / shipment creation ONLY ON ACCEPT
+    if (status === 'SELLER_ACCEPTED') {
+      // Execute asynchronously, don't wait or block response for the frontend
       deliveryService.initiateDelivery(orderId).catch(err => {
-        logger.error({ err: err.message, orderId }, 'Failed to initiate delivery on CONFIRM');
+        logger.error({ err: err.message, orderId }, 'Failed to initiate delivery on SELLER_ACCEPTED');
       });
     }
 

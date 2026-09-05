@@ -11,6 +11,7 @@ import { initSitemapWorker } from './modules/seo/jobs/sitemap.job.js';
 import { initCampaignExpiryWorker } from './modules/campaigns/jobs/campaignExpiry.job.js';
 import { stopAllWorkers, queueConnection } from './shared/utils/queue.manager.js';
 import { initSocket } from './lib/socket.js';
+import { startReconciliationJob } from './modules/delivery/jobs/reconciliation.job.js';
 
 let httpServer;
 let io;
@@ -29,6 +30,7 @@ const startServer = async () => {
     initOrderMaintenanceWorker();
     initSitemapWorker();
     initCampaignExpiryWorker();
+    startReconciliationJob();
 
     const { default: app } = await import('./app.js');
     httpServer = createServer(app);
