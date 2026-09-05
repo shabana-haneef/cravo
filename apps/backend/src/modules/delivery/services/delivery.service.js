@@ -9,6 +9,43 @@ import prisma from '../../../lib/prisma.js';
 
 export const deliveryService = {
   async initiateDelivery(orderId) {
+    // 1. Atomic Claim Transaction
+    const claim = await prisma.$transaction(async (tx) => {
+      const existingDelivery = await tx.delivery.findUnique({ where: { orderId } });
+      
+      if (existingDelivery) {
+        if (existingDelivery.trackingNumber) {
+          return { status: 'ALREADY_CREATED', delivery: existingDelivery };
+        }
+        if (existingDelivery.status === 'CREATING') {
+          const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+          if (existingDelivery.updatedAt > twoMinutesAgo) {
+            return { status: 'LOCKED' };
+          }
+          // It's stale. Allow re-claim.
+        } else if (['CREATED', 'BOOKED', 'PICKUP_SCHEDULED'].includes(existingDelivery.status)) {
+          return { status: 'ALREADY_CREATED', delivery: existingDelivery };
+        }
+      }
+
+      // Atomically claim the delivery row
+      const updated = await tx.delivery.upsert({
+        where: { orderId },
+        update: { status: 'CREATING', updatedAt: new Date() },
+        create: { orderId, status: 'CREATING' }
+      });
+      return { status: 'CLAIMED', delivery: updated };
+    });
+
+    if (claim.status === 'LOCKED') {
+      throw new AppError('Shipment is currently being processed. Please wait.', 409);
+    }
+    if (claim.status === 'ALREADY_CREATED') {
+      logger.info({ orderId }, 'Shipment already exists for order. Skipping duplicate creation.');
+      return claim.delivery;
+    }
+
+    // 2. Fetch full order for API
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
@@ -21,16 +58,16 @@ export const deliveryService = {
     });
 
     if (!order) throw new AppError('Order not found', 404);
-    
-    // Prevent duplicate shipment creation
-    if (order.delivery && order.delivery.trackingNumber) {
-      logger.info({ orderId }, 'Shipment already exists for order. Skipping duplicate creation.');
-      return order.delivery;
-    }
 
     const seller = order.shop?.seller;
-    if (!seller || !seller.pickupLocationName) {
-      throw new AppError('Seller pickup details are incomplete. Cannot automate shipment.', 400);
+    if (!seller || seller.delhiveryRegistrationStatus !== 'REGISTERED' || !seller.delhiveryPickupLocationId) {
+      // Save FAILED state so seller can retry later when location is registered
+      await prisma.delivery.upsert({
+        where: { orderId },
+        update: { status: 'FAILED' },
+        create: { orderId, status: 'FAILED' }
+      });
+      throw new AppError('Shipment blocked: Seller pickup location is not registered with Delhivery.', 400);
     }
 
     const deliveryAddress = order.address;
@@ -96,6 +133,27 @@ export const deliveryService = {
           }
         });
 
+        // Dual-Write to Relational Table
+        await tx.orderShipmentLog.create({
+          data: {
+            orderId: order.id,
+            event: 'Shipment Created',
+            timestamp: new Date(),
+            awbNumber: shipmentResponse.trackingNumber,
+            shipmentId: shipmentResponse.shipmentId,
+            remarks: shipmentResponse.remarks || 'Shipment created and pickup scheduled'
+          }
+        });
+
+        const currentLogs = Array.isArray(order.shipmentLogs) ? order.shipmentLogs : [];
+        const newLogEntry = {
+          timestamp: new Date().toISOString(),
+          event: 'Shipment Created',
+          awbNumber: shipmentResponse.trackingNumber,
+          shipmentId: shipmentResponse.shipmentId,
+          remarks: shipmentResponse.remarks || 'Shipment created and pickup scheduled'
+        };
+
         await tx.order.update({
           where: { id: order.id },
           data: {
@@ -103,6 +161,7 @@ export const deliveryService = {
             shipmentCreatedAt: new Date(),
             awbNumber: shipmentResponse.trackingNumber,
             delhiveryShipmentId: shipmentResponse.shipmentId,
+            shipmentLogs: [...currentLogs, newLogEntry]
           }
         });
 
@@ -129,8 +188,15 @@ export const deliveryService = {
       include: { order: { include: { shop: true } } }
     });
     
-    if (!delivery || delivery.status !== 'FAILED') {
-      throw new AppError('Only failed shipments can be retried', 400);
+    if (!delivery) {
+      throw new AppError('Delivery record not found', 404);
+    }
+
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    const isStaleCreating = delivery.status === 'CREATING' && delivery.updatedAt < twoMinutesAgo;
+    
+    if (delivery.status !== 'FAILED' && !isStaleCreating) {
+      throw new AppError('Only failed or stale shipments can be retried', 400);
     }
     
     // Ensure the caller is the seller of this order

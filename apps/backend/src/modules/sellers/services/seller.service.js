@@ -12,6 +12,26 @@ import { maskAccountNumber } from '../../../shared/utils/masking.js';
 import { otpService } from '../../auth/services/otp.service.js';
 import { emailService } from '../../auth/services/email.service.js';
 import { delhiveryShipmentService } from '../../delivery/services/delhiveryShipmentService.js';
+import { logger } from '../../../shared/services/logger.js';
+
+async function _syncPickupLocation(sellerId, sellerData) {
+  if (!sellerData.pickupLocationName) return;
+  try {
+    const result = await delhiveryShipmentService.registerPickupLocation(sellerData);
+    if (result && result.success && result.locationId) {
+      await prisma.seller.update({
+        where: { id: sellerId },
+        data: { delhiveryPickupLocationId: result.locationId, delhiveryRegistrationStatus: 'REGISTERED' }
+      });
+    }
+  } catch (err) {
+    logger.error({ err: err.message, sellerId }, 'Delhivery Pickup Location Registration failed');
+    await prisma.seller.update({
+      where: { id: sellerId },
+      data: { delhiveryRegistrationStatus: 'FAILED' }
+    });
+  }
+}
 
 export const sellerService = {
   /**
@@ -85,7 +105,7 @@ export const sellerService = {
     const initialStatus = govSettings.requireSellerApproval ? 'PENDING' : 'APPROVED';
 
     try {
-      return await prisma.$transaction(async (tx) => {
+      const createdSeller = await prisma.$transaction(async (tx) => {
         // 1. Acquire row-level lock on User to serialize concurrent submissions
         await tx.$executeRawUnsafe('SELECT id FROM "User" WHERE id = $1 FOR UPDATE', userId);
 
@@ -261,6 +281,12 @@ export const sellerService = {
         
         return seller;
       }, { maxWait: 10000, timeout: 20000 });
+
+      if (initialStatus === 'APPROVED') {
+        _syncPickupLocation(createdSeller.id, createdSeller).catch(() => {});
+      }
+
+      return createdSeller;
     } catch (error) {
       // Clean up orphaned Cloudinary files if the database transaction fails
       if (publicIdsToClean.length > 0) {
@@ -353,6 +379,8 @@ export const sellerService = {
 
       return result;
     });
+
+    _syncPickupLocation(updatedSeller.id, updatedSeller).catch(() => {});
 
     // Notify the user (fire-and-forget)
     notificationService.createAndEmit(
@@ -606,13 +634,15 @@ export const sellerService = {
    * Update Store Profile
    */
   async updateStoreProfile(userId, data) {
-    return await prisma.$transaction(async (tx) => {
+    let sellerId = null;
+    await prisma.$transaction(async (tx) => {
       const seller = await tx.seller.findUnique({
         where: { userId },
         include: { shop: true }
       });
 
       if (!seller) throw new AppError("Seller profile not found", 404);
+      sellerId = seller.id;
 
       // Update Seller pickup info & business info
       await tx.seller.update({
@@ -659,21 +689,21 @@ export const sellerService = {
           }
         });
       }
-
-      // Sync pickup location with Delhivery (fire and forget)
-      if (data.locationName && data.pincode) {
-        delhiveryShipmentService.registerPickupLocation({
-          pickupLocationName: data.locationName,
-          pickupAddress: data.streetAddress,
-          pickupCity: data.city,
-          pickupState: data.state,
-          pickupPincode: data.pincode,
-          pickupPhone: data.pickupPhone,
-          supportEmail: data.supportEmail
-        }).catch(() => {});
-      }
-
-      return { success: true };
     });
+
+    if (sellerId && data.locationName && data.pincode) {
+      _syncPickupLocation(sellerId, {
+        pickupLocationName: data.locationName,
+        pickupAddress: data.streetAddress,
+        pickupCity: data.city,
+        pickupState: data.state,
+        pickupPincode: data.pincode,
+        pickupPhone: data.pickupPhone,
+        supportEmail: data.supportEmail
+      }).catch(() => {});
+    }
+
+    return { success: true };
   }
 };
+

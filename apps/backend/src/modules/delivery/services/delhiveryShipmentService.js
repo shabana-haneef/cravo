@@ -47,62 +47,66 @@ export const delhiveryShipmentService = {
    */
   async registerPickupLocation(seller) {
     if (!getToken()) {
-      logger.warn('Delhivery API key missing. Skipping automated warehouse registration.');
-      return false;
+      throw new AppError('Delhivery API key missing. Cannot register warehouse.', 500);
     }
     if (!seller || !seller.pickupLocationName) {
-      logger.warn('Seller missing pickupLocationName. Skipping Delhivery warehouse registration.');
-      return false;
+      throw new AppError('Seller missing pickupLocationName.', 400);
     }
 
-    try {
-      const delhiveryClient = createDelhiveryClient();
-      // Delhivery Client Warehouse creation payload
-      const warehousePayload = {
-        name: seller.pickupLocationName,
-        email: seller.supportEmail || seller.user?.email || 'seller@cravomarketplace.com',
-        phone: seller.pickupPhone || seller.supportPhone || '9876543210',
-        address: seller.pickupAddress || '',
-        city: seller.pickupCity || '',
-        state: seller.pickupState || '',
-        country: 'India',
-        pin: seller.pickupPincode || '',
-        return_address: seller.pickupAddress || '',
-        return_city: seller.pickupCity || '',
-        return_state: seller.pickupState || '',
-        return_country: 'India',
-        return_pin: seller.pickupPincode || ''
-      };
+    const delhiveryClient = createDelhiveryClient();
+    // Delhivery Client Warehouse creation payload
+    const warehousePayload = {
+      name: seller.pickupLocationName,
+      email: seller.supportEmail || seller.user?.email || 'seller@cravomarketplace.com',
+      phone: seller.pickupPhone || seller.supportPhone || '9876543210',
+      address: seller.pickupAddress || '',
+      city: seller.pickupCity || '',
+      state: seller.pickupState || '',
+      country: 'India',
+      pin: seller.pickupPincode || '',
+      return_address: seller.pickupAddress || '',
+      return_city: seller.pickupCity || '',
+      return_state: seller.pickupState || '',
+      return_country: 'India',
+      return_pin: seller.pickupPincode || ''
+    };
 
+    try {
       const response = await delhiveryClient.post('/api/backend/clientwarehouse/create/', warehousePayload, {
         headers: { 'Content-Type': 'application/json' }
       });
 
       if (response.data && (response.data.success || response.data.status)) {
         logger.info({ pickupLocationName: seller.pickupLocationName }, 'Successfully registered/synced pickup location with Delhivery.');
-        return true;
+        // The API returns the registered warehouse name/identifier
+        const locationId = response.data.data?.name || seller.pickupLocationName;
+        return { success: true, locationId };
       }
-      logger.info({ data: response.data }, 'Delhivery Warehouse Creation Response');
-      return true;
+      
+      throw new AppError(`Delhivery Warehouse Creation failed: ${JSON.stringify(response.data)}`, 400);
     } catch (error) {
-      logger.warn({ err: error.message, locationName: seller.pickupLocationName }, 'Delhivery Warehouse Creation call warning (Location may already exist).');
-      return false;
+      logger.error({ err: error.message, locationName: seller.pickupLocationName }, 'Delhivery Warehouse Creation error');
+      throw new AppError(`Failed to register Delhivery pickup location: ${error.response?.data?.error || error.message}`, error.response?.status || 500);
     }
   },
 
   async createShipment(order, seller, deliveryAddress) {
     if (!getToken()) {
-      // Return a mock payload if no key exists (useful for development)
-      logger.warn('Delhivery API key missing. Generating mock AWB.');
-      return {
-        success: true,
-        trackingNumber: `MOCK_AWB_${order.orderNumber}_${Date.now().toString().slice(-4)}`,
-        shipmentId: `MOCK_SHP_${Date.now()}`,
-        status: 'BOOKED',
-        remarks: 'Mock shipment created'
-      };
+      throw new AppError('Delhivery API key missing. Cannot create shipment in production.', 500);
     }
+
+    if (seller.delhiveryRegistrationStatus !== 'REGISTERED' || !seller.delhiveryPickupLocationId) {
+      throw new AppError('Shipment blocked: Seller pickup location is not registered with Delhivery.', 400);
+    }
+
     const delhiveryClient = createDelhiveryClient();
+
+    // Idempotency: Check if the shipment is already created for this exact orderNumber
+    const existingShipment = await delhiveryShipmentService.findShipmentByOrderNumber(order.orderNumber);
+    if (existingShipment && existingShipment.success) {
+      logger.info({ orderNumber: order.orderNumber, trackingNumber: existingShipment.trackingNumber }, 'Recovered existing Delhivery shipment to prevent duplicate.');
+      return existingShipment;
+    }
 
     // Calculate total weight in grams from items or fallback
     const totalWeightGrams = (order.items || []).reduce((sum, item) => {
@@ -126,12 +130,12 @@ export const delhiveryShipmentService = {
           state: deliveryAddress.state,
           country: 'India',
           phone: deliveryAddress.phone,
-          order: order.orderNumber,
+          order: order.orderNumber, // Deterministic unique reference
           payment_mode: order.payments?.length > 0 ? 'Pre-paid' : 'COD',
           weight: totalWeightGrams.toString(),
           declared_value: grandTotal.toString(),
           products_desc: productsDesc,
-          pickup_location: seller.pickupLocationName, // REQUIRED by Delhivery: String matching registered warehouse
+          pickup_location: seller.pickupLocationName, // String matching registered warehouse
           return_pin: seller.pickupPincode,
           return_city: seller.pickupCity,
           return_phone: seller.pickupPhone,
@@ -188,14 +192,7 @@ export const delhiveryShipmentService = {
 
   async createPickupRequest(seller, expectedPackageCount = 1) {
     if (!getToken()) {
-      logger.warn('Delhivery API key missing. Skipping pickup request.');
-      return {
-        success: true,
-        pickupId: `MOCK_PICKUP_${Date.now()}`,
-        pickupDate: null,
-        pickupTime: null,
-        remarks: 'Mock pickup created'
-      };
+      throw new AppError('Delhivery API key missing. Cannot schedule pickup in production.', 500);
     }
     const delhiveryClient = createDelhiveryClient();
 
@@ -245,8 +242,8 @@ export const delhiveryShipmentService = {
   },
 
   async generateShippingLabel(trackingNumber) {
-    if (!getToken() || trackingNumber.startsWith('MOCK_')) {
-      return `https://mock-label-url.com/label/${trackingNumber}.pdf`;
+    if (!getToken()) {
+      throw new AppError('Delhivery API key missing. Cannot generate label in production.', 500);
     }
 
     try {
@@ -301,20 +298,7 @@ export const delhiveryShipmentService = {
 
   async trackShipment(trackingNumber) {
     if (!getToken()) {
-      // Mock tracking response
-      let status = 'IN_TRANSIT';
-      if (trackingNumber.includes('DELIVERED')) status = 'DELIVERED';
-      else if (trackingNumber.includes('CANCEL')) status = 'CANCELLED';
-      else if (trackingNumber.includes('RTO')) status = 'RETURNED';
-      else if (trackingNumber.includes('OUT')) status = 'OUT_FOR_DELIVERY';
-
-      return {
-        status,
-        events: [
-          { date: new Date().toISOString(), status: 'Manifested', location: 'Kochi Hub' },
-          { date: new Date().toISOString(), status: 'In Transit', location: 'Ernakulam Gateway' }
-        ]
-      };
+      throw new AppError('Delhivery API key missing. Cannot track shipment in production.', 500);
     }
 
     try {

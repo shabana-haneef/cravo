@@ -114,6 +114,22 @@ export const orderRepository = {
         skip,
         take: limit,
         include: {
+          shop: {
+            select: {
+              name: true,
+              slug: true,
+              seller: {
+                select: {
+                  pickupLocationName: true,
+                  pickupAddress: true,
+                  pickupCity: true,
+                  pickupState: true,
+                  pickupPincode: true,
+                  pickupPhone: true
+                }
+              }
+            }
+          },
           customer: { select: { email: true, profile: { select: { fullName: true } } } },
           address: true,
           items: {

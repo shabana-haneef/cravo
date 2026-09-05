@@ -280,8 +280,10 @@ export const HelpCenterPage = () => {
                 </div>
                 <span className="font-bold text-gray-800 text-[13px]">Support Hours</span>
               </div>
-              <p className="text-gray-500 text-[11.5px] mb-1">Monday to Saturday</p>
-              <p className="text-gray-900 font-extrabold text-lg tracking-tight">9:00 AM – 6:00 PM</p>
+              <div className="flex flex-col gap-1.5 mt-5">
+                <span className="text-xs font-medium text-gray-500">Monday to Sunday</span>
+                <span className="text-lg font-bold text-[#0B2317]">Open 24 Hours</span>
+              </div>
             </div>
 
             <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex flex-col gap-4">

@@ -53,6 +53,10 @@ model Seller {
   pickupPincode      String?
   pickupState        String?
   
+  // Delhivery Integration
+  delhiveryPickupLocationId   String?
+  delhiveryRegistrationStatus String  @default("PENDING")
+  
   // Comprehensive Seller Application Fields (Temporary storage until approved)
   businessName       String?
   businessType       String?
@@ -368,6 +372,7 @@ model CartItem {
 model Order {
   id                  String             @id @default(cuid())
   orderNumber         String             @unique
+  invoiceNumber       String?            @unique
   customerId          String
   shopId              String
   addressId           String

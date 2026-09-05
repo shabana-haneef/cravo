@@ -17,8 +17,7 @@ export const delhiveryService = {
   getHeaders() {
     const token = process.env.DELHIVERY_API_TOKEN || process.env.DELHIVERY_API_KEY;
     if (!token) {
-      logger.warn('Delhivery API key missing. Using mock responses.');
-      return null;
+      throw new AppError('Delhivery API key missing in environment.', 500);
     }
     return {
       'Authorization': `Token ${token}`,
@@ -40,12 +39,6 @@ export const delhiveryService = {
 
   async trackShipment(trackingNumber) {
     const headers = this.getHeaders();
-    if (!headers) {
-      return {
-        status: 'IN_TRANSIT',
-        events: [{ date: new Date().toISOString(), status: 'In Transit', location: 'Mock Hub' }]
-      };
-    }
 
     try {
       const response = await axios.get(`${this.getBaseUrl()}/api/v1/packages/json/`, {
@@ -83,7 +76,6 @@ export const delhiveryService = {
 
   async cancelShipment(trackingNumber) {
     const headers = this.getHeaders();
-    if (!headers) return true; // Mock success
 
     try {
       const payload = {

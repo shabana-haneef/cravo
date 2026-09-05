@@ -61,10 +61,10 @@ export const ContactUsPage = () => {
             <h3 className="font-bold text-lg">Business Hours</h3>
           </div>
           <div className="text-gray-700 text-sm sm:text-base leading-relaxed pl-10">
-            <p className="font-medium text-gray-500">Monday to Saturday</p>
-            <p className="font-bold text-lg text-gray-900 mb-4">9:00 AM – 6:00 PM</p>
+            <p className="font-medium text-gray-500">Monday to Sunday</p>
+            <p className="font-bold text-lg text-gray-900 mb-4">Open 24 Hours</p>
             <div className="border-t border-[#E2F2E7] pt-4 text-xs sm:text-sm text-gray-500 font-medium">
-              We aim to respond to all queries within 24 to 48 business hours.
+              We aim to respond to all queries within 24 hours.
             </div>
           </div>
         </div>

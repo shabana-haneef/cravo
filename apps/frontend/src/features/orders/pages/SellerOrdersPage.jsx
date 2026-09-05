@@ -504,9 +504,97 @@ export const SellerOrdersPage = () => {
               </div>
             </div>
             <div className="p-8 sm:p-12 overflow-y-auto print:overflow-visible text-gray-800">
-              <h1 className="text-3xl font-semibold text-gray-900 mb-2 tracking-tight">INVOICE</h1>
-              <p className="text-gray-500 font-medium text-sm">Order #{invoiceOrder.orderNumber || invoiceOrder.id.slice(-8).toUpperCase()}</p>
-              <p className="text-gray-500 font-medium text-sm">Date: {new Date(invoiceOrder.createdAt).toLocaleDateString()}</p>
+              {/* Header */}
+              <div className="flex justify-between items-start mb-12">
+                <div>
+                  <div className="text-3xl font-bold text-[#1E3A2B] tracking-tighter mb-1">CRAVO</div>
+                </div>
+                <div className="text-right">
+                  <h1 className="text-4xl font-semibold text-gray-900 mb-2 tracking-tight uppercase">INVOICE</h1>
+                  <p className="text-gray-500 font-medium text-sm">Order: {invoiceOrder.orderNumber || invoiceOrder.id.slice(-8).toUpperCase()}</p>
+                  <p className="text-gray-500 font-medium text-sm">Date: {new Date(invoiceOrder.createdAt).toLocaleDateString()}</p>
+                  <p className="text-gray-500 font-medium text-sm">Invoice No: {invoiceOrder.invoiceNumber || 'PENDING'}</p>
+                </div>
+              </div>
+
+              {/* Billing / Store Information */}
+              <div className="grid grid-cols-2 gap-8 mb-12">
+                <div>
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-200 pb-2">BILL TO</h3>
+                  <p className="font-semibold text-gray-900 mb-1">{invoiceOrder.customer?.profile?.fullName || invoiceOrder.address?.fullName || 'Customer'}</p>
+                  <p className="text-gray-600 text-sm mb-1">{invoiceOrder.address?.phone || invoiceOrder.customer?.email}</p>
+                  <p className="text-gray-500 text-sm leading-relaxed max-w-[250px]">
+                    {invoiceOrder.address ? `${invoiceOrder.address.street}, ${invoiceOrder.address.city}, ${invoiceOrder.address.state} ${invoiceOrder.address.pincode}` : 'Address not provided'}
+                  </p>
+                </div>
+                <div className="text-right flex flex-col items-end">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-200 pb-2 w-full text-right">STORE</h3>
+                  <p className="font-semibold text-gray-900 mb-1">{invoiceOrder.shop?.name || 'Cravo Store'}</p>
+                  {invoiceOrder.shop?.seller?.pickupAddress && (
+                    <p className="text-gray-500 text-sm mb-1">{invoiceOrder.shop.seller.pickupAddress}, {invoiceOrder.shop.seller.pickupCity}</p>
+                  )}
+                  <p className="text-[#16A34A] font-medium text-xs mt-2">Managed by CRAVO Logistics</p>
+                </div>
+              </div>
+
+              {/* Items Table */}
+              <div className="mb-12">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b-2 border-gray-900">
+                      <th className="py-3 text-xs font-bold text-gray-900 uppercase tracking-widest">ITEM</th>
+                      <th className="py-3 text-xs font-bold text-gray-900 uppercase tracking-widest text-center">QTY</th>
+                      <th className="py-3 text-xs font-bold text-gray-900 uppercase tracking-widest text-right">UNIT PRICE</th>
+                      <th className="py-3 text-xs font-bold text-gray-900 uppercase tracking-widest text-right">TOTAL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoiceOrder.items?.map((item, idx) => (
+                      <tr key={idx} className="border-b border-gray-100">
+                        <td className="py-4">
+                          <p className="font-medium text-gray-900 text-sm">{item.product?.name || 'Product'}</p>
+                          {item.productVariant?.name && item.productVariant?.name !== 'Default Variant' && (
+                            <p className="text-gray-500 text-xs mt-0.5">{item.productVariant.name}</p>
+                          )}
+                        </td>
+                        <td className="py-4 text-center text-gray-700 text-sm">{item.quantity}</td>
+                        <td className="py-4 text-right text-gray-700 text-sm">₹{Number(item.unitPrice).toFixed(2)}</td>
+                        <td className="py-4 text-right font-medium text-gray-900 text-sm">₹{Number(item.totalPrice).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Order Summary */}
+              <div className="flex justify-end mb-16">
+                <div className="w-full max-w-sm">
+                  <div className="flex justify-between py-2 text-sm">
+                    <span className="text-gray-500">Subtotal</span>
+                    <span className="font-medium text-gray-900">₹{Number(invoiceOrder.subtotal).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between py-2 text-sm">
+                    <span className="text-gray-500">Delivery</span>
+                    <span className="font-medium text-gray-900">₹{Number(invoiceOrder.deliveryCharge || 0).toFixed(2)}</span>
+                  </div>
+                  {Number(invoiceOrder.discount) > 0 && (
+                    <div className="flex justify-between py-2 text-sm">
+                      <span className="text-gray-500">Discount</span>
+                      <span className="font-medium text-red-600">-₹{Number(invoiceOrder.discount).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between py-4 mt-2 border-t-2 border-gray-900">
+                    <span className="text-base font-bold text-gray-900">TOTAL AMOUNT</span>
+                    <span className="text-xl font-bold text-[#1E3A2B]">₹{Number(invoiceOrder.grandTotal).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="border-t border-gray-200 pt-8 flex justify-between items-center text-xs text-gray-400">
+                <p className="font-medium tracking-wide text-gray-500">CRAVO MARKETPLACE</p>
+                <p>Managed by CRAVO Logistics</p>
+              </div>
             </div>
           </div>
         </div>

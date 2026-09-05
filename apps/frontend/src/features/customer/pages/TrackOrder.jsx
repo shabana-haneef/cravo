@@ -28,19 +28,19 @@ export const TrackOrder = () => {
     {
       title: 'Order Placed',
       description: 'Your order has been received and confirmed.',
-      date: 'June 18, 2026 - 10:30 AM',
+      date: 'June 18, 2026 - 10:30',
       status: 'completed'
     },
     {
       title: 'Dispatched',
       description: 'Seller has packed the items and handed the package to our logistics partner.',
-      date: 'June 19, 2026 - 02:15 PM',
+      date: 'June 19, 2026 - 14:15',
       status: 'completed'
     },
     {
       title: 'In Transit',
       description: 'Package is in transit between hub locations.',
-      date: 'June 20, 2026 - 09:00 AM',
+      date: 'June 20, 2026 - 09:00',
       status: 'active'
     },
     {
@@ -117,7 +117,7 @@ export const TrackOrder = () => {
             </div>
 
             {/* Visual Steps */}
-            <div className="relative pl-8 border-l border-gray-100 flex flex-col gap-8">
+            <div className="relative ml-4 border-l-2 border-gray-100 flex flex-col gap-8">
               {steps.map((step, idx) => {
                 let dotIcon = null;
                 let textClass = 'text-gray-400';
@@ -125,7 +125,7 @@ export const TrackOrder = () => {
 
                 if (step.status === 'completed') {
                   dotIcon = (
-                    <div className="absolute -left-4 w-8 h-8 rounded-full bg-[#E8F5E9] text-[#154D21] flex items-center justify-center border border-white">
+                    <div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-[#E8F5E9] text-[#154D21] flex items-center justify-center border-2 border-white ring-4 ring-white">
                       <CheckCircle2 size={16} className="fill-current text-white stroke-[#154D21]" />
                     </div>
                   );
@@ -133,7 +133,7 @@ export const TrackOrder = () => {
                   textClass = 'text-gray-600';
                 } else if (step.status === 'active') {
                   dotIcon = (
-                    <div className="absolute -left-4 w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200">
+                    <div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center border-2 border-white ring-4 ring-white">
                       <Truck size={16} className="animate-bounce motion-reduce:animate-none" />
                     </div>
                   );
@@ -141,14 +141,14 @@ export const TrackOrder = () => {
                   textClass = 'text-gray-700';
                 } else {
                   dotIcon = (
-                    <div className="absolute -left-4 w-8 h-8 rounded-full bg-white text-gray-300 flex items-center justify-center border border-gray-200">
+                    <div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-white text-gray-300 flex items-center justify-center border-2 border-gray-200 ring-4 ring-white">
                       <Circle size={12} className="fill-current" />
                     </div>
                   );
                 }
 
                 return (
-                  <div key={idx} className="relative flex flex-col gap-2">
+                  <div key={idx} className="relative pl-8 flex flex-col gap-2">
                     {dotIcon}
                     <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-1">
                       <h4 className={`text-sm sm:text-base ${titleClass}`}>{step.title}</h4>

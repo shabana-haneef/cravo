@@ -445,6 +445,7 @@ export const checkoutService = {
     await _validateOrderLimits(userId, cart, grandTotal, settings);
 
     const orderNumber = generateOrderNumber();
+    const invoiceNumber = `INV-${orderNumber.substring(4)}`;
 
     const result = await prisma.$transaction(async (tx) => {
       // 6. Reserve Stock
