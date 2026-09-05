@@ -100,13 +100,18 @@ export const OrdersPage = () => {
   const getStatusText = (status) => {
     switch(status) {
       case 'PENDING_PAYMENT': return 'Pending payment';
-      case 'PLACED': return 'Pending ETA allocation';
+      case 'PLACED': 
+      case 'PAID': return 'Order Placed';
+      case 'SELLER_ACCEPTED': return 'Order Accepted';
       case 'CONFIRMED': return 'Order confirmed';
-      case 'PREPARING': return 'Preparing order';
+      case 'PREPARING': 
+      case 'PROCESSING': return 'Processing';
       case 'READY_FOR_PICKUP': return 'Ready for pickup';
+      case 'SHIPPED': return 'Shipped';
       case 'OUT_FOR_DELIVERY': return 'Out for delivery';
       case 'DELIVERED': return 'Delivered';
       case 'CANCELLED': return 'Cancelled';
+      case 'SELLER_REJECTED': return 'Rejected by Seller';
       case 'REFUNDED': return 'Refunded';
       default: return status;
     }
