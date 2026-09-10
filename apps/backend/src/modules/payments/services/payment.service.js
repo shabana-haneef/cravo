@@ -159,124 +159,190 @@ export const paymentService = {
     });
   },
 
-  async handleWebhook(rawBody, body, signature) {
+  async handleWebhook(rawBody, body, signature, eventId) {
     const rawPayload = Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : (typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody));
     const isValid = razorpayService.verifyWebhookSignature(rawPayload, signature);
     if (!isValid) throw new AppError("Invalid webhook signature", 400);
 
     const event = body.event;
-    const payload = body.payload?.payment?.entity || {};
 
-    const payment = await paymentRepository.findByRazorpayOrderId(payload.order_id);
-    if (!payment) return; // Ignore unmapped payments
+    if (event.startsWith('payment.')) {
+      const payload = body.payload?.payment?.entity || {};
 
-    if (event === 'payment.captured' && payment.status === 'PENDING') {
-      // Strict Amount and Currency Verification
-      const expectedAmountPaise = Math.round(payment.amount * 100);
-      
-      if (payload.amount !== expectedAmountPaise || payload.currency !== 'INR') {
-        logger.error({ 
-          orderId: payment.orderId, 
-          expectedAmount: expectedAmountPaise, 
-          receivedAmount: payload.amount,
-          receivedCurrency: payload.currency
-        }, 'SECURITY ALERT: Webhook payment amount/currency mismatch');
-        return; // Ignore fraudulent webhook payload
-      }
+      const payment = await paymentRepository.findByRazorpayOrderId(payload.order_id);
+      if (!payment) return; // Ignore unmapped payments
 
-      let isDuplicate = false;
-      let placedOrder = null;
-      await prisma.$transaction(async (tx) => {
-        const updateResult = await tx.payment.updateMany({
-          where: { id: payment.id, status: 'PENDING' },
-          data: {
-            razorpayPaymentId: payload.id,
-            status: 'SUCCESS'
-          }
-        });
+      if (event === 'payment.captured' && payment.status === 'PENDING') {
+        // Strict Amount and Currency Verification
+        const expectedAmountPaise = Math.round(payment.amount * 100);
         
-        if (updateResult.count === 0) {
-          isDuplicate = true;
-          return; // Ignore duplicate/retried webhook
-        }
-        
-        await tx.order.updateMany({
-          where: { id: payment.orderId, status: 'PENDING_PAYMENT' },
-          data: { status: 'PLACED' }
-        });
-
-        placedOrder = await _postOrderPlacementActions(tx, payment.orderId);
-      });
-      
-      if (isDuplicate) return;
-      
-      logger.info({ orderId: payment.orderId }, 'Webhook: Payment captured');
-
-      // Notify seller (fire-and-forget)
-      const sellerUserId = placedOrder?.shop?.seller?.userId;
-      if (sellerUserId) {
-        notificationService.createAndEmit(
-          sellerUserId,
-          'ORDER_PLACED',
-          'New Order Received! 🛍️',
-          `Order #${placedOrder.orderNumber} has been placed. Amount: ₹${Number(placedOrder.grandTotal).toFixed(2)}`,
-          { orderId: payment.orderId, orderNumber: placedOrder.orderNumber }
-        ).catch(() => {});
-      }
-    }
-
-    if (event === 'payment.failed' && payment.status === 'PENDING') {
-      let isDuplicate = false;
-      await prisma.$transaction(async (tx) => {
-        const updateResult = await tx.payment.updateMany({
-          where: { id: payment.id, status: 'PENDING' },
-          data: {
-            razorpayPaymentId: payload.id,
-            status: 'FAILED'
-          }
-        });
-        
-        if (updateResult.count === 0) {
-          isDuplicate = true;
-          return;
+        if (payload.amount !== expectedAmountPaise || payload.currency !== 'INR') {
+          logger.error({ 
+            orderId: payment.orderId, 
+            expectedAmount: expectedAmountPaise, 
+            receivedAmount: payload.amount,
+            receivedCurrency: payload.currency
+          }, 'SECURITY ALERT: Webhook payment amount/currency mismatch');
+          return; // Ignore fraudulent webhook payload
         }
 
-        await tx.order.updateMany({
-          where: { id: payment.orderId, status: 'PENDING_PAYMENT' },
-          data: { status: 'CANCELLED' }
-        });
-        
-        // Release reserved stock back to available using Atomic SQL Updates
-        const order = await orderRepository.findById(payment.orderId);
-        for (const item of order.items) {
-          const invUpdateResult = await tx.inventory.updateMany({
-            where: { 
-              productVariantId: item.productVariantId,
-              reservedStock: { gte: item.quantity }
-            },
+        let isDuplicate = false;
+        let placedOrder = null;
+        await prisma.$transaction(async (tx) => {
+          const updateResult = await tx.payment.updateMany({
+            where: { id: payment.id, status: 'PENDING' },
             data: {
-              availableStock: { increment: item.quantity },
-              reservedStock: { decrement: item.quantity }
+              razorpayPaymentId: payload.id,
+              status: 'SUCCESS'
             }
           });
           
-          if (invUpdateResult.count > 0) {
-            const inventory = await tx.inventory.findUnique({ where: { productVariantId: item.productVariantId } });
-            await tx.inventoryTransaction.create({
+          if (updateResult.count === 0) {
+            isDuplicate = true;
+            return; // Ignore duplicate/retried webhook
+          }
+          
+          await tx.order.updateMany({
+            where: { id: payment.orderId, status: 'PENDING_PAYMENT' },
+            data: { status: 'PLACED' }
+          });
+
+          placedOrder = await _postOrderPlacementActions(tx, payment.orderId);
+        });
+        
+        if (isDuplicate) return;
+        
+        logger.info({ orderId: payment.orderId }, 'Webhook: Payment captured');
+
+        // Notify seller (fire-and-forget)
+        const sellerUserId = placedOrder?.shop?.seller?.userId;
+        if (sellerUserId) {
+          notificationService.createAndEmit(
+            sellerUserId,
+            'ORDER_PLACED',
+            'New Order Received! 🛍️',
+            `Order #${placedOrder.orderNumber} has been placed. Amount: ₹${Number(placedOrder.grandTotal).toFixed(2)}`,
+            { orderId: payment.orderId, orderNumber: placedOrder.orderNumber }
+          ).catch(() => {});
+        }
+      }
+
+      if (event === 'payment.failed' && payment.status === 'PENDING') {
+        let isDuplicate = false;
+        await prisma.$transaction(async (tx) => {
+          const updateResult = await tx.payment.updateMany({
+            where: { id: payment.id, status: 'PENDING' },
+            data: {
+              razorpayPaymentId: payload.id,
+              status: 'FAILED'
+            }
+          });
+          
+          if (updateResult.count === 0) {
+            isDuplicate = true;
+            return;
+          }
+
+          await tx.order.updateMany({
+            where: { id: payment.orderId, status: 'PENDING_PAYMENT' },
+            data: { status: 'CANCELLED' }
+          });
+          
+          // Release reserved stock back to available using Atomic SQL Updates
+          const order = await orderRepository.findById(payment.orderId);
+          for (const item of order.items) {
+            const invUpdateResult = await tx.inventory.updateMany({
+              where: { 
+                productVariantId: item.productVariantId,
+                reservedStock: { gte: item.quantity }
+              },
               data: {
-                inventoryId: inventory.id,
-                type: 'ORDER_RELEASED',
-                quantity: item.quantity,
-                previousStock: inventory.availableStock,
-                newStock: inventory.availableStock + item.quantity,
-                reason: 'Payment failed, stock released'
+                availableStock: { increment: item.quantity },
+                reservedStock: { decrement: item.quantity }
               }
             });
+            
+            if (invUpdateResult.count > 0) {
+              const inventory = await tx.inventory.findUnique({ where: { productVariantId: item.productVariantId } });
+              await tx.inventoryTransaction.create({
+                data: {
+                  inventoryId: inventory.id,
+                  type: 'ORDER_RELEASED',
+                  quantity: item.quantity,
+                  previousStock: inventory.availableStock,
+                  newStock: inventory.availableStock + item.quantity,
+                  reason: 'Payment failed, stock released'
+                }
+              });
+            }
           }
-        }
-      });
-      if (isDuplicate) return;
-      logger.info({ orderId: payment.orderId }, 'Webhook: Payment failed and stock released');
+        });
+        if (isDuplicate) return;
+        logger.info({ orderId: payment.orderId }, 'Webhook: Payment failed and stock released');
+      }
+      return;
+    }
+
+    if (event.startsWith('refund.')) {
+      const refundPayload = body.payload?.refund?.entity || {};
+      const razorpayPaymentId = refundPayload.payment_id;
+      const razorpayRefundId = refundPayload.id;
+      const receipt = refundPayload.receipt || null;
+      
+      const paymentRecord = await paymentRepository.findByRazorpayPaymentId(razorpayPaymentId);
+      if (!paymentRecord) return;
+
+      if (['refund.created', 'refund.processed', 'refund.failed'].includes(event)) {
+        const newStatus = event === 'refund.failed' ? 'FAILED' : (event === 'refund.processed' ? 'PROCESSED' : 'PENDING');
+        
+        await prisma.$transaction(async (tx) => {
+          // 1. Look up by razorpayRefundId primarily
+          let refundRecord = await tx.refund.findUnique({
+            where: { razorpayRefundId }
+          });
+
+          // 2. Fallback: look up by paymentId + receipt (API/Webhook race condition)
+          if (!refundRecord && receipt) {
+            refundRecord = await tx.refund.findFirst({
+              where: { paymentId: paymentRecord.id, receipt }
+            });
+          }
+
+          if (refundRecord) {
+            // Duplicate/Out-of-order webhook protection
+            if ((refundRecord.status === 'PROCESSED' || refundRecord.status === 'FAILED') && newStatus === 'PENDING') {
+              logger.info({ razorpayRefundId, eventId }, 'Ignored out-of-order or duplicate refund webhook');
+              return;
+            }
+
+            // Only update if there is an actual change needed to avoid unnecessary DB writes
+            if (refundRecord.status !== newStatus || refundRecord.razorpayRefundId !== razorpayRefundId) {
+              await tx.refund.update({
+                where: { id: refundRecord.id },
+                data: {
+                  razorpayRefundId, // Attach it if matched via fallback
+                  status: newStatus
+                }
+              });
+              logger.info({ orderId: paymentRecord.orderId, razorpayRefundId, status: newStatus, eventId }, `Webhook: Refund updated to ${newStatus}`);
+            }
+          } else {
+            // Record doesn't exist locally (e.g., initiated from Razorpay dashboard)
+            await tx.refund.create({
+              data: {
+                paymentId: paymentRecord.id,
+                orderId: paymentRecord.orderId,
+                razorpayRefundId,
+                amount: refundPayload.amount / 100,
+                status: newStatus,
+                receipt
+              }
+            });
+            logger.info({ orderId: paymentRecord.orderId, razorpayRefundId, status: newStatus, eventId }, `Webhook: External refund created as ${newStatus}`);
+          }
+        });
+      }
+      return;
     }
   }
 };

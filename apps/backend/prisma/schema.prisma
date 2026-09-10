@@ -398,6 +398,7 @@ model Order {
   items               OrderItem[]
   orderShipmentLogs   OrderShipmentLog[]
   payments            Payment[]
+  refunds             Refund[]
 
   @@index([customerId])
   @@index([shopId])
@@ -433,8 +434,29 @@ model Payment {
   status            PaymentStatus @default(PENDING)
   createdAt         DateTime      @default(now())
   order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  refunds           Refund[]
 
   @@index([orderId])
+}
+
+model Refund {
+  id                String       @id @default(cuid())
+  paymentId         String
+  orderId           String
+  razorpayRefundId  String?      @unique
+  amount            Decimal
+  status            RefundStatus @default(PENDING)
+  reason            String?
+  error             String?
+  receipt           String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  payment           Payment      @relation(fields: [paymentId], references: [id])
+  order             Order        @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([paymentId])
 }
 
 model OrderShipmentLog {
@@ -785,6 +807,12 @@ enum PaymentStatus {
   SUCCESS
   FAILED
   REFUNDED
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSED
+  FAILED
 }
 
 enum DeliveryStatus {

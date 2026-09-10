@@ -22,9 +22,15 @@ export const paymentRepository = {
     });
   },
 
-  async update(paymentId, data, tx = prisma) {
+  async findByRazorpayPaymentId(razorpayPaymentId) {
+    return prisma.payment.findUnique({
+      where: { razorpayPaymentId }
+    });
+  },
+
+  async update(id, data, tx = prisma) {
     return tx.payment.update({
-      where: { id: paymentId },
+      where: { id },
       data
     });
   }

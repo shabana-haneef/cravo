@@ -38,6 +38,51 @@ export const razorpayService = {
     }
   },
 
+  async createRefund(paymentId, amount, receipt, idempotencyKey) {
+    // We use native fetch to ensure X-Refund-Idempotency header is passed accurately
+    // as older Razorpay SDKs may not natively expose custom headers in the refund method.
+    const url = `https://api.razorpay.com/v1/payments/${paymentId}/refund`;
+    const options = {
+      amount: Math.round(amount * 100),
+      receipt,
+      speed: "normal"
+    };
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Basic ' + Buffer.from(env.RAZORPAY_KEY_ID + ':' + env.RAZORPAY_KEY_SECRET).toString('base64')
+    };
+
+    if (idempotencyKey) {
+      headers['X-Refund-Idempotency'] = idempotencyKey;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(options)
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.description || "Refund API failed");
+      }
+      return data;
+    } catch (error) {
+      throw new AppError(`Failed to create Razorpay refund: ${error.message}`, 500);
+    }
+  },
+
+  async getRefund(refundId) {
+    const instance = this.getInstance();
+    try {
+      return await instance.refunds.fetch(refundId);
+    } catch (error) {
+      throw new AppError("Failed to fetch Razorpay refund", 500);
+    }
+  },
+
   verifySignature(razorpayOrderId, razorpayPaymentId, signature) {
     const body = razorpayOrderId + "|" + razorpayPaymentId;
     const expectedSignature = crypto

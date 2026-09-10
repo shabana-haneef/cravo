@@ -55,18 +55,35 @@ const getStatusBadge = (status) => {
   }
 };
 
-const getPaymentBadge = (status) => {
-  const paymentStatus = status === 'CANCELLED' ? 'refunded' : (status === 'PLACED' ? 'unpaid' : 'paid');
-  switch (paymentStatus) {
-    case 'paid':
-      return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-green-600 bg-green-50 w-max"><CheckCircle2 size={12}/> Paid</span>;
-    case 'unpaid':
-      return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-red-500 bg-red-50 w-max">Unpaid</span>;
-    case 'refunded':
-      return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-gray-600 bg-gray-100 w-max">Refunded</span>;
-    default:
-      return null;
+const getPaymentBadge = (order) => {
+  const payment = order?.payments?.[0];
+  if (!payment) {
+    return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-red-500 bg-red-50 w-max">Unpaid</span>;
   }
+
+  const refunds = payment.refunds || [];
+  const processedRefund = refunds.find(r => r.status === 'PROCESSED');
+  const pendingRefund = refunds.find(r => r.status === 'PENDING');
+  const failedRefund = refunds.find(r => r.status === 'FAILED');
+
+  if (processedRefund) {
+    return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-gray-600 bg-gray-100 w-max">Refunded</span>;
+  }
+  if (pendingRefund) {
+    return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-orange-600 bg-orange-100 w-max">Refund Pending</span>;
+  }
+  if (failedRefund) {
+    return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-red-600 bg-red-100 w-max">Refund Failed</span>;
+  }
+  
+  if (payment.status === 'SUCCESS') {
+    return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-green-600 bg-green-50 w-max"><CheckCircle2 size={12}/> Paid</span>;
+  }
+  if (payment.status === 'FAILED') {
+    return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-red-500 bg-red-50 w-max">Failed</span>;
+  }
+
+  return <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold text-gray-500 bg-gray-50 w-max">Pending</span>;
 };
 
 export const SellerOrdersPage = () => {
@@ -316,7 +333,7 @@ export const SellerOrdersPage = () => {
                     ₹{Number(order.grandTotal || 0).toFixed(2)}
                   </td>
                   <td className="py-4 px-6">{getStatusBadge(order.status)}</td>
-                  <td className="py-4 px-6">{getPaymentBadge(order.status)}</td>
+                  <td className="py-4 px-6">{getPaymentBadge(order)}</td>
                   <td className="py-4 px-6 text-[13px] font-semibold text-gray-700">{formatOrderDate(order.createdAt)}</td>
                   <td className="py-4 px-6 text-center">
                     <button 

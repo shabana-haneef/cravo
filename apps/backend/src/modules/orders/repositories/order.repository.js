@@ -19,7 +19,7 @@ export const orderRepository = {
             productVariant: true
           }
         },
-        payments: true,
+        payments: { include: { refunds: true } },
         shop: {
           select: {
             name: true,
@@ -45,7 +45,7 @@ export const orderRepository = {
   async findByOrderNumber(orderNumber) {
     return prisma.order.findUnique({
       where: { orderNumber },
-      include: { items: true, payments: true }
+      include: { items: true, payments: { include: { refunds: true } } }
     });
   },
 
@@ -72,6 +72,7 @@ export const orderRepository = {
         include: {
           shop: { select: { name: true, slug: true } },
           address: true,
+          payments: { include: { refunds: true } },
           items: {
             include: {
               product: {
@@ -132,6 +133,7 @@ export const orderRepository = {
           },
           customer: { select: { email: true, profile: { select: { fullName: true } } } },
           address: true,
+          payments: { include: { refunds: true } },
           items: {
             include: {
               product: {
