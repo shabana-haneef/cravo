@@ -23,6 +23,14 @@ const applySchema = z.object({
   pickupCity: z.string().min(1, 'Pickup City is required'),
   pickupState: z.string().min(1, 'Pickup State is required'),
   pickupPincode: z.string().min(5, 'Pickup Postal Code is required'),
+  pickupCountry: z.string().optional().default('India'),
+  
+  returnAddressSameAsPickup: z.union([z.boolean(), z.string()]).transform(v => v === 'true' || v === true).default(true),
+  returnAddress: z.string().optional(),
+  returnCity: z.string().optional(),
+  returnState: z.string().optional(),
+  returnPincode: z.string().optional(),
+  returnCountry: z.string().optional().default('India'),
   
   accountHolderName: z.string().min(1, 'Account Holder Name is required'),
   bankName: z.string().min(1, 'Bank Name is required'),

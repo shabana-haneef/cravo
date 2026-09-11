@@ -63,5 +63,22 @@ export const adminSellerController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  async createWarehouse(req, res, next) {
+    try {
+      const seller = await sellerService.createDelhiveryWarehouse(req.params.id);
+      logger.info({ adminId: req.user.id, sellerId: seller.id }, 'Delhivery Client Warehouse created for seller');
+      
+      await auditLogService.logFromRequest(req, {
+        actionType: 'WAREHOUSE_CREATION',
+        targetType: 'SELLER',
+        targetId: seller.id
+      });
+
+      return successResponse(res, 'Warehouse created successfully', { seller });
+    } catch (error) {
+      next(error);
+    }
   }
 };

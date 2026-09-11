@@ -52,10 +52,20 @@ model Seller {
   pickupPhone        String?
   pickupPincode      String?
   pickupState        String?
+  pickupCountry      String?          @default("India")
   
   // Delhivery Integration
   delhiveryPickupLocationId   String?
   delhiveryRegistrationStatus String  @default("PENDING")
+  delhiveryWarehouseName      String?
+  
+  // Return Location Fields (Delhivery requirement)
+  returnAddressSameAsPickup   Boolean @default(true)
+  returnAddress               String?
+  returnCity                  String?
+  returnState                 String?
+  returnPincode               String?
+  returnCountry               String? @default("India")
   
   // Comprehensive Seller Application Fields (Temporary storage until approved)
   businessName       String?

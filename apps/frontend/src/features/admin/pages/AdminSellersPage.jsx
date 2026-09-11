@@ -56,6 +56,20 @@ export const AdminSellersPage = () => {
     }
   };
 
+  const handleCreateWarehouse = async (id) => {
+    try {
+      toast.loading("Creating Delhivery Warehouse...", { id: "createWarehouse" });
+      await adminService.createWarehouse(id);
+      toast.success('Warehouse created successfully', { id: "createWarehouse" });
+      fetchApplications();
+      if (isModalOpen && selectedApp?.id === id) {
+         openReviewModal({ id }); // refetch current app
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to create warehouse', { id: "createWarehouse" });
+    }
+  };
+
   const openReviewModal = async (appPreview) => {
     try {
       toast.loading("Loading full application...", { id: "loadApp" });
@@ -339,6 +353,31 @@ export const AdminSellersPage = () => {
                 >
                   Approve & Grant Seller Access
                 </button>
+              </div>
+            )}
+
+            {/* Additional Actions for APPROVED sellers */}
+            {selectedApp.status === 'APPROVED' && (
+              <div className="sticky bottom-0 bg-gray-50 border-t border-gray-100 p-4 flex justify-between items-center gap-3 rounded-b-2xl">
+                <div className="flex items-center gap-2 text-sm">
+                   {selectedApp.delhiveryRegistrationStatus === 'REGISTERED' ? (
+                     <span className="text-green-600 font-medium flex items-center gap-1">
+                       <Check size={16} /> Delhivery Warehouse Active: {selectedApp.delhiveryWarehouseName}
+                     </span>
+                   ) : (
+                     <span className="text-amber-600 font-medium flex items-center gap-1">
+                       <MapPin size={16} /> Delhivery Warehouse Pending
+                     </span>
+                   )}
+                </div>
+                {!selectedApp.delhiveryWarehouseName && (
+                  <button
+                    onClick={() => handleCreateWarehouse(selectedApp.id)}
+                    className="px-6 py-2.5 rounded-lg font-bold bg-[#B88645] text-white hover:bg-[#a3753a] transition-colors shadow-lg"
+                  >
+                    Create Delhivery Warehouse
+                  </button>
+                )}
               </div>
             )}
           </div>

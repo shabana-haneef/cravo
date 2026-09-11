@@ -12,6 +12,7 @@ import { maskAccountNumber } from '../../../shared/utils/masking.js';
 import { otpService } from '../../auth/services/otp.service.js';
 import { emailService } from '../../auth/services/email.service.js';
 import { delhiveryShipmentService } from '../../delivery/services/delhiveryShipmentService.js';
+import { delhiveryService } from '../../delivery/services/delhivery.service.js';
 import { logger } from '../../../shared/services/logger.js';
 
 async function _syncPickupLocation(sellerId, sellerData) {
@@ -199,6 +200,14 @@ export const sellerService = {
             pickupCity: data.pickupCity,
             pickupState: data.pickupState,
             pickupPincode: data.pickupPincode,
+            pickupCountry: data.pickupCountry,
+            
+            returnAddressSameAsPickup: data.returnAddressSameAsPickup,
+            returnAddress: data.returnAddress,
+            returnCity: data.returnCity,
+            returnState: data.returnState,
+            returnPincode: data.returnPincode,
+            returnCountry: data.returnCountry,
             
             storeName: data.storeName,
             storeDescription: data.storeDescription,
@@ -422,6 +431,51 @@ export const sellerService = {
     ).catch(() => {});
 
     return result;
+  },
+
+  /**
+   * Admin: Create Delhivery Client Warehouse
+   */
+  async createDelhiveryWarehouse(sellerId) {
+    const seller = await prisma.seller.findUnique({
+      where: { id: sellerId },
+      include: { user: true }
+    });
+
+    if (!seller) throw new AppError("Seller not found", 404);
+    if (seller.status !== 'APPROVED') throw new AppError("Seller must be approved to create a warehouse", 400);
+
+    const warehouseName = seller.pickupLocationName || `Cravo_${seller.businessName.replace(/[^a-zA-Z0-9]/g, '')}_${seller.id.substring(0, 5)}`;
+
+    const payload = {
+      name: warehouseName,
+      email: seller.supportEmail || seller.user.email,
+      phone: seller.pickupPhone || seller.user.phone,
+      address: seller.pickupAddress,
+      city: seller.pickupCity,
+      country: seller.pickupCountry || 'India',
+      pin: seller.pickupPincode,
+      return_address: seller.returnAddressSameAsPickup ? seller.pickupAddress : seller.returnAddress,
+      return_pin: seller.returnAddressSameAsPickup ? seller.pickupPincode : seller.returnPincode,
+      return_city: seller.returnAddressSameAsPickup ? seller.pickupCity : seller.returnCity,
+      return_state: seller.returnAddressSameAsPickup ? seller.pickupState : seller.returnState,
+      return_country: seller.returnAddressSameAsPickup ? seller.pickupCountry : seller.returnCountry
+    };
+
+    const result = await delhiveryService.createClientWarehouse(payload);
+    
+    if (result.success && result.data && result.data.success) {
+       return await prisma.seller.update({
+         where: { id: sellerId },
+         data: {
+           delhiveryWarehouseName: warehouseName,
+           delhiveryRegistrationStatus: 'REGISTERED'
+         }
+       });
+    } else {
+       logger.error({ result, sellerId }, 'Warehouse creation returned non-success response');
+       throw new AppError("Failed to create warehouse at Delhivery", 500);
+    }
   },
 
   /**

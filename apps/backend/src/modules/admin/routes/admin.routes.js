@@ -33,6 +33,7 @@ router.get('/seller-applications', adminSellerController.listApplications);
 router.get('/seller-applications/:id', adminSellerController.getApplication);
 router.patch('/seller-applications/:id/approve', adminSellerController.approveApplication);
 router.patch('/seller-applications/:id/reject', adminSellerController.rejectApplication);
+router.post('/seller-applications/:id/warehouse', adminSellerController.createWarehouse);
 
 // Category Admin
 router.post('/categories', categoryController.createCategory);

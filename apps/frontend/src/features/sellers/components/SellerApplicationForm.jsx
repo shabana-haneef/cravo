@@ -35,6 +35,15 @@ const schema = z.object({
   pickupCity: z.string().min(1, 'Pickup City is required'),
   pickupState: z.string().min(1, 'Pickup State is required'),
   pickupPincode: z.string().min(5, 'Pickup Postal Code is required'),
+  pickupCountry: z.string().default('India'),
+
+  // Return Location
+  returnAddressSameAsPickup: z.boolean().default(true),
+  returnAddress: z.string().optional(),
+  returnCity: z.string().optional(),
+  returnState: z.string().optional(),
+  returnPincode: z.string().optional(),
+  returnCountry: z.string().default('India'),
 
   // Step 5: Bank Details
   accountHolderName: z.string().min(1, 'Account Holder Name is required'),
@@ -72,6 +81,7 @@ export const SellerApplicationForm = ({ onSuccess, onCancel }) => {
     handleSubmit,
     control,
     trigger,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
@@ -92,6 +102,13 @@ export const SellerApplicationForm = ({ onSuccess, onCancel }) => {
       pickupCity: '',
       pickupState: '',
       pickupPincode: '',
+      pickupCountry: 'India',
+      returnAddressSameAsPickup: true,
+      returnAddress: '',
+      returnCity: '',
+      returnState: '',
+      returnPincode: '',
+      returnCountry: 'India',
       accountHolderName: '',
       bankName: '',
       accountNumber: '',
@@ -115,6 +132,16 @@ export const SellerApplicationForm = ({ onSuccess, onCancel }) => {
     if (step === 5) fieldsToValidate = ['storeName'];
     
     const isStepValid = await trigger(fieldsToValidate);
+    
+    // Custom validation for return location
+    if (step === 3 && !watch('returnAddressSameAsPickup')) {
+      const { returnAddress, returnCity, returnState, returnPincode } = watch();
+      if (!returnAddress || !returnCity || !returnState || !returnPincode) {
+        toast.error("Please fill all required return location fields.");
+        return;
+      }
+    }
+
     if (isStepValid) {
       setStep((s) => Math.min(s + 1, totalSteps));
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -329,6 +356,43 @@ export const SellerApplicationForm = ({ onSuccess, onCancel }) => {
                 <input {...register('pickupPincode')} className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-[#1E3A2B]" />
                 {errors.pickupPincode && <p className="text-xs text-red-500 mt-1">{errors.pickupPincode.message}</p>}
               </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Country</label>
+                <input {...register('pickupCountry')} readOnly className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none bg-gray-50 text-gray-500" />
+              </div>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-gray-100">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Return Location</h2>
+              <label className="flex items-start gap-3 cursor-pointer group mb-6">
+                <input type="checkbox" {...register('returnAddressSameAsPickup')} className="mt-1 w-5 h-5 rounded border-gray-300 text-[#1E3A2B] focus:ring-[#1E3A2B]" />
+                <span className="text-sm text-gray-700 leading-relaxed font-medium">Return address is the same as pickup address</span>
+              </label>
+
+              {!watch('returnAddressSameAsPickup') && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="col-span-1 md:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Return Address *</label>
+                    <input {...register('returnAddress')} className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-[#1E3A2B]" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">City *</label>
+                    <input {...register('returnCity')} className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-[#1E3A2B]" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">State *</label>
+                    <input {...register('returnState')} className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-[#1E3A2B]" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Postal Code *</label>
+                    <input {...register('returnPincode')} className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-[#1E3A2B]" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Country</label>
+                    <input {...register('returnCountry')} readOnly className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none bg-gray-50 text-gray-500" />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

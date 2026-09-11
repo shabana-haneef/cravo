@@ -88,5 +88,30 @@ export const delhiveryService = {
       logger.error({ err: error.message, trackingNumber }, 'Delhivery Cancel Error');
       return false;
     }
+  },
+
+  async createClientWarehouse(payload) {
+    const headers = this.getHeaders();
+
+    try {
+      // The payload must strictly match Delhivery's API spec
+      // e.g. { name, email, phone, address, city, country, pin, return_address, etc }
+      const response = await axios.post(`${this.getBaseUrl()}/api/backend/clientwarehouse/create/`, payload, { headers });
+      
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      logger.error({ 
+        err: error.response?.data || error.message, 
+        payload 
+      }, 'Delhivery Client Warehouse Creation Error');
+      
+      // Pass along the exact error message from Delhivery if available
+      const delhiveryMessage = error.response?.data?.message || error.response?.data?.error || error.message;
+      
+      throw new AppError(`Delhivery Warehouse Creation failed: ${delhiveryMessage}`, error.response?.status || 500);
+    }
   }
 };

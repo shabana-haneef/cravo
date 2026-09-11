@@ -77,6 +77,11 @@ export const adminService = {
     return response.data;
   },
 
+  async createWarehouse(id) {
+    const response = await api.post(`/admin/seller-applications/${id}/warehouse`);
+    return response.data;
+  },
+
   // Product Verification
   async listProducts(status = 'PENDING_APPROVAL') {
     const response = await api.get(`/admin/products/pending?status=${status}`);
