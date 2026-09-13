@@ -444,6 +444,9 @@ export const sellerService = {
 
     if (!seller) throw new AppError("Seller not found", 404);
     if (seller.status !== 'APPROVED') throw new AppError("Seller must be approved to create a warehouse", 400);
+    if (seller.delhiveryRegistrationStatus === 'REGISTERED') {
+      return seller; // Already registered, just return success
+    }
 
     // Ensure warehouse name is absolutely unique to avoid Delhivery "already exists" errors
     const uniqueId = seller.id.substring(seller.id.length - 6);
