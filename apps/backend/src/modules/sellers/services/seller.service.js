@@ -439,7 +439,7 @@ export const sellerService = {
   async createDelhiveryWarehouse(sellerId) {
     const seller = await prisma.seller.findUnique({
       where: { id: sellerId },
-      include: { user: true }
+      include: { user: { include: { profile: true } } }
     });
 
     if (!seller) throw new AppError("Seller not found", 404);
@@ -450,7 +450,7 @@ export const sellerService = {
     const payload = {
       name: warehouseName,
       email: seller.supportEmail || seller.user.email,
-      phone: seller.pickupPhone || seller.user.phone,
+      phone: seller.pickupPhone || seller.supportPhone || seller.user.profile?.phone || '0000000000',
       address: seller.pickupAddress,
       city: seller.pickupCity,
       country: seller.pickupCountry || 'India',
