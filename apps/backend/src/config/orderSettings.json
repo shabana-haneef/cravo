@@ -5,14 +5,26 @@
   "customerCancellationWindowMins": 30,
   "allowedTransitions": {
     "PLACED": [
-      "CONFIRMED",
+      "SELLER_ACCEPTED",
+      "SELLER_REJECTED",
       "CANCELLED"
     ],
-    "CONFIRMED": [
+    "PAID": [
+      "SELLER_ACCEPTED",
+      "SELLER_REJECTED"
+    ],
+    "PENDING_PAYMENT": [
+      "SELLER_REJECTED"
+    ],
+    "SELLER_ACCEPTED": [
       "PREPARING"
     ],
     "PREPARING": [
       "READY_FOR_PICKUP",
+      "OUT_FOR_DELIVERY",
+      "SHIPPED"
+    ],
+    "SHIPPED": [
       "OUT_FOR_DELIVERY"
     ],
     "READY_FOR_PICKUP": [
