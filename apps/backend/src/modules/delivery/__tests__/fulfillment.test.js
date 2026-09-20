@@ -28,7 +28,10 @@ describe('Seller Fulfillment Workflow - Production Readiness', () => {
     jest.spyOn(delhiveryShipmentService, 'createShipment').mockResolvedValue({ success: true, trackingNumber: 'AWB123', shipmentId: 'SHP123' });
     jest.spyOn(delhiveryShipmentService, 'createPickupRequest').mockResolvedValue({});
     jest.spyOn(delhiveryShipmentService, 'generateShippingLabel').mockResolvedValue('http://label');
-    jest.spyOn(delhiveryShipmentService, 'trackShipment').mockResolvedValue({ status: 'Delivered' });
+    // Default: batch format [{awb, status, rawStatus, events, currentLocation}]
+    jest.spyOn(delhiveryShipmentService, 'trackShipment').mockResolvedValue([
+      { awb: 'AWB123', status: 'DELIVERED', rawStatus: 'Delivered', events: [], currentLocation: 'Customer' }
+    ]);
 
     // Mock Prisma
     jest.spyOn(prisma.order, 'findUnique').mockResolvedValue(null);
@@ -39,6 +42,8 @@ describe('Seller Fulfillment Workflow - Production Readiness', () => {
     jest.spyOn(prisma.delivery, 'findMany').mockResolvedValue([]);
     jest.spyOn(prisma.seller, 'findUnique').mockResolvedValue(null);
     jest.spyOn(prisma.deliveryTrackingEvent, 'create').mockResolvedValue({});
+    // processTrackingUpdate uses createMany (with skipDuplicates) — must be mocked to avoid real DB FK violation
+    jest.spyOn(prisma.deliveryTrackingEvent, 'createMany').mockResolvedValue({ count: 1 });
     jest.spyOn(prisma.orderShipmentLog, 'create').mockResolvedValue({});
     
     // Special handling for $transaction to immediately execute the callback with the real prisma (which is spied upon)
@@ -143,19 +148,25 @@ describe('Seller Fulfillment Workflow - Production Readiness', () => {
   describe('6. Webhook State Machine', () => {
     it('allows forward transitions (IN_TRANSIT -> OUT_FOR_DELIVERY)', async () => {
       prisma.delivery.findUnique.mockResolvedValue({ id: 'del_1', status: 'IN_TRANSIT', order: {} });
-      await deliveryService.handleWebhookEvent({ awb: 'AWB123', status: 'Out for Delivery' });
-      expect(prisma.$transaction).toHaveBeenCalled(); // Means updateDeliveryStatus was called
+      await deliveryService.handleWebhookEvent({ Shipment: { AWB: 'AWB123', Status: { Status: 'Out for Delivery' } } });
+      // processTrackingUpdate always calls $transaction (to insert the event)
+      expect(prisma.$transaction).toHaveBeenCalled();
+      // AND delivery.update must be called because rank advanced (7 -> 8)
+      expect(prisma.delivery.update).toHaveBeenCalled();
     });
 
     it('rejects backward transitions (DELIVERED -> IN_TRANSIT)', async () => {
       prisma.delivery.findUnique.mockResolvedValue({ id: 'del_1', status: 'DELIVERED', order: {} });
-      await deliveryService.handleWebhookEvent({ awb: 'AWB123', status: 'In Transit' });
-      expect(prisma.$transaction).not.toHaveBeenCalled();
+      await deliveryService.handleWebhookEvent({ Shipment: { AWB: 'AWB123', Status: { Status: 'In Transit' } } });
+      // $transaction IS called (event is always recorded)
+      expect(prisma.$transaction).toHaveBeenCalled();
+      // But delivery.update must NOT be called — rank does not advance (9 > 7)
+      expect(prisma.delivery.update).not.toHaveBeenCalled();
     });
 
     it('allows NDR -> OUT_FOR_DELIVERY reattempts', async () => {
       prisma.delivery.findUnique.mockResolvedValue({ id: 'del_1', status: 'NDR', order: {} });
-      await deliveryService.handleWebhookEvent({ awb: 'AWB123', status: 'Out for Delivery' });
+      await deliveryService.handleWebhookEvent({ Shipment: { AWB: 'AWB123', Status: { Status: 'Out for Delivery' } } });
       expect(prisma.$transaction).toHaveBeenCalled();
     });
   });
@@ -167,7 +178,10 @@ describe('Seller Fulfillment Workflow - Production Readiness', () => {
       prisma.delivery.findMany.mockResolvedValue([
         { id: 'del_1', trackingNumber: 'AWB123', status: 'IN_TRANSIT', orderId: 'ord_1' }
       ]);
-      delhiveryShipmentService.trackShipment.mockResolvedValue({ status: 'Delivered' });
+      // trackShipment returns normalized batch array [{awb, status, rawStatus, events, currentLocation}]
+      delhiveryShipmentService.trackShipment.mockResolvedValue([
+        { awb: 'AWB123', status: 'DELIVERED', rawStatus: 'Delivered', events: [], currentLocation: 'Customer' }
+      ]);
       prisma.delivery.findUnique.mockResolvedValue({ id: 'del_1', status: 'IN_TRANSIT', order: {} });
       
       startReconciliationJob();
@@ -175,8 +189,9 @@ describe('Seller Fulfillment Workflow - Production Readiness', () => {
       await jobFn({});
 
       expect(prisma.delivery.findMany).toHaveBeenCalled();
-      expect(delhiveryShipmentService.trackShipment).toHaveBeenCalledWith('AWB123');
-      expect(prisma.$transaction).toHaveBeenCalled(); // handleWebhookEvent executed
+      // trackShipment is now a batch API — called with an array of waybills
+      expect(delhiveryShipmentService.trackShipment).toHaveBeenCalledWith(['AWB123']);
+      expect(prisma.$transaction).toHaveBeenCalled(); // processTrackingUpdate executed
     });
   });
   

@@ -72,7 +72,7 @@ describe('sellerService - Delhivery Warehouse Creation', () => {
     const result = await sellerService.createDelhiveryWarehouse('sel_123');
 
     expect(mockDelhiveryService.createClientWarehouse).toHaveBeenCalledWith({
-      name: 'SuperMart_WH',
+      name: 'SuperMartWH_el_123',
       email: 'contact@supermart.com',
       phone: '9876543210',
       address: '123 Main St',
@@ -89,7 +89,7 @@ describe('sellerService - Delhivery Warehouse Creation', () => {
     expect(mockPrisma.seller.update).toHaveBeenCalledWith({
       where: { id: 'sel_123' },
       data: {
-        delhiveryWarehouseName: 'SuperMart_WH',
+        delhiveryWarehouseName: 'SuperMartWH_el_123',
         delhiveryRegistrationStatus: 'REGISTERED'
       }
     });

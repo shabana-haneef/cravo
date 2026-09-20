@@ -13,7 +13,61 @@ export const reconciliationQueue = createQueue('reconciliation');
  */
 export const startReconciliationJob = () => {
   createWorker('reconciliation', async (job) => {
-    logger.info('[ReconciliationWorker] Running Delivery Reconciliation Job');
+    const jobName = job?.name || 'reconcile-deliveries';
+    const jobData = job?.data || {};
+    logger.info({ jobName, jobId: job?.id }, '[ReconciliationWorker] Processing reconciliation job');
+
+    // 1. Dedicated E-Waybill reconciliation
+    if (jobName === 'reconcile-ewaybill') {
+      const { deliveryId, waybill, dcn, ewbn, flow, reason } = jobData;
+      logger.info({ deliveryId, waybill, dcn, ewbn, flow, reason }, '[ReconciliationWorker] Processing reconcile-ewaybill');
+      try {
+        if (reason === 'POST_DELHIVERY_DB_SYNC_FAILED' && deliveryId && ewbn) {
+          const updateData = (flow === 'RETURN')
+            ? { returnEwaybillNumber: ewbn, updatedAt: new Date() }
+            : { ewaybillNumber: ewbn, updatedAt: new Date() };
+
+          await prisma.delivery.update({
+            where: { id: deliveryId },
+            data: updateData
+          });
+
+          await prisma.integrationLog.create({
+            data: {
+              id: `reconcile-ewb-resolved-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              service: 'Delhivery',
+              event: 'RECONCILIATION_EWAYBILL_SYNCED',
+              status: 'RESOLVED',
+              timestamp: new Date()
+            }
+          }).catch(() => {});
+          logger.info({ deliveryId, ewbn }, '[ReconciliationWorker] Successfully reconciled e-waybill local state');
+        }
+      } catch (ewbErr) {
+        logger.error({ err: ewbErr.message, deliveryId }, '[ReconciliationWorker] Failed to reconcile e-waybill');
+      }
+      return;
+    }
+
+    // 2. Cancelled shipment reconciliation
+    if (jobName === 'reconcile-cancelled-shipment') {
+      logger.info({ data: jobData }, '[ReconciliationWorker] Processing reconcile-cancelled-shipment');
+      return;
+    }
+
+    // 3. Edited shipment reconciliation
+    if (jobName === 'reconcile-edited-shipment') {
+      logger.info({ data: jobData }, '[ReconciliationWorker] Processing reconcile-edited-shipment');
+      return;
+    }
+
+    // 4. Pickup reconciliation
+    if (jobName === 'reconcile-pickup') {
+      logger.info({ data: jobData }, '[ReconciliationWorker] Processing reconcile-pickup');
+      return;
+    }
+
+    // 5. Default: Periodic Active Deliveries Sync (reconcile-deliveries)
     try {
       // Fetch active deliveries that might have missed webhooks
       const activeDeliveries = await prisma.delivery.findMany({
@@ -36,21 +90,37 @@ export const startReconciliationJob = () => {
 
       logger.info(`Reconciling ${activeDeliveries.length} active shipments`);
 
-      for (const delivery of activeDeliveries) {
-        try {
-          const delhiveryData = await delhiveryShipmentService.trackShipment(delivery.trackingNumber);
-          
-          if (delhiveryData && delhiveryData.status) {
-            // Re-use webhook event handler to enforce strict state machine rules
-            await deliveryService.handleWebhookEvent({
-              awb: delivery.trackingNumber,
-              status: delhiveryData.status,
-              instructions: 'Updated via Reconciliation Job'
-            });
+      const waybills = activeDeliveries.map(d => d.trackingNumber);
+
+      try {
+        const results = await delhiveryShipmentService.trackShipment(waybills);
+        if (!results) return;
+
+        const resultsArray = Array.isArray(results) ? results : [results];
+
+        for (const delivery of activeDeliveries) {
+          const trackingData = resultsArray.find(r => String(r.awb) === String(delivery.trackingNumber));
+          if (!trackingData) continue;
+
+          // Sync Historical Events
+          for (const scan of trackingData.events || []) {
+            const normalized = deliveryService.normalizeTrackingEvent(delivery.trackingNumber, scan.status, scan.location, scan.date);
+            await deliveryService.processTrackingUpdate(delivery, normalized, false);
           }
-        } catch (err) {
-          logger.warn({ err: err.message, deliveryId: delivery.id }, 'Failed to reconcile shipment');
+          
+          // Sync Current Status
+          if (trackingData.status) {
+            const normalizedCurrent = deliveryService.normalizeTrackingEvent(
+              delivery.trackingNumber, 
+              trackingData.rawStatus || trackingData.status, 
+              trackingData.currentLocation, 
+              new Date()
+            );
+            await deliveryService.processTrackingUpdate(delivery, normalizedCurrent, true);
+          }
         }
+      } catch (err) {
+        logger.warn({ err: err.message }, 'Failed to batch reconcile shipments');
       }
     } catch (error) {
       logger.error({ err: error.message }, '[ReconciliationWorker] Delivery Reconciliation Job failed');

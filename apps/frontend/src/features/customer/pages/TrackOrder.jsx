@@ -1,61 +1,60 @@
 import React, { useState } from 'react';
 import { Search, Package, MapPin, Truck, CheckCircle2, Circle } from 'lucide-react';
+import { trackingApi } from '../api/tracking.api.js';
 
 export const TrackOrder = () => {
   const [orderId, setOrderId] = useState('');
   const [isTracking, setIsTracking] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [error, setError] = useState('');
+  const [trackingData, setTrackingData] = useState(null);
 
-  const handleTrack = (e) => {
+  const handleTrack = async (e) => {
     e.preventDefault();
     if (!orderId.trim()) {
-      setError('Please enter a valid Order ID.');
+      setError('Please enter a valid Order ID or AWB.');
       setShowResult(false);
       return;
     }
     setError('');
     setIsTracking(true);
     
-    // Simulate API fetch delay
-    setTimeout(() => {
+    try {
+      const response = await trackingApi.getPublicTracking(orderId);
+      if (response && response.data) {
+        setTrackingData(response.data.tracking);
+        setShowResult(true);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not find tracking information.');
+      setShowResult(false);
+    } finally {
       setIsTracking(false);
-      setShowResult(true);
-    }, 600);
+    }
   };
 
-  const steps = [
-    {
-      title: 'Order Placed',
-      description: 'Your order has been received and confirmed.',
-      date: 'June 18, 2026 - 10:30',
-      status: 'completed'
-    },
-    {
-      title: 'Dispatched',
-      description: 'Seller has packed the items and handed the package to our logistics partner.',
-      date: 'June 19, 2026 - 14:15',
-      status: 'completed'
-    },
-    {
-      title: 'In Transit',
-      description: 'Package is in transit between hub locations.',
-      date: 'June 20, 2026 - 09:00',
-      status: 'active'
-    },
-    {
-      title: 'Out For Delivery',
-      description: 'Courier partner is delivering the package to your address today.',
-      date: 'Estimated: June 21, 2026',
-      status: 'pending'
-    },
-    {
-      title: 'Delivered',
-      description: 'Package successfully delivered.',
-      date: 'Estimated: June 21, 2026',
-      status: 'pending'
-    }
-  ];
+  const getSteps = () => {
+    if (!trackingData || !trackingData.events) return [];
+    
+    // Map backend events to UI steps
+    return trackingData.events.map((ev, index) => {
+      const isCompleted = index < trackingData.events.length - 1 || trackingData.status === 'DELIVERED';
+      const isActive = index === trackingData.events.length - 1 && trackingData.status !== 'DELIVERED';
+      
+      let status = 'pending';
+      if (isCompleted) status = 'completed';
+      if (isActive) status = 'active';
+
+      return {
+        title: ev.status.replace(/_/g, ' '),
+        description: ev.description || 'Scanned',
+        date: new Date(ev.date).toLocaleString(),
+        status
+      };
+    });
+  };
+
+  const steps = getSteps();
 
   return (
     <div className="min-h-screen py-16 px-6 sm:px-8 bg-gradient-to-b from-white to-[#F8FAF8]">

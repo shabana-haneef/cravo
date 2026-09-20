@@ -14,6 +14,21 @@ import { emailService } from '../../auth/services/email.service.js';
 import { delhiveryShipmentService } from '../../delivery/services/delhiveryShipmentService.js';
 import { delhiveryService } from '../../delivery/services/delhivery.service.js';
 import { logger } from '../../../shared/services/logger.js';
+import { redis } from '../../../config/redis.js';
+
+export const acquireWarehouseLock = async (sellerId, locationName, operation = 'edit', ttlSeconds = 30) => {
+  if (redis && redis.isOpen) {
+    const lockKey = `delhivery:warehouse:${sellerId}:${locationName}:lock`;
+    const acquired = await redis.set(lockKey, 'LOCKED', { NX: true, EX: ttlSeconds });
+    if (!acquired) {
+      throw new AppError(`Warehouse ${operation} operation is already in progress for this location.`, 409, 'CONCURRENT_OPERATION');
+    }
+    return async () => {
+      await redis.del(lockKey).catch(() => {});
+    };
+  }
+  return async () => {};
+};
 
 async function _syncPickupLocation(sellerId, sellerData) {
   if (!sellerData.pickupLocationName) return;
@@ -672,7 +687,8 @@ export const sellerService = {
       city: seller.pickupCity || '',
       state: seller.pickupState || '',
       pincode: seller.pickupPincode || '',
-      enableSelfPickup: seller.shop?.isPickupEnabled ?? false,
+      delhiveryRegistrationStatus: seller.delhiveryRegistrationStatus || 'PENDING',
+      enableSelfPickup: seller.shop?.isPickupEnabled || false,
       enableHomeDelivery: seller.shop?.isDeliveryEnabled ?? false,
       deliveryRadius: seller.shop?.deliveryRadiusKm || 5,
       logoImage: seller.shop?.logoUrl || null,
@@ -703,6 +719,10 @@ export const sellerService = {
 
       if (!seller) throw new AppError("Seller profile not found", 404);
       sellerId = seller.id;
+
+      if (seller.delhiveryRegistrationStatus === 'REGISTERED' && data.locationName && data.locationName !== seller.pickupLocationName) {
+        throw new AppError("Cannot change pickup location name after it has been registered with Delhivery.", 400);
+      }
 
       // Update Seller pickup info & business info
       await tx.seller.update({
@@ -751,19 +771,73 @@ export const sellerService = {
       }
     });
 
-    if (sellerId && data.locationName && data.pincode) {
-      _syncPickupLocation(sellerId, {
-        pickupLocationName: data.locationName,
-        pickupAddress: data.streetAddress,
-        pickupCity: data.city,
-        pickupState: data.state,
-        pickupPincode: data.pincode,
-        pickupPhone: data.pickupPhone,
-        supportEmail: data.supportEmail
-      }).catch(() => {});
+    return { success: true };
+  },
+
+  /**
+   * Dedicated endpoint for updating client warehouse details in Delhivery.
+   */
+  async editPickupLocation(userId, data, clientIp) {
+    const seller = await prisma.seller.findUnique({
+      where: { userId }
+    });
+
+    if (!seller) throw new AppError("Seller profile not found", 404);
+    if (seller.delhiveryRegistrationStatus !== 'REGISTERED') {
+      throw new AppError("Warehouse is not yet registered with Delhivery. Cannot edit.", 400);
     }
 
-    return { success: true };
+    if (!data.pincode || !/^[1-9][0-9]{5}$/.test(data.pincode)) {
+      throw new AppError("A valid 6-digit pincode is required to update the warehouse.", 400);
+    }
+
+    const releaseLock = await acquireWarehouseLock(seller.id, seller.pickupLocationName, 'edit', 30);
+
+    try {
+      // 1. Call Delhivery
+      await delhiveryShipmentService.editClientWarehouse(seller, data, clientIp);
+
+      // 2. On success, atomic local update
+      try {
+        await prisma.seller.update({
+          where: { id: seller.id },
+          data: {
+            pickupPincode: data.pincode,
+            ...(data.streetAddress !== undefined ? { pickupAddress: data.streetAddress } : {}),
+            ...(data.pickupPhone !== undefined ? { pickupPhone: data.pickupPhone } : {})
+          }
+        });
+      } catch (dbError) {
+        logger.error({ err: dbError.message, sellerId: seller.id }, 'DB Update failed after Delhivery warehouse edit success');
+        await prisma.integrationLog.create({
+          data: {
+            id: `client-warehouse-edit-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            service: 'Delhivery',
+            event: 'CLIENT_WAREHOUSE_UPDATE',
+            status: 'NEEDS_RECONCILIATION',
+            timestamp: new Date()
+          }
+        }).catch(() => {});
+        throw new AppError("Warehouse updated in Delhivery, but failed to sync locally. Support has been notified.", 500, 'NEEDS_RECONCILIATION');
+      }
+
+      return { success: true };
+    } catch (error) {
+      if (error.code === 'AMBIGUOUS_TIMEOUT') {
+        await prisma.integrationLog.create({
+          data: {
+            id: `client-warehouse-edit-timeout-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            service: 'Delhivery',
+            event: 'CLIENT_WAREHOUSE_UPDATE',
+            status: 'AMBIGUOUS_TIMEOUT',
+            timestamp: new Date()
+          }
+        }).catch(() => {});
+      }
+      throw error;
+    } finally {
+      await releaseLock();
+    }
   }
 };
 

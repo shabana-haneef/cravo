@@ -496,6 +496,8 @@ model Delivery {
   pickupDate            String?
   pickupSlot            String?
   shippingLabelUrl      String?
+  ewaybillNumber        String?
+  returnEwaybillNumber  String?
   estimatedDeliveryDate DateTime?
   pickedUpAt            DateTime?
   shippedAt             DateTime?
@@ -513,11 +515,33 @@ model DeliveryTrackingEvent {
   deliveryId  String
   status      DeliveryStatus
   description String?
+  fingerprint String?
   eventTime   DateTime       @default(now())
   createdAt   DateTime       @default(now())
   delivery    Delivery       @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
 
   @@index([deliveryId])
+  @@unique([deliveryId, fingerprint])
+}
+
+model DelhiveryWaybill {
+  id          String                 @id @default(cuid())
+  waybill     String                 @unique
+  status      DelhiveryWaybillStatus @default(AVAILABLE)
+  reservedAt  DateTime?
+  usedAt      DateTime?
+  reservedFor String?
+  orderId     String?
+  deliveryId  String?
+  fetchedAt   DateTime               @default(now())
+  metadata    Json?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@index([status])
+  @@index([orderId])
+  @@index([deliveryId])
+  @@index([status, createdAt])
 }
 
 model AdPackage {
@@ -875,4 +899,12 @@ enum CampaignStatus {
   COMPLETED
   REJECTED
   CANCELLED
+}
+
+enum DelhiveryWaybillStatus {
+  AVAILABLE
+  RESERVED
+  USED
+  RELEASED
+  EXPIRED
 }

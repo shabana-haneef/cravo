@@ -149,12 +149,20 @@ async function _calculateShipping(cart, address, deliverySettings) {
         return sum + (itemWeight * item.quantity);
       }, 0);
 
-      deliveryCharge = await delhiveryService.calculateShippingCharge(
-        originPincode,
-        destPincode,
-        totalWeightGrams,
-        deliverySettings.defaultDeliveryCharge
-      );
+      try {
+        const costResult = await delhiveryService.calculateShippingCost({
+          originPincode,
+          destinationPincode: destPincode,
+          weightGrams: Math.ceil(totalWeightGrams),
+          mode: 'S',
+          paymentType: 'Pre-paid',
+          shipmentStatus: 'Delivered'
+        });
+        deliveryCharge = costResult.estimatedShippingCost;
+      } catch (err) {
+        logger.warn({ err: err.message, originPincode, destPincode }, 'Delhivery shipping cost fallback triggered in checkout');
+        deliveryCharge = deliverySettings.defaultDeliveryCharge;
+      }
     } else if (!address) {
       deliveryCharge = null;
     }

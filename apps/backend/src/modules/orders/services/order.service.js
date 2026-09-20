@@ -5,6 +5,7 @@ import { deliveryService } from '../../delivery/services/delivery.service.js';
 import { delhiveryShipmentService } from '../../delivery/services/delhiveryShipmentService.js';
 import { notificationService } from '../../notifications/services/notification.service.js';
 import { orderSettingsService } from '../../admin/services/orderSettings.service.js';
+import { refundService } from '../../payments/services/refund.service.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 import prisma from '../../../lib/prisma.js';
 import { logger } from '../../../shared/services/logger.js';
@@ -56,7 +57,13 @@ export const orderService = {
       throw new AppError(`Cancellation window of ${settings.customerCancellationWindowMins} minutes has expired.`, 400);
     }
 
-    return prisma.$transaction(async (tx) => {
+    // Check if shipment was already manifested with Delhivery
+    const delivery = await prisma.delivery.findUnique({ where: { orderId } });
+    if (delivery && delivery.trackingNumber && ['CREATED', 'BOOKED', 'PICKUP_SCHEDULED', 'READY_FOR_PICKUP'].includes(delivery.status)) {
+      return await deliveryService.cancelShipment(delivery.id, { id: userId, userId, role: 'CUSTOMER' }, { reason: 'Order cancelled by customer within window' });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
       // Atomic state transition prevents Double Cancellation race condition
       const updateResult = await tx.order.updateMany({
         where: { 
@@ -116,6 +123,19 @@ export const orderService = {
 
       return { message: "Order cancelled successfully" };
     });
+
+    // Outside transaction, trigger refund if payment was SUCCESS
+    const successfulPayment = order.payments?.find(p => p.status === 'SUCCESS');
+    if (successfulPayment) {
+      refundService.initiateRefund(
+        successfulPayment.id,
+        successfulPayment.amount,
+        'Order cancelled by customer',
+        `refund-cancel-${order.id}`
+      ).catch(err => logger.error({ err: err.message, orderId }, 'Failed to initiate refund on customer cancellation'));
+    }
+
+    return result;
   },
 
   async updateOrderStatus(userId, orderId, status) {

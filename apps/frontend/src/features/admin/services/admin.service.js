@@ -250,6 +250,17 @@ export const adminService = {
   async getInventoryHealth() {
     const response = await api.get('/admin/settings/inventory/health');
     return response.data;
+  },
+
+  // Delhivery Waybill Inventory Management
+  async getDelhiveryWaybills(params = {}) {
+    const response = await api.get('/admin/delhivery/waybills', { params });
+    return response.data;
+  },
+
+  async fetchDelhiveryWaybills(count) {
+    const response = await api.post('/admin/delhivery/waybills/fetch', { count });
+    return response.data;
   }
 };
 

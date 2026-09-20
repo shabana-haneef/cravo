@@ -27,11 +27,12 @@ const generalLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' },
-  store: new RedisStore({
+  store: env.NODE_ENV === 'test' ? undefined : new RedisStore({
     sendCommand: (...args) => redis.sendCommand(args),
     prefix: 'rl:general:'
   })
 });
+
 
 
 const app = express();

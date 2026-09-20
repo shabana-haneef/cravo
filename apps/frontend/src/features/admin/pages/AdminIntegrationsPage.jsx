@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   Boxes, Key, Cpu, Radio, Database, Activity, RefreshCw, 
   Mail, Play, Server, AlertCircle, CheckCircle2, ShieldAlert,
-  Send, X, Search, Clock
+  Send, X, Search, Clock, Barcode, PackageCheck
 } from 'lucide-react';
 import { adminService } from '../services/admin.service.js';
 import { useAuthStore } from '../../../store/auth.store.js';
@@ -23,10 +23,61 @@ export const AdminIntegrationsPage = () => {
   const [showSmtpModal, setShowSmtpModal] = useState(false);
   const [smtpTargetEmail, setSmtpTargetEmail] = useState('');
 
+  // Waybill Inventory State
+  const [waybillSummary, setWaybillSummary] = useState(null);
+  const [waybillsLoading, setWaybillsLoading] = useState(false);
+  const [fetchCount, setFetchCount] = useState(100);
+  const [fetchingWaybills, setFetchingWaybills] = useState(false);
+
   useEffect(() => {
     fetchHealthReport();
     fetchLogs();
+    fetchWaybillInventory();
   }, []);
+
+  const fetchWaybillInventory = async () => {
+    try {
+      setWaybillsLoading(true);
+      const res = await adminService.getDelhiveryWaybills();
+      if (res?.data?.summary) {
+        setWaybillSummary(res.data.summary);
+      }
+    } catch (e) {
+      console.error('Failed to load waybill inventory', e);
+    } finally {
+      setWaybillsLoading(false);
+    }
+  };
+
+  const handleFetchWaybills = async (e) => {
+    e?.preventDefault();
+    const countNum = parseInt(fetchCount, 10);
+    if (isNaN(countNum) || countNum < 1 || countNum > 10000) {
+      toast.error('Count must be an integer between 1 and 10000');
+      return;
+    }
+
+    try {
+      setFetchingWaybills(true);
+      toast.loading(`Requesting ${countNum} waybills from Delhivery Bulk API...`, { id: 'waybill-fetch' });
+      const res = await adminService.fetchDelhiveryWaybills(countNum);
+      if (res?.success) {
+        const { requested, received, stored, duplicates } = res.data;
+        toast.success(
+          `Stored ${stored} new waybills (${duplicates} duplicates skipped out of ${received} received)`,
+          { id: 'waybill-fetch' }
+        );
+        fetchWaybillInventory();
+        fetchLogs();
+      } else {
+        toast.error(res?.error?.message || 'Failed to fetch waybills', { id: 'waybill-fetch' });
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Failed to fetch waybills', { id: 'waybill-fetch' });
+    } finally {
+      setFetchingWaybills(false);
+    }
+  };
 
   const fetchHealthReport = async () => {
     try {
@@ -223,7 +274,7 @@ export const AdminIntegrationsPage = () => {
       testAction: () => handleTestConnection('delhivery'),
       renderDetails: (details) => (
         <div className="text-[10px] text-gray-400 space-y-1">
-          <p>API Sync: <span className="font-bold text-gray-700">{details?.trackingSyncStatus || 'Inactive'}</span></p>
+          <p>AWB Pool: <span className="font-bold text-orange-600">{waybillSummary?.available ?? 0} available</span></p>
           <p>Last manifest: <span className="font-semibold text-gray-700">{details?.lastShipmentCreated ? new Date(details.lastShipmentCreated).toLocaleString() : 'N/A'}</span></p>
         </div>
       )
@@ -346,6 +397,117 @@ export const AdminIntegrationsPage = () => {
             </article>
           );
         })}
+      </section>
+
+      {/* Delhivery Waybill Inventory Management Section */}
+      <section className="bg-white rounded-2xl shadow-xs border border-gray-100 p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-gray-50 pb-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Barcode className="text-orange-600 w-5 h-5" />
+              <h2 className="text-base font-bold text-gray-900">Delhivery Waybill Inventory</h2>
+              {waybillSummary?.isLowStock && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+                  <AlertCircle size={10} /> Low Stock Alert (&lt; {waybillSummary.lowStockThreshold})
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-gray-500">
+              Pre-allocated AWB numbers pool for instant concurrency-safe shipment manifestation. Rate limit: 5 requests / 5 mins.
+            </p>
+          </div>
+
+          <button
+            onClick={fetchWaybillInventory}
+            disabled={waybillsLoading}
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 text-xs font-semibold transition-all disabled:opacity-50"
+          >
+            <RefreshCw size={12} className={waybillsLoading ? 'motion-safe:animate-spin' : ''} />
+            Sync Inventory
+          </button>
+        </div>
+
+        {/* Metrics Strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="p-4 rounded-xl bg-gray-50/50 border border-gray-100">
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Total Waybills</p>
+            <p className="text-2xl font-black text-gray-900 mt-1">{waybillSummary?.total ?? 0}</p>
+          </div>
+          <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100">
+            <p className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Available AWBs</p>
+            <p className="text-2xl font-black text-emerald-800 mt-1">{waybillSummary?.available ?? 0}</p>
+          </div>
+          <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-100">
+            <p className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Reserved</p>
+            <p className="text-2xl font-black text-amber-800 mt-1">{waybillSummary?.reserved ?? 0}</p>
+          </div>
+          <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-100">
+            <p className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">Used AWBs</p>
+            <p className="text-2xl font-black text-indigo-800 mt-1">{waybillSummary?.used ?? 0}</p>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-50/50 border border-slate-100 col-span-2 sm:col-span-1">
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Last Fetched</p>
+            <p className="text-xs font-semibold text-gray-700 mt-2 truncate">
+              {waybillSummary?.lastFetchedAt ? new Date(waybillSummary.lastFetchedAt).toLocaleString() : 'Never'}
+            </p>
+          </div>
+        </div>
+
+        {/* Fetch Action Form */}
+        <div className="bg-orange-50/40 border border-orange-100 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+              <PackageCheck className="text-orange-600 w-4 h-4" /> Fetch Fresh Waybills from Delhivery
+            </h3>
+            <p className="text-xs text-gray-600">
+              Enter number of waybills to request (1 – 10,000). Delhivery generates waybills in batches of 25.
+            </p>
+          </div>
+
+          <form onSubmit={handleFetchWaybills} className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative">
+              <input
+                type="number"
+                min="1"
+                max="10000"
+                value={fetchCount}
+                onChange={(e) => setFetchCount(e.target.value)}
+                disabled={fetchingWaybills}
+                placeholder="Count (e.g. 100)"
+                className="w-32 px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+              />
+            </div>
+
+            {/* Quick Select Buttons */}
+            <div className="hidden md:flex items-center gap-1">
+              {[25, 100, 500].map(cnt => (
+                <button
+                  key={cnt}
+                  type="button"
+                  onClick={() => setFetchCount(cnt)}
+                  className="px-2 py-1 text-xs font-semibold bg-white border border-gray-200 text-gray-700 rounded-md hover:bg-gray-100"
+                >
+                  {cnt}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="submit"
+              disabled={fetchingWaybills}
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-orange-600 text-white rounded-lg text-sm font-bold hover:bg-orange-700 transition-colors disabled:opacity-50"
+            >
+              {fetchingWaybills ? (
+                <>
+                  <RefreshCw size={14} className="motion-safe:animate-spin" />
+                  Fetching...
+                </>
+              ) : (
+                <>Fetch Waybills</>
+              )}
+            </button>
+          </form>
+        </div>
       </section>
 
       {/* Integration Event Logs Section */}

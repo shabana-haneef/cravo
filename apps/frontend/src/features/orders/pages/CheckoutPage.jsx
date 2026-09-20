@@ -189,9 +189,21 @@ export const CheckoutPage = () => {
   const deliverySummary = previewResponse?.data?.summary;
   const addresses = addressData?.data?.addresses || [];
 
+  // Determine whether the cart contains any items classified as Heavy
+  const isCartHeavy = Boolean(
+    cart?.items?.some(item =>
+      item.isHeavy ||
+      item.product?.isHeavy ||
+      item.product?.shippingType === 'Heavy' ||
+      item.product?.productType === 'Heavy' ||
+      (item.productVariant?.weight && item.productVariant.weight >= 10000) ||
+      (item.weightGrams && item.weightGrams >= 10000)
+    )
+  );
+
   useEffect(() => {
     if (!selectedAddressId) {
-      setServiceability({ checked: false, deliverable: false, checking: false, error: null });
+      setServiceability({ checked: false, deliverable: false, checking: false, error: null, isApiError: false });
       return;
     }
     const address = addresses.find(a => a.id === selectedAddressId);
@@ -199,34 +211,41 @@ export const CheckoutPage = () => {
 
     const checkPincode = async () => {
       try {
-        setServiceability(prev => ({ ...prev, checking: true, error: null }));
-        const response = await api.get(`/delhivery/serviceability/${address.postalCode}`);
+        setServiceability(prev => ({ ...prev, checking: true, error: null, isApiError: false }));
+        const endpoint = `/delhivery/serviceability/${address.postalCode}${isCartHeavy ? '?productType=Heavy' : ''}`;
+        const response = await api.get(endpoint);
         if (response.data?.success) {
+          const resData = response.data.data || response.data;
+          const isDeliverable = resData.serviceable ?? resData.deliverable ?? false;
           setServiceability({
             checked: true,
-            deliverable: response.data.deliverable,
+            deliverable: isDeliverable,
+            serviceType: resData.serviceType || (isCartHeavy ? 'HEAVY' : 'B2C'),
             checking: false,
-            error: null
+            error: null,
+            isApiError: false
           });
-          if (!response.data.deliverable) {
-            toast.error('Selected delivery address is not serviceable by Delhivery.');
+          if (!isDeliverable) {
+            toast.error(`Selected address is not serviceable for ${isCartHeavy ? 'Heavy' : 'standard'} delivery by Delhivery.`);
           }
         } else {
           throw new Error('Serviceability check failed');
         }
       } catch (err) {
+        const errorMsg = err.response?.data?.error?.message || err.response?.data?.message || 'Could not verify delivery serviceability right now.';
         setServiceability({
-          checked: true,
+          checked: false,
           deliverable: false,
           checking: false,
-          error: 'Could not verify delivery serviceability. Please check the address.'
+          error: errorMsg,
+          isApiError: true
         });
         toast.error('Unable to verify delivery serviceability for this address.');
       }
     };
 
     checkPincode();
-  }, [selectedAddressId, addresses]);
+  }, [selectedAddressId, addresses, isCartHeavy]);
 
   const handlePayment = async () => {
     if (!selectedAddressId) {
@@ -237,8 +256,12 @@ export const CheckoutPage = () => {
       toast.info('Verifying delivery serviceability, please wait...');
       return;
     }
+    if (serviceability.isApiError) {
+      toast.error('Delivery availability could not be verified right now. Please retry.');
+      return;
+    }
     if (serviceability.checked && !serviceability.deliverable) {
-      toast.error('Selected delivery address is not serviceable by Delhivery. Please choose another address.');
+      toast.error(`Selected delivery address is not serviceable for ${isCartHeavy ? 'Heavy' : 'standard'} delivery by Delhivery. Please choose another address.`);
       return;
     }
     if (!cart || cart.items.length === 0) {
@@ -495,20 +518,20 @@ export const CheckoutPage = () => {
                 {serviceability.checking ? (
                   <div className="flex items-center gap-2 text-gray-500">
                     <Loader2 size={16} className="animate-spin text-primary-600" />
-                    <span>Verifying pincode serviceability...</span>
+                    <span>Verifying Delhivery {isCartHeavy ? 'Heavy' : 'standard'} delivery serviceability...</span>
                   </div>
-                ) : serviceability.error ? (
+                ) : serviceability.isApiError ? (
                   <div className="text-amber-600 font-medium">⚠️ {serviceability.error}</div>
-                ) : serviceability.deliverable ? (
+                ) : serviceability.checked && serviceability.deliverable ? (
                   <div className="text-green-700 font-semibold flex items-center gap-2">
                     <CheckCircle2 size={16} />
-                    <span>Deliverable to pincode {addresses.find(a => a.id === selectedAddressId)?.postalCode} by Delhivery</span>
+                    <span>Deliverable to pincode {addresses.find(a => a.id === selectedAddressId)?.postalCode} via Delhivery ({serviceability.serviceType || (isCartHeavy ? 'HEAVY' : 'B2C')})</span>
                   </div>
-                ) : (
+                ) : serviceability.checked && !serviceability.deliverable ? (
                   <div className="text-red-500 font-semibold">
-                    ⚠️ Selected pincode ({addresses.find(a => a.id === selectedAddressId)?.postalCode}) is not serviceable by Delhivery.
+                    ⚠️ Selected pincode ({addresses.find(a => a.id === selectedAddressId)?.postalCode}) is not serviceable for {isCartHeavy ? 'Heavy' : 'standard'} delivery.
                   </div>
-                )}
+                ) : null}
               </div>
             )}
 

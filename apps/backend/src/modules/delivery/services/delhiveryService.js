@@ -33,6 +33,9 @@ const createDelhiveryClient = () => {
 const memoryCache = new Map();
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // Cache for 24 hours
 
+// In-flight request deduplication map
+const inFlightRequests = new Map();
+
 export const delhiveryService = {
   /**
    * Phase 1: Connection Test
@@ -66,126 +69,342 @@ export const delhiveryService = {
   },
 
   /**
-   * Phase 2: Pincode Serviceability Validation
+   * Check Pincode Serviceability for normal B2C shipments
    * @param {string} pincode
-   * @returns {Promise<{deliverable: boolean, pincode: string}>}
+   * @returns {Promise<Object>}
    */
-  async checkServiceability(pincode) {
-    if (!getToken()) {
-      logger.warn('Delhivery API token is not configured. Bypassing serviceability check for local testing.');
-      return { success: true, deliverable: true, pincode, fallback: true };
+  async checkPincodeServiceability(pincode) {
+    return this.checkServiceability(pincode, { productType: 'B2C' });
+  },
+
+  /**
+   * Check Pincode Serviceability for Heavy Product Type shipments
+   * @param {string} pincode
+   * @returns {Promise<Object>}
+   */
+  async checkHeavyPincodeServiceability(pincode) {
+    return this.checkServiceability(pincode, { productType: 'Heavy' });
+  },
+
+  /**
+   * Phase 2: Pincode Serviceability Validation
+   * Supports both Normal B2C and Heavy Product Type serviceability.
+   *
+   * @param {string} pincode
+   * @param {{ productType?: string, product_type?: string }} [options]
+   * @returns {Promise<Object>}
+   */
+  async checkServiceability(pincode, options = {}) {
+    // 1. Pincode validation & normalization
+    const normalizedPincode = String(pincode || '').trim();
+    const pincodeRegex = /^[1-9][0-9]{5}$/;
+
+    if (!pincodeRegex.test(normalizedPincode)) {
+      throw new AppError('Please provide a valid 6-digit pincode.', 400, 'INVALID_PINCODE');
     }
-    const delhiveryClient = createDelhiveryClient();
 
-    const cacheKey = `cache:delhivery:pincode:${pincode}`;
+    // 2. Product type validation & normalization
+    const rawType = options.productType || options.product_type || 'B2C';
+    const normalizedType = String(rawType).trim();
+    let standardProductType = 'B2C';
+    let serviceType = 'B2C';
 
-    // 1. Try fetching from Redis Cache first
+    if (/^heavy$/i.test(normalizedType)) {
+      standardProductType = 'Heavy';
+      serviceType = 'HEAVY';
+    } else if (/^b2c$/i.test(normalizedType) || /^normal$/i.test(normalizedType)) {
+      standardProductType = 'B2C';
+      serviceType = 'B2C';
+    } else {
+      throw new AppError("Invalid product type. Supported types are 'B2C' and 'Heavy'.", 400, 'INVALID_PRODUCT_TYPE');
+    }
+
+    // 3. Isolated Cache Keys (strictly prevents B2C and Heavy cache collisions)
+    const cacheKey = `delhivery:serviceability:${standardProductType.toLowerCase()}:${normalizedPincode}`;
+    const memoryKey = `${standardProductType.toLowerCase()}:${normalizedPincode}`;
+
+    // 4. Check Redis Cache
     try {
       if (redis && redis.isOpen) {
         const cachedValue = await redis.get(cacheKey);
         if (cachedValue) {
-          logger.info({ pincode }, 'Delhivery serviceability cache hit (Redis)');
-          return JSON.parse(cachedValue);
+          logger.info({ pincode: normalizedPincode, serviceType, productType: standardProductType }, 'Delhivery serviceability cache hit (Redis)');
+          const parsed = JSON.parse(cachedValue);
+          return { ...parsed, cached: true };
         }
       }
     } catch (err) {
       logger.warn({ err: err.message }, 'Failed to read from Redis cache, falling back.');
     }
 
-    // 2. Try fetching from in-memory fallback cache
-    const localCached = memoryCache.get(pincode);
+    // 5. Check in-memory fallback cache
+    const localCached = memoryCache.get(memoryKey);
     if (localCached && (Date.now() - localCached.timestamp < CACHE_TTL_MS)) {
-      logger.info({ pincode }, 'Delhivery serviceability cache hit (Memory)');
-      return localCached.data;
+      logger.info({ pincode: normalizedPincode, serviceType, productType: standardProductType }, 'Delhivery serviceability cache hit (Memory)');
+      return { ...localCached.data, cached: true };
     }
 
-    // 3. Perform the live API call
-    try {
-      // Endpoint format: /c/api/pin-codes/json/?filter_codes=pincode
-      const response = await delhiveryClient.get('/c/api/pin-codes/json/', {
-        params: { filter_codes: pincode }
-      });
+    // 6. In-flight request deduplication to prevent hammering Delhivery with concurrent requests
+    if (inFlightRequests.has(memoryKey)) {
+      logger.info({ pincode: normalizedPincode, serviceType }, 'Delhivery serviceability request deduplicated (in-flight)');
+      return inFlightRequests.get(memoryKey);
+    }
 
-      const deliveryCodes = response.data?.delivery_codes;
-      let deliverable = false;
-
-      if (Array.isArray(deliveryCodes) && deliveryCodes.length > 0) {
-        const pinInfo = deliveryCodes[0]?.postal_code;
-        // Delhivery API does NOT return an `is_serviceable` field.
-        // A pincode is serviceable if it appears in the response AND supports pre_paid or COD.
-        deliverable = !!(
-          pinInfo &&
-          pinInfo.pin === parseInt(pincode, 10) &&
-          (pinInfo.pre_paid === 'Y' || pinInfo.cod === 'Y')
-        );
+    const executeCheck = async () => {
+      // 7. Check if API token is configured
+      if (!getToken()) {
+        logger.warn('Delhivery API token is not configured. Bypassing serviceability check for local testing.');
+        return {
+          pincode: normalizedPincode,
+          serviceable: true,
+          deliverable: true,
+          serviceType,
+          productType: standardProductType,
+          prepaid: true,
+          cod: true,
+          fallback: true,
+          cached: false
+        };
       }
 
-      const result = {
-        success: true,
-        deliverable: !!deliverable,
-        pincode
+      const delhiveryClient = createDelhiveryClient();
+      const startTime = Date.now();
+
+      // 8. Prepare upstream Delhivery request parameters
+      // API A (Normal B2C): GET /c/api/pin-codes/json/?filter_codes={PINCODE}
+      // API B (Heavy Product Type): GET /c/api/pin-codes/json/?filter_codes={PINCODE}&pincode={PINCODE}&product_type=Heavy
+      const params = {
+        filter_codes: normalizedPincode
       };
 
-      // 4. Save to Redis Cache
-      try {
-        if (redis && redis.isOpen) {
-          await redis.setEx(cacheKey, 86400, JSON.stringify(result)); // Cache for 24 hours
-        }
-      } catch (err) {
-        logger.warn({ err: err.message }, 'Failed to write to Redis cache.');
+      if (standardProductType === 'Heavy') {
+        params.pincode = normalizedPincode;
+        params.product_type = 'Heavy';
       }
 
-      memoryCache.set(pincode, {
-        timestamp: Date.now(),
-        data: result
-      });
+      try {
+        const response = await delhiveryClient.get('/c/api/pin-codes/json/', { params });
+        const durationMs = Date.now() - startTime;
 
-      return result;
-    } catch (error) {
-      logger.error({ message: error.message, pincode }, 'Delhivery serviceability check API error.');
-      if (error instanceof AppError) throw error;
-      throw new AppError('Failed to verify serviceability with Delhivery API', 500);
-    }
+        const deliveryCodes = response.data?.delivery_codes;
+        let serviceable = false;
+        let pinInfo = null;
+
+        if (Array.isArray(deliveryCodes) && deliveryCodes.length > 0) {
+          pinInfo = deliveryCodes[0]?.postal_code;
+          // Pincode is serviceable if it matches the query pincode AND supports prepaid or COD
+          serviceable = !!(
+            pinInfo &&
+            Number(pinInfo.pin) === parseInt(normalizedPincode, 10) &&
+            (pinInfo.pre_paid === 'Y' || pinInfo.cod === 'Y')
+          );
+        }
+
+        const resultData = {
+          pincode: normalizedPincode,
+          serviceable: !!serviceable,
+          deliverable: !!serviceable, // Backwards compatibility with previous field name
+          serviceType,
+          productType: standardProductType,
+          cached: false
+        };
+
+        if (pinInfo) {
+          if (typeof pinInfo.pre_paid === 'string') resultData.prepaid = pinInfo.pre_paid === 'Y';
+          if (typeof pinInfo.cod === 'string') resultData.cod = pinInfo.cod === 'Y';
+          if (pinInfo.city) resultData.city = pinInfo.city;
+          if (pinInfo.state_code) resultData.state = pinInfo.state_code;
+          if (pinInfo.district) resultData.district = pinInfo.district;
+        }
+
+        // 9. Save to Redis Cache (24 hours TTL)
+        try {
+          if (redis && redis.isOpen) {
+            await redis.setEx(cacheKey, 86400, JSON.stringify(resultData));
+          }
+        } catch (err) {
+          logger.warn({ err: err.message }, 'Failed to write to Redis cache.');
+        }
+
+        // 10. Save to in-memory fallback cache
+        memoryCache.set(memoryKey, {
+          timestamp: Date.now(),
+          data: resultData
+        });
+
+        logger.info({
+          pincode: normalizedPincode,
+          serviceType,
+          serviceable: resultData.serviceable,
+          durationMs
+        }, 'Delhivery serviceability check completed successfully');
+
+        return resultData;
+      } catch (error) {
+        const durationMs = Date.now() - startTime;
+        logger.error({
+          err: error.message,
+          pincode: normalizedPincode,
+          serviceType,
+          durationMs,
+          status: error.response?.status
+        }, 'Delhivery serviceability check API communication failure.');
+
+        // Upstream API failure (timeout, 500, 502, 503, network failure) must NEVER be confused with non-serviceability
+        throw new AppError(
+          'Delivery availability could not be verified right now.',
+          503,
+          'DELHIVERY_SERVICE_UNAVAILABLE'
+        );
+      }
+    };
+
+    const deduplicatedPromise = executeCheck().finally(() => {
+      inFlightRequests.delete(memoryKey);
+    });
+
+    inFlightRequests.set(memoryKey, deduplicatedPromise);
+    return deduplicatedPromise;
+  },
+
+  /**
+   * Helper to clear memory cache (primarily used for testing and resets)
+   */
+  clearCache() {
+    memoryCache.clear();
+    inFlightRequests.clear();
   },
 
   /**
    * Phase 3: Shipping Rate Calculator
-   * Calculates live shipping rates from Delhivery API.
-   * Falls back to a safe default if API fails.
-   * @param {string} originPincode
-   * @param {string} destPincode
-   * @param {number} weightGrams
-   * @param {number} fallbackDefaultCharge
-   * @returns {Promise<number>}
+   * Calculates estimated shipping costs from Delhivery API.
+   * Strictly read-only; does not mutate any shipment state.
+   *
+   * @param {Object} params
+   * @param {string} params.originPincode
+   * @param {string} params.destinationPincode
+   * @param {number} params.weightGrams
+   * @param {string} params.mode - 'E' or 'S'
+   * @param {string} params.paymentType - Must be 'Pre-paid'
+   * @param {string} params.shipmentStatus - 'Delivered', 'RTO', 'DTO'
+   * @returns {Promise<Object>}
    */
-  async calculateShippingCharge(originPincode, destPincode, weightGrams, fallbackDefaultCharge = 50) {
-    if (!getToken()) {
-      logger.warn('Delhivery API token is not configured. Falling back to default delivery charge.');
-      return fallbackDefaultCharge;
+  async calculateShippingCost(params) {
+    const {
+      originPincode,
+      destinationPincode,
+      weightGrams,
+      mode = 'S',
+      paymentType = 'Pre-paid',
+      shipmentStatus = 'Delivered'
+    } = params;
+
+    // 1. Validation
+    const pincodeRegex = /^[1-9][0-9]{5}$/;
+    if (!pincodeRegex.test(originPincode) || !pincodeRegex.test(destinationPincode)) {
+      throw new AppError('Origin and destination must be valid 6-digit pincodes.', 400, 'INVALID_PINCODE');
     }
 
+    if (paymentType !== 'Pre-paid') {
+      throw new AppError('Only Pre-paid payment type is supported for shipping cost calculation.', 400, 'UNSUPPORTED_PAYMENT_TYPE');
+    }
+
+    if (!['E', 'S'].includes(mode)) {
+      throw new AppError('Mode must be E (Express) or S (Surface).', 400, 'INVALID_MODE');
+    }
+
+    if (!['Delivered', 'RTO', 'DTO'].includes(shipmentStatus)) {
+      throw new AppError('Shipment status must be Delivered, RTO, or DTO.', 400, 'INVALID_SHIPMENT_STATUS');
+    }
+
+    if (typeof weightGrams !== 'number' || weightGrams <= 0 || !Number.isInteger(weightGrams)) {
+      throw new AppError('Weight must be a positive integer in grams.', 400, 'INVALID_WEIGHT');
+    }
+
+    // 2. Redis Rate Limiting (50 requests / 5 minutes)
+    const RATE_LIMIT_KEY = 'delhivery:shipping-cost:rate_limit';
+    const RATE_LIMIT_WINDOW_SECONDS = 300;
+    const MAX_REQUESTS = 50;
+
+    if (redis && redis.isOpen) {
+      try {
+        const now = Date.now();
+        const windowStart = now - RATE_LIMIT_WINDOW_SECONDS * 1000;
+        await redis.zRemRangeByScore(RATE_LIMIT_KEY, 0, windowStart);
+        const currentCount = await redis.zCard(RATE_LIMIT_KEY);
+        if (currentCount >= MAX_REQUESTS) {
+          throw new AppError('Delhivery rate calculation rate limit exceeded.', 429, 'DELHIVERY_RATE_LIMITED');
+        }
+        await redis.zAdd(RATE_LIMIT_KEY, { score: now, value: `${now}:${Math.random().toString(36).slice(2, 6)}` });
+        await redis.expire(RATE_LIMIT_KEY, RATE_LIMIT_WINDOW_SECONDS);
+      } catch (err) {
+        if (err instanceof AppError) throw err;
+        logger.warn({ err: err.message }, 'Redis rate limit check failed for shipping cost');
+      }
+    }
+
+    // 3. Environment Check
+    const token = getToken();
+    if (!token) {
+      throw new AppError('Delhivery API token is not configured.', 500, 'DELHIVERY_UNCONFIGURED');
+    }
+
+    // 4. API Call
     const delhiveryClient = createDelhiveryClient();
+    let response;
     try {
-      // Delhivery Rate Calculator API: GET /api/kinko/v1/invoice/charges/.json
-      const response = await delhiveryClient.get('/api/kinko/v1/invoice/charges/.json', {
+      response = await delhiveryClient.get('/api/kinko/v1/invoice/charges/.json', {
         params: {
-          md: 'S', // S for Surface, E for Express
-          ss: 'Delivered',
+          md: mode,
+          ss: shipmentStatus,
           o_pin: originPincode,
-          d_pin: destPincode,
-          cgm: weightGrams
+          d_pin: destinationPincode,
+          cgm: weightGrams,
+          pt: paymentType
         }
       });
-
-      if (response.data && response.data.length > 0 && response.data[0].total_amount) {
-        return Math.ceil(response.data[0].total_amount);
-      }
-      
-      logger.warn({ data: response.data }, 'Delhivery rate API returned unexpected format. Falling back to default charge.');
-      return fallbackDefaultCharge;
-
     } catch (error) {
-      logger.error({ message: error.message, originPincode, destPincode, weightGrams }, 'Delhivery rate calculation failed. Falling back to default charge.');
+      const isRateLimited = error.response?.status === 429;
+      const isTimeout = error.code === 'ECONNABORTED' || !error.response;
+      
+      const errorCode = isTimeout ? 'DELHIVERY_TIMEOUT' : (isRateLimited ? 'DELHIVERY_RATE_LIMITED' : 'DELHIVERY_API_ERROR');
+      const statusCode = error.response?.status || (isTimeout ? 504 : 502);
+      throw new AppError(`Delhivery rate calculation failed: ${error.message}`, statusCode, errorCode);
+    }
+
+    // 5. Response Normalization
+    if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      const chargeData = response.data[0];
+      if (chargeData.total_amount !== undefined && chargeData.total_amount !== null) {
+        return {
+          estimatedShippingCost: chargeData.total_amount, // Preserve upstream float, no rounding
+          currency: 'INR',
+          mode,
+          weightGrams,
+          originPincode,
+          destinationPincode,
+          paymentType,
+          isStaging: process.env.DELHIVERY_ENV !== 'prod'
+        };
+      }
+    }
+
+    throw new AppError('Invalid response format from Delhivery rate API.', 502, 'DELHIVERY_INVALID_RESPONSE');
+  },
+
+  /**
+   * Thin alias for backwards compatibility
+   */
+  async calculateShippingCharge(originPincode, destPincode, weightGrams, fallbackDefaultCharge = 50) {
+    try {
+      const result = await this.calculateShippingCost({
+        originPincode,
+        destinationPincode: destPincode,
+        weightGrams: Math.ceil(weightGrams) // Ensure integer
+      });
+      return result.estimatedShippingCost;
+    } catch (err) {
+      logger.warn({ err: err.message, originPincode, destPincode }, 'Delhivery shipping cost fallback triggered');
       return fallbackDefaultCharge;
     }
   }

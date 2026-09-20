@@ -33,3 +33,54 @@ export const useCreateShipment = () => {
     },
   });
 };
+
+export const useUpdateShipment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: sellerOrderApi.updateShipment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SELLER_ORDERS_KEY });
+    },
+  });
+};
+
+export const useCancelShipment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: sellerOrderApi.cancelShipment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SELLER_ORDERS_KEY });
+    },
+  });
+};
+
+export const useCancelPickup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: sellerOrderApi.cancelPickup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SELLER_ORDERS_KEY });
+    },
+  });
+};
+
+export const useReschedulePickup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: sellerOrderApi.reschedulePickup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SELLER_ORDERS_KEY });
+    },
+  });
+};
+
+export const useUpdateEwaybill = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: sellerOrderApi.updateEwaybill,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SELLER_ORDERS_KEY });
+    },
+  });
+};
+

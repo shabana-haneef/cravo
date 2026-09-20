@@ -8,6 +8,7 @@ import { systemController } from '../controllers/system.controller.js';
 import { auditController } from '../controllers/audit.controller.js';
 import { settingsController } from '../controllers/settings.controller.js';
 import { healthController } from '../controllers/health.controller.js';
+import { adminWaybillController } from '../controllers/admin.waybill.controller.js';
 import { protect } from '../../../shared/middleware/auth.middleware.js';
 import { allowRoles } from '../../../shared/middleware/role.middleware.js';
 
@@ -68,6 +69,10 @@ router.get('/settings/delivery', settingsController.getDeliverySettings);
 router.put('/settings/delivery', settingsController.updateDeliverySettings);
 router.get('/settings/delivery/analytics', healthController.getDeliveryAnalytics);
 router.get('/settings/delivery/integration-info', healthController.getDelhiveryIntegrationInfo);
+
+// Delhivery Waybill Inventory Management
+router.post('/delhivery/waybills/fetch', adminWaybillController.fetchWaybills);
+router.get('/delhivery/waybills', adminWaybillController.getInventory);
 
 // Governance Settings Configuration Panel
 router.get('/settings/governance', settingsController.getGovernanceSettings);

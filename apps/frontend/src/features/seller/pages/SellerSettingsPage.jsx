@@ -690,6 +690,8 @@ const StoreProfileTab = ({ onSave }) => {
 
   const [logoImage, setLogoImage] = useState(null);
   const [bannerImage, setBannerImage] = useState(null);
+  const [delhiveryRegistrationStatus, setDelhiveryRegistrationStatus] = useState('PENDING');
+  const [isSavingPickup, setIsSavingPickup] = useState(false);
 
   // Business Onboarding Data State
   const [businessName, setBusinessName] = useState('');
@@ -730,6 +732,7 @@ const StoreProfileTab = ({ onSave }) => {
         setDeliveryRadius(p.deliveryRadius || '');
         setLogoImage(p.logoImage || null);
         setBannerImage(p.bannerImage || null);
+        setDelhiveryRegistrationStatus(p.delhiveryRegistrationStatus || 'PENDING');
 
         setBusinessName(p.businessName || '');
         setBusinessType(p.businessType || '');
@@ -815,6 +818,25 @@ const StoreProfileTab = ({ onSave }) => {
       if (onSave) onSave();
     } catch (err) {
       toast.error('Failed to update shop profile');
+    }
+  };
+
+  const handleSavePickupLocation = async () => {
+    setIsSavingPickup(true);
+    try {
+      await api.patch('/sellers/pickup-location', {
+        locationName,
+        pickupPhone,
+        streetAddress,
+        city,
+        state,
+        pincode
+      });
+      toast.success('Pickup location updated successfully!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update pickup location');
+    } finally {
+      setIsSavingPickup(false);
     }
   };
 
@@ -1063,8 +1085,12 @@ const StoreProfileTab = ({ onSave }) => {
                     type="text"
                     value={locationName}
                     onChange={(e) => setLocationName(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                    readOnly={delhiveryRegistrationStatus === 'REGISTERED'}
+                    className={`w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A] ${delhiveryRegistrationStatus === 'REGISTERED' ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''}`}
                   />
+                  {delhiveryRegistrationStatus === 'REGISTERED' && (
+                    <p className="text-[11px] text-gray-400 mt-1">Location name cannot be changed after registration.</p>
+                  )}
                 </div>
                 <div>
                   <InputLabel>Pickup Contact Phone</InputLabel>
@@ -1117,6 +1143,22 @@ const StoreProfileTab = ({ onSave }) => {
                   className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
                 />
               </div>
+            </div>
+
+            <div className="flex justify-end pt-4 mt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={handleSavePickupLocation}
+                disabled={isSavingPickup}
+                className="flex items-center gap-2 bg-[#16A34A] text-white px-5 py-2 rounded-lg text-[13px] font-bold shadow-sm hover:bg-[#15803d] active:scale-95 transition-all disabled:opacity-70 disabled:active:scale-100"
+              >
+                {isSavingPickup ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Save size={16} strokeWidth={2.5} />
+                )}
+                Save Pickup Details
+              </button>
             </div>
           </div>
         </div>

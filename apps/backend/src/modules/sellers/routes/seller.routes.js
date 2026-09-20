@@ -26,5 +26,6 @@ router.put('/settings/notifications', sellerController.updateNotificationPrefere
 
 router.get('/settings/profile', sellerController.getStoreProfile);
 router.put('/settings/profile', sellerController.updateStoreProfile);
+router.patch('/pickup-location', sellerController.editPickupLocation);
 
 export default router;

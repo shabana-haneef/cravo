@@ -141,5 +141,15 @@ export const sellerController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  async editPickupLocation(req, res, next) {
+    try {
+      const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
+      const updated = await sellerService.editPickupLocation(req.user.id, req.body, clientIp);
+      return successResponse(res, 'Pickup location updated successfully in Delhivery and Cravo.', updated);
+    } catch (error) {
+      next(error);
+    }
   }
 };
