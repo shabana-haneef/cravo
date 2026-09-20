@@ -7,11 +7,41 @@ import { logger } from '../../../shared/services/logger.js';
 
 export const inventoryService = {
   async getInventory(userId, variantId) {
-    const inventory = await inventoryRepository.findByVariantIdWithProduct(variantId);
-    if (!inventory) throw new AppError("Inventory not found", 404);
+    let inventory = await inventoryRepository.findByVariantIdWithProduct(variantId);
+    
+    // Auto-create missing inventory for legacy variants
+    if (!inventory) {
+      // We must verify the variant belongs to the user first before creating it
+      const variant = await prisma.productVariant.findUnique({
+        where: { id: variantId },
+        include: { product: true }
+      });
+      
+      if (!variant) throw new AppError("Variant not found", 404);
+      await productService.getMyProductById(userId, variant.productId);
 
-    // Enforce IDOR protection: only the owner of the product can view its inventory details directly
-    await productService.getMyProductById(userId, inventory.productVariant.productId);
+      await prisma.inventory.create({
+        data: {
+          productVariantId: variantId,
+          availableStock: 0,
+          transactions: {
+            create: {
+              type: 'STOCK_IN',
+              quantity: 0,
+              previousStock: 0,
+              newStock: 0,
+              reason: 'Auto-created missing inventory record',
+              createdBy: userId
+            }
+          }
+        }
+      });
+      
+      inventory = await inventoryRepository.findByVariantIdWithProduct(variantId);
+    } else {
+      // Enforce IDOR protection: only the owner of the product can view its inventory details directly
+      await productService.getMyProductById(userId, inventory.productVariant.productId);
+    }
 
     return inventory;
   },
