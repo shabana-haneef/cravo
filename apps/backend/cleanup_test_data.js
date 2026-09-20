@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 // Set to false ONLY when you are 100% sure you want to delete the listed items
-const DRY_RUN = true; 
+const DRY_RUN = false; 
 
 async function main() {
   console.log(`--- Starting Cleanup (${DRY_RUN ? 'DRY RUN' : 'ACTUAL DELETION'}) ---`);
