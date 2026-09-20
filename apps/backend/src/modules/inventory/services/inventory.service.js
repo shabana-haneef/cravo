@@ -4,6 +4,7 @@ import { productService } from '../../products/services/product.service.js';
 import prisma from '../../../lib/prisma.js';
 import { AppError } from '../../../shared/errors/AppError.js';
 import { logger } from '../../../shared/services/logger.js';
+import { redis } from '../../../config/redis.js';
 
 export const inventoryService = {
   async getInventory(userId, variantId) {
@@ -90,6 +91,22 @@ export const inventoryService = {
       if (updatedInventory.availableStock <= updatedInventory.lowStockThreshold) {
         logger.warn({ variantId, newStock: updatedInventory.availableStock }, 'Low stock alert');
         // Trigger notification service here
+      }
+
+      // Clear product cache
+      if (redis && redis.isOpen && inventory.productVariant?.productId) {
+        const productId = inventory.productVariant.productId;
+        redis.del(`catalog:product:${productId}`).catch(()=>{});
+        
+        // Also clear lists so stock changes reflect everywhere
+        try {
+          let cursor = 0;
+          do {
+            const result = await redis.scan(cursor, { MATCH: 'catalog:list:*', COUNT: 100 });
+            cursor = result.cursor;
+            if (result.keys && result.keys.length > 0) await redis.del(result.keys);
+          } while (Number(cursor) !== 0);
+        } catch(e) {}
       }
 
       return updatedInventory;
