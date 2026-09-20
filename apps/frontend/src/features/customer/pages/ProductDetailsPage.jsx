@@ -303,14 +303,21 @@ export const ProductDetailsPage = () => {
             </span>
           </div>
 
-          {/* Price */}
-          <div className="flex items-baseline gap-2 mb-5">
-            <span className="text-3xl font-bold text-[#154D21] leading-none tracking-tight">
-              ₹{selectedVariant?.price ? Number(selectedVariant.price).toFixed(2) : '200.00'}
-            </span>
-            {selectedVariant?.compareAtPrice && (
-              <span className="text-sm font-medium text-gray-400 line-through ml-2">
-                ₹{Number(selectedVariant.compareAtPrice).toFixed(2)}
+          {/* Price & Stock Status */}
+          <div className="flex flex-col mb-5">
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold text-[#154D21] leading-none tracking-tight">
+                ₹{selectedVariant?.price ? Number(selectedVariant.price).toFixed(2) : '200.00'}
+              </span>
+              {selectedVariant?.compareAtPrice && (
+                <span className="text-sm font-medium text-gray-400 line-through ml-2">
+                  ₹{Number(selectedVariant.compareAtPrice).toFixed(2)}
+                </span>
+              )}
+            </div>
+            {isOutOfStock && (
+              <span className="text-[#B12704] text-[15px] font-bold mt-2">
+                Currently unavailable.
               </span>
             )}
           </div>
@@ -372,20 +379,26 @@ export const ProductDetailsPage = () => {
               <button 
                 disabled={isOutOfStock || isAdding}
                 onClick={isItemInCart ? () => navigate('/cart') : executeAddToCart}
-                className="flex-1 h-12 text-[14px] bg-[#154D21] text-white font-semibold rounded-lg hover:bg-[#103B19] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className={`flex-1 h-12 text-[14px] font-semibold rounded-lg transition-all flex items-center justify-center gap-2
+                  ${isOutOfStock 
+                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed' 
+                    : 'bg-[#154D21] text-white hover:bg-[#103B19] disabled:opacity-50'
+                  }`}
               >
-                <ShoppingCart size={18} /> {isItemInCart ? 'Go to Cart' : 'Add to Cart'}
+                <ShoppingCart size={18} /> {isOutOfStock ? 'Out of Stock' : (isItemInCart ? 'Go to Cart' : 'Add to Cart')}
               </button>
             </div>
             
             {/* Buy Now */}
-            <button 
-              disabled={isOutOfStock || isAdding || isClearing}
-              onClick={handleBuyNow}
-              className="w-full h-12 text-[14px] bg-[#CA8A04] text-white font-bold rounded-lg hover:bg-[#A16207] transition-all disabled:opacity-50"
-            >
-              Buy Now
-            </button>
+            {!isOutOfStock && (
+              <button 
+                disabled={isAdding || isClearing}
+                onClick={handleBuyNow}
+                className="w-full h-12 text-[14px] bg-[#CA8A04] text-white font-bold rounded-lg hover:bg-[#A16207] transition-all disabled:opacity-50"
+              >
+                Buy Now
+              </button>
+            )}
           </div>
 
           {/* Hardcoded features below Buy Now */}

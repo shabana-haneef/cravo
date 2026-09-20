@@ -81,11 +81,7 @@ export const ProductCard = React.memo(({ product, variant = 'simple' }) => {
             width="400"
             height="400"
           />
-          {isOutOfStock && (
-            <div className="absolute inset-0 bg-white/60 backdrop-blur-xs flex items-center justify-center z-10">
-              <span className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full tracking-wide">OUT OF STOCK</span>
-            </div>
-          )}
+          {/* Removed out of stock overlay for professional look */}
         </Link>
 
         {/* Product Info */}
@@ -135,13 +131,16 @@ export const ProductCard = React.memo(({ product, variant = 'simple' }) => {
             </p>
           )}
 
-          {/* Move to Cart Button */}
           <button
             disabled={isOutOfStock || isAdding}
             onClick={handleAddToCart}
-            className="w-full mt-4 py-2 px-4 rounded-full border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold transition-colors text-center flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-sm"
+            className={`w-full mt-4 py-2 px-4 rounded-full border text-xs font-semibold transition-colors text-center flex items-center justify-center gap-1.5 shadow-sm
+              ${isOutOfStock 
+                ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed' 
+                : 'border-gray-300 bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-50'
+              }`}
           >
-            {isAdding ? 'Moving...' : 'Move to cart'}
+            {isOutOfStock ? 'Out of Stock' : (isAdding ? 'Moving...' : 'Move to cart')}
           </button>
         </div>
       </div>
@@ -177,11 +176,7 @@ export const ProductCard = React.memo(({ product, variant = 'simple' }) => {
             className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white flex items-center justify-center shadow-sm text-gray-400 hover:text-red-500 transition-all border border-gray-100 p-0 z-10"
           />
 
-          {isOutOfStock && (
-            <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-10">
-              <span className="bg-red-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-full tracking-wide">OUT OF STOCK</span>
-            </div>
-          )}
+          {/* Removed out of stock overlay for professional look */}
         </Link>
         
         {/* Product Details */}
@@ -208,10 +203,14 @@ export const ProductCard = React.memo(({ product, variant = 'simple' }) => {
             <button
               disabled={isOutOfStock || isAdding}
               onClick={handleAddToCart}
-              className="w-full h-[32px] rounded-md flex items-center justify-center gap-1.5 bg-[#F0FDF4] border border-[#154D21]/20 text-[#154D21] hover:bg-[#DCFCE7] transition-colors disabled:opacity-50 text-[12px] font-bold"
+              className={`w-full h-[32px] rounded-md flex items-center justify-center gap-1.5 transition-colors text-[12px] font-bold
+                ${isOutOfStock
+                  ? 'bg-gray-100 border border-gray-200 text-gray-500 cursor-not-allowed'
+                  : 'bg-[#F0FDF4] border border-[#154D21]/20 text-[#154D21] hover:bg-[#DCFCE7] disabled:opacity-50'
+                }`}
             >
               <ShoppingCart size={13} className="stroke-[2.5]" />
-              {isAdding ? 'Adding...' : 'Add to Cart'}
+              {isOutOfStock ? 'Out of Stock' : (isAdding ? 'Adding...' : 'Add to Cart')}
             </button>
           </div>
         </div>
@@ -247,11 +246,7 @@ export const ProductCard = React.memo(({ product, variant = 'simple' }) => {
           className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-md text-gray-400 hover:text-red-500 transition-all border-none p-0 z-10"
         />
 
-        {isOutOfStock && (
-          <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-10">
-            <span className="bg-red-500 text-white text-sm font-bold px-4 py-2 rounded-full tracking-wide">OUT OF STOCK</span>
-          </div>
-        )}
+        {/* Removed out of stock overlay for professional look */}
       </Link>
       
       {/* Product Details */}
@@ -276,11 +271,15 @@ export const ProductCard = React.memo(({ product, variant = 'simple' }) => {
           </div>
           
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={!isOutOfStock ? { scale: 1.05 } : {}}
+            whileTap={!isOutOfStock ? { scale: 0.95 } : {}}
             disabled={isOutOfStock || isAdding}
             onClick={handleAddToCart}
-            className="w-9 h-9 rounded-full flex items-center justify-center bg-[#154D21] text-white hover:bg-[#103B19] transition-colors disabled:opacity-50 shrink-0 shadow-sm"
+            className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors shrink-0 shadow-sm
+              ${isOutOfStock 
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                : 'bg-[#154D21] text-white hover:bg-[#103B19] disabled:opacity-50'
+              }`}
           >
             <ShoppingCart size={15} className="stroke-[2.5]" />
           </motion.button>
