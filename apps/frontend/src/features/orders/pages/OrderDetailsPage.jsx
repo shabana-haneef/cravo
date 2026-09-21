@@ -64,30 +64,37 @@ export const OrderDetailsPage = () => {
   };
 
   const getStatusText = (status) => {
+    if (!status) return 'Pending';
     switch(status) {
       case 'PENDING_PAYMENT': return 'Pending';
       case 'PLACED': return 'Confirmed';
       case 'CONFIRMED': return 'Confirmed';
       case 'PREPARING': return 'Processing';
       case 'READY_FOR_PICKUP': return 'Shipped';
+      case 'PICKED_UP': return 'Shipped';
+      case 'IN_TRANSIT': return 'In Transit';
       case 'OUT_FOR_DELIVERY': return 'Out for delivery';
       case 'DELIVERED': return 'Delivered';
       case 'CANCELLED': return 'Cancelled';
-      default: return status;
+      case 'RTO': return 'Return to Origin';
+      case 'RETURNED': return 'Returned';
+      case 'FAILED': return 'Delivery Failed';
+      default: return status.replace(/_/g, ' ');
     }
   };
 
-  const getStatusStage = (status) => {
-    if (['DELIVERED'].includes(status)) return 3;
-    if (['READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'].includes(status)) return 2;
-    if (['PLACED', 'CONFIRMED', 'PREPARING'].includes(status)) return 1;
+  const getStatusStage = (orderStatus, deliveryStatus) => {
+    const statusToCheck = deliveryStatus || orderStatus;
+    if (['DELIVERED', 'RETURNED'].includes(statusToCheck)) return 3;
+    if (['READY_FOR_PICKUP', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'RTO'].includes(statusToCheck)) return 2;
+    if (['PLACED', 'CONFIRMED', 'PREPARING', 'BOOKED'].includes(statusToCheck)) return 1;
     return 0; // Cancelled or Pending
   };
 
-  const currentStage = getStatusStage(order.status);
+  const currentStage = getStatusStage(order.status, order.delivery?.status);
   const formattedDate = new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const displayStatus = getStatusText(order.status);
-  const isCancelled = order.status === 'CANCELLED' || order.status === 'REFUNDED';
+  const displayStatus = getStatusText(order.delivery?.status || order.status);
+  const isCancelled = order.status === 'CANCELLED' || order.status === 'REFUNDED' || order.delivery?.status === 'CANCELLED';
 
   return (
     <div className="max-w-2xl mx-auto bg-gray-50 min-h-screen pb-16">
@@ -154,8 +161,8 @@ export const OrderDetailsPage = () => {
             </div>
             
             <p className="text-xs text-gray-700 mb-5">
-              {order.shipmentLogs?.[0] ? 
-                `Latest: ${order.shipmentLogs[0].event}` : 
+              {order.delivery?.events?.[order.delivery.events.length - 1] ? 
+                `Latest: ${order.delivery.events[order.delivery.events.length - 1].status.replace(/_/g, ' ')} - ${order.delivery.events[order.delivery.events.length - 1].description || ''}` : 
                 (isCancelled ? 'This order was cancelled.' : 'Your order is being processed.')
               }
             </p>
@@ -206,7 +213,7 @@ export const OrderDetailsPage = () => {
                   </div>
                   <div className="text-center w-16">
                     <p>Shipped</p>
-                    {currentStage >= 2 && <p className="mt-0.5">{order.shipmentLogs?.[0] ? new Date(order.shipmentLogs[0].timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</p>}
+                    {currentStage >= 2 && <p className="mt-0.5">{order.delivery?.events?.find(e => ['READY_FOR_PICKUP', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(e.status)) ? new Date(order.delivery.events.find(e => ['READY_FOR_PICKUP', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(e.status)).eventTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</p>}
                   </div>
                   <div className="text-center w-20 -mr-6">
                     <p>Delivery</p>
@@ -217,12 +224,33 @@ export const OrderDetailsPage = () => {
             )}
 
             {/* Info Box */}
-            <div className="bg-[#F8F9FA] rounded-lg p-3 flex items-start gap-2 border border-gray-100">
+            <div className="bg-[#F8F9FA] rounded-lg p-3 flex items-start gap-2 border border-gray-100 mb-3">
               <HelpCircle size={14} className="text-gray-500 mt-0.5 shrink-0" />
               <p className="text-xs text-gray-700 leading-tight">
                 Delivery Executive details will be available once the order is out for delivery
               </p>
             </div>
+
+            {/* Additional Delivery Details (E-Waybill & Label) */}
+            {order.delivery && (order.delivery.ewaybillNumber || order.delivery.shippingLabelUrl) && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {order.delivery.ewaybillNumber && (
+                  <div className="bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-700">
+                    E-Waybill: {order.delivery.ewaybillNumber}
+                  </div>
+                )}
+                {order.delivery.shippingLabelUrl && (
+                  <a 
+                    href={order.delivery.shippingLabelUrl} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="bg-gray-800 text-white hover:bg-gray-900 border border-gray-800 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                  >
+                    Download Label
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
         </div>

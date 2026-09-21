@@ -37,7 +37,12 @@ export const orderRepository = {
             }
           }
         },
-        address: true
+        address: true,
+        delivery: {
+          include: {
+            events: { orderBy: { eventTime: 'asc' } }
+          }
+        }
       }
     });
   },
@@ -45,7 +50,15 @@ export const orderRepository = {
   async findByOrderNumber(orderNumber) {
     return prisma.order.findUnique({
       where: { orderNumber },
-      include: { items: true, payments: { include: { refunds: true } } }
+      include: { 
+        items: true, 
+        payments: { include: { refunds: true } },
+        delivery: {
+          include: {
+            events: { orderBy: { eventTime: 'asc' } }
+          }
+        }
+      }
     });
   },
 
@@ -73,6 +86,11 @@ export const orderRepository = {
           shop: { select: { name: true, slug: true } },
           address: true,
           payments: { include: { refunds: true } },
+          delivery: {
+            include: {
+              events: { orderBy: { eventTime: 'asc' } }
+            }
+          },
           items: {
             include: {
               product: {
@@ -134,6 +152,11 @@ export const orderRepository = {
           customer: { select: { email: true, profile: { select: { fullName: true } } } },
           address: true,
           payments: { include: { refunds: true } },
+          delivery: {
+            include: {
+              events: { orderBy: { eventTime: 'asc' } }
+            }
+          },
           items: {
             include: {
               product: {
