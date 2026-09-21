@@ -217,6 +217,8 @@ export const deliveryService = {
           }
         });
 
+        const formattedRemarks = (Array.isArray(shipmentResponse.remarks) ? shipmentResponse.remarks.join(' ') : shipmentResponse.remarks) || 'Shipment created and pickup scheduled';
+
         // Dual-Write to Relational Table
         await tx.orderShipmentLog.create({
           data: {
@@ -225,7 +227,7 @@ export const deliveryService = {
             timestamp: new Date(),
             awbNumber: shipmentResponse.trackingNumber,
             shipmentId: shipmentResponse.shipmentId,
-            remarks: shipmentResponse.remarks || 'Shipment created and pickup scheduled'
+            remarks: formattedRemarks
           }
         });
 
@@ -235,7 +237,7 @@ export const deliveryService = {
           event: 'Shipment Created',
           awbNumber: shipmentResponse.trackingNumber,
           shipmentId: shipmentResponse.shipmentId,
-          remarks: shipmentResponse.remarks || 'Shipment created and pickup scheduled'
+          remarks: formattedRemarks
         };
 
         await tx.order.update({
@@ -3119,55 +3121,7 @@ export const deliveryService = {
     });
   },
 
-  /**
-   * Authenticated tracking endpoint — returns full event history for a delivery.
-   * Used by sellers / admins.
-   */
-  async getTracking(deliveryId, forceRefresh = false) {
-    const delivery = await prisma.delivery.findUnique({
-      where: { id: deliveryId },
-      include: {
-        trackingEvents: { orderBy: { eventTime: 'desc' } },
-        order: { include: { shop: { include: { seller: true } } } }
-      }
-    });
 
-    if (!delivery) throw new AppError('Delivery not found', 404);
-
-    if (forceRefresh && delivery.trackingNumber) {
-      try {
-        const results = await delhiveryShipmentService.trackShipment([delivery.trackingNumber]);
-        const trackingData = results?.[0];
-        if (trackingData) {
-          for (const scan of trackingData.events || []) {
-            const normalized = this.normalizeTrackingEvent(
-              delivery.trackingNumber, scan.status, scan.location, scan.date
-            );
-            await this.processTrackingUpdate(delivery, normalized, false);
-          }
-          if (trackingData.status) {
-            const normalizedCurrent = this.normalizeTrackingEvent(
-              delivery.trackingNumber,
-              trackingData.rawStatus || trackingData.status,
-              trackingData.currentLocation,
-              new Date()
-            );
-            await this.processTrackingUpdate(delivery, normalizedCurrent, true);
-          }
-        }
-      } catch (err) {
-        logger.warn({ err: err.message, deliveryId }, '[getTracking] Live refresh failed, returning cached events');
-      }
-
-      // Re-fetch after refresh
-      return prisma.delivery.findUnique({
-        where: { id: deliveryId },
-        include: { trackingEvents: { orderBy: { eventTime: 'desc' } } }
-      });
-    }
-
-    return delivery;
-  },
 
   /**
    * Public tracking endpoint — accepts AWB or order number.

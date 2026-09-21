@@ -1,9 +1,21 @@
 import { checkoutService } from '../services/checkout.service.js';
 import { orderService } from '../services/order.service.js';
+import invoiceService from '../services/invoice.service.js';
 import { checkoutSchema, updateOrderStatusSchema } from '../validators/order.validation.js';
 import { successResponse, errorResponse } from '../../../shared/responses/apiResponse.js';
 
 export const orderController = {
+  async getInvoicePdf(req, res, next) {
+    try {
+      const order = await orderService.getOrderById(req.user.id, req.params.id);
+      const pdfBuffer = await invoiceService.generateInvoicePdf(order);
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="CRAVO-INVOICE-${order.orderNumber}.pdf"`);
+      return res.send(pdfBuffer);
+    } catch (error) { next(error); }
+  },
+
   async getPreview(req, res, next) {
     try {
       const { buyNow, variantId, quantity, addressId, unselectedItemIds } = req.query;

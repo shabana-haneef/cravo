@@ -13,6 +13,7 @@ router.post('/checkout', orderController.checkout);
 router.post('/checkout/cancel', orderController.cancelCheckout);
 router.get('/', orderController.getMyOrders);
 router.get('/:id', orderController.getOrderById);
+router.get('/:id/invoice.pdf', orderController.getInvoicePdf);
 router.post('/:id/cancel', orderController.cancelOrder);
 
 // Seller Routes

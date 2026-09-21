@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useSellerOrders, useUpdateOrderStatus, useCreateShipment, useUpdateShipment, useCancelShipment, useCancelPickup, useReschedulePickup, useUpdateEwaybill } from '../hooks/useSellerOrderQueries.js';
 import { Pagination } from '../../../components/ui/Pagination.jsx';
+import { api } from '../../../lib/axios.js';
 import { toast } from 'sonner';
 import { 
   Package, Search, Loader2, AlertCircle, CheckCircle, Truck, Box, XCircle, Users, Receipt, Printer, X, MapPin,
@@ -93,8 +94,18 @@ export const SellerOrdersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAllRows, setShowAllRows] = useState(false);
   
-  // State for modals
-  const [invoiceOrder, setInvoiceOrder] = useState(null);
+  
+  const handleViewInvoice = async (orderId) => {
+    try {
+      toast.loading('Generating invoice...', { id: 'invoice-gen' });
+      const response = await api.get(`/orders/${orderId}/invoice.pdf`, { responseType: 'blob' });
+      const blobUrl = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      window.open(blobUrl, '_blank');
+      toast.success('Invoice generated successfully', { id: 'invoice-gen' });
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to generate invoice', { id: 'invoice-gen' });
+    }
+  };
   const [detailsOrder, setDetailsOrder] = useState(null);
   const [editShipmentOrder, setEditShipmentOrder] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -846,7 +857,7 @@ export const SellerOrdersPage = () => {
                   <p className="text-2xl font-semibold text-[#1E3A2B]">₹{Number(detailsOrder.grandTotal || 0).toFixed(2)}</p>
                </div>
                {detailsOrder.status !== 'PENDING_PAYMENT' && (
-                 <button onClick={() => { setDetailsOrder(null); setInvoiceOrder(detailsOrder); }} className="px-5 py-2.5 border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm">
+                 <button onClick={() => { setDetailsOrder(null); handleViewInvoice(detailsOrder.id); }} className="px-5 py-2.5 border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm">
                    <Receipt size={16} /> View Invoice
                  </button>
                )}
@@ -855,133 +866,7 @@ export const SellerOrdersPage = () => {
         </div>
       )}
 
-      {/* Invoice Modal */}
-      {invoiceOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 print:p-0 print:bg-white print:block overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col max-h-[90vh] print:max-h-none print:shadow-none print:rounded-none">
-            <div className="flex justify-between items-center p-6 border-b border-gray-100 print:hidden shrink-0">
-              <h2 className="text-xl font-medium text-gray-900 flex items-center gap-2">
-                <Receipt size={24} className="text-[#1E3A2B]" /> Invoice #{invoiceOrder.orderNumber || invoiceOrder.id.slice(-8).toUpperCase()}
-              </h2>
-              <div className="flex gap-3">
-                <button onClick={() => window.print()} className="px-4 py-2 bg-[#16A34A] hover:bg-[#15803d] text-white font-medium rounded-xl text-sm transition-colors flex items-center gap-2">
-                  <Printer size={16} /> Print
-                </button>
-                <button onClick={() => setInvoiceOrder(null)} className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition-colors">
-                  <X size={20} />
-                </button>
-              </div>
-            </div>
-            <div className="p-8 sm:p-12 overflow-y-auto print:overflow-visible text-gray-800">
-              {/* Header */}
-              <div className="flex justify-between items-start mb-12">
-                <div>
-                  <div className="text-3xl font-bold text-[#1E3A2B] tracking-tighter mb-1">CRAVO</div>
-                </div>
-                <div className="text-right">
-                  <h1 className="text-4xl font-semibold text-gray-900 mb-2 tracking-tight uppercase">INVOICE</h1>
-                  <p className="text-gray-500 font-medium text-sm">Order: {invoiceOrder.orderNumber || invoiceOrder.id.slice(-8).toUpperCase()}</p>
-                  <p className="text-gray-500 font-medium text-sm">Date: {new Date(invoiceOrder.createdAt).toLocaleDateString()}</p>
-                  <p className="text-gray-500 font-medium text-sm">Invoice No: {invoiceOrder.invoiceNumber || 'PENDING'}</p>
-                </div>
-              </div>
 
-              {/* Billing / Store Information */}
-              <div className="grid grid-cols-2 gap-8 mb-12">
-                <div>
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-200 pb-2">BILL TO</h3>
-                  <p className="font-semibold text-gray-900 mb-1">{invoiceOrder.customer?.profile?.fullName || invoiceOrder.address?.fullName || 'Customer'}</p>
-                  <p className="text-gray-600 text-sm mb-1">{invoiceOrder.address?.phone || invoiceOrder.customer?.email}</p>
-                  <p className="text-gray-500 text-sm leading-relaxed max-w-[250px]">
-                    {invoiceOrder.address ? `${invoiceOrder.address.street}, ${invoiceOrder.address.city}, ${invoiceOrder.address.state} ${invoiceOrder.address.pincode}` : 'Address not provided'}
-                  </p>
-                </div>
-                <div className="text-right flex flex-col items-end">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-200 pb-2 w-full text-right">STORE</h3>
-                  <p className="font-semibold text-gray-900 mb-1">{invoiceOrder.shop?.name || 'Cravo Store'}</p>
-                  {invoiceOrder.shop?.seller?.pickupAddress && (
-                    <p className="text-gray-500 text-sm mb-1">{invoiceOrder.shop.seller.pickupAddress}, {invoiceOrder.shop.seller.pickupCity}</p>
-                  )}
-                  <p className="text-[#16A34A] font-medium text-xs mt-2">Managed by CRAVO Logistics</p>
-                </div>
-              </div>
-
-              {/* Items Table */}
-              <div className="mb-12">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b-2 border-gray-900">
-                      <th className="py-3 text-xs font-bold text-gray-900 uppercase tracking-widest">ITEM</th>
-                      <th className="py-3 text-xs font-bold text-gray-900 uppercase tracking-widest text-center">QTY</th>
-                      <th className="py-3 text-xs font-bold text-gray-900 uppercase tracking-widest text-right">UNIT PRICE</th>
-                      <th className="py-3 text-xs font-bold text-gray-900 uppercase tracking-widest text-right">TOTAL</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoiceOrder.items?.map((item, idx) => (
-                      <tr key={idx} className="border-b border-gray-100">
-                        <td className="py-4">
-                          <p className="font-medium text-gray-900 text-sm">{item.product?.name || 'Product'}</p>
-                          {item.productVariant?.name && item.productVariant?.name !== 'Default Variant' && (
-                            <p className="text-gray-500 text-xs mt-0.5">{item.productVariant.name}</p>
-                          )}
-                        </td>
-                        <td className="py-4 text-center text-gray-700 text-sm">{item.quantity}</td>
-                        <td className="py-4 text-right text-gray-700 text-sm">₹{Number(item.unitPrice).toFixed(2)}</td>
-                        <td className="py-4 text-right font-medium text-gray-900 text-sm">₹{Number(item.totalPrice).toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Order Summary */}
-              <div className="flex justify-end mb-16">
-                <div className="w-full max-w-sm">
-                  <div className="flex justify-between py-2 text-sm">
-                    <span className="text-gray-500">Subtotal</span>
-                    <span className="font-medium text-gray-900">₹{Number(invoiceOrder.subtotal).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between py-2 text-sm">
-                    <span className="text-gray-500">Delivery</span>
-                    <span className="font-medium text-gray-900">₹{Number(invoiceOrder.deliveryCharge || 0).toFixed(2)}</span>
-                  </div>
-                  {Number(invoiceOrder.discount) > 0 && (
-                    <div className="flex justify-between py-2 text-sm">
-                      <span className="text-gray-500">Discount</span>
-                      <span className="font-medium text-red-600">-₹{Number(invoiceOrder.discount).toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between py-4 mt-2 border-t-2 border-gray-900">
-                    <span className="text-base font-bold text-gray-900">TOTAL AMOUNT</span>
-                    <span className="text-xl font-bold text-[#1E3A2B]">₹{Number(invoiceOrder.grandTotal).toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Shipping Label Section */}
-              {invoiceOrder.delivery?.shippingLabelUrl && (
-                <div className="mt-8 border-t-2 border-dashed border-gray-300 pt-8 print:break-inside-avoid">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">SHIPPING LABEL</h3>
-                  <div className="w-full rounded-lg overflow-hidden border border-gray-200 h-[450px]">
-                    <iframe 
-                      src={`${invoiceOrder.delivery.shippingLabelUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-                      title="Shipping Label"
-                      className="w-full h-full border-0"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Footer */}
-              <div className="border-t border-gray-200 pt-8 flex justify-between items-center text-xs text-gray-400">
-                <p className="font-medium tracking-wide text-gray-500">CRAVO MARKETPLACE</p>
-                <p>Managed by CRAVO Logistics</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Edit Shipment Modal */}
       {editShipmentOrder && (
