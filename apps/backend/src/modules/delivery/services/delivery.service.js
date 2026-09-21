@@ -58,7 +58,7 @@ export const deliveryService = {
   async initiateDelivery(orderId) {
     // 1. Atomic Claim Transaction
     const claim = await prisma.$transaction(async (tx) => {
-      const existingDelivery = await tx.delivery.findUnique({ where: { orderId } });
+      const existingDelivery = await tx.delivery.findFirst({ where: { orderId } });
       
       if (existingDelivery) {
         if (existingDelivery.trackingNumber) {

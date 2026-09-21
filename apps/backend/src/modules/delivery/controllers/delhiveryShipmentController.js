@@ -34,9 +34,9 @@ export const delhiveryShipmentController = {
         throw new AppError('Unauthorized: Only sellers or administrators can create shipments.', 403);
       }
 
-      // Validate Order Status (must be CONFIRMED/seller_accepted)
-      if (order.status !== 'CONFIRMED') {
-        throw new AppError(`Shipment creation blocked: Order status must be CONFIRMED. Current status: ${order.status}`, 400);
+      // Validate Order Status (must be CONFIRMED or SELLER_ACCEPTED)
+      if (order.status !== 'CONFIRMED' && order.status !== 'SELLER_ACCEPTED') {
+        throw new AppError(`Shipment creation blocked: Order status must be CONFIRMED or SELLER_ACCEPTED. Current status: ${order.status}`, 400);
       }
 
       // Payment verification check for prepaid orders
