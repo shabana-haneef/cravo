@@ -959,38 +959,19 @@ export const SellerOrdersPage = () => {
                 </div>
               </div>
 
-              {/* Delivery Details */}
-              <div className="mb-12">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-200 pb-2">DELIVERY</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-500 block mb-1">Courier</span>
-                    <span className="font-semibold text-gray-900">Delhivery</span>
+              {/* Shipping Label Section */}
+              {invoiceOrder.delivery?.shippingLabelUrl && (
+                <div className="mt-8 border-t-2 border-dashed border-gray-300 pt-8 print:break-inside-avoid">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">SHIPPING LABEL</h3>
+                  <div className="w-full rounded-lg overflow-hidden border border-gray-200 h-[450px]">
+                    <iframe 
+                      src={`${invoiceOrder.delivery.shippingLabelUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                      title="Shipping Label"
+                      className="w-full h-full border-0"
+                    />
                   </div>
-                  <div>
-                    <span className="text-gray-500 block mb-1">AWB / Tracking No</span>
-                    <span className="font-semibold text-gray-900">{invoiceOrder.delivery?.trackingNumber || invoiceOrder.awbNumber || 'Not assigned yet'}</span>
-                  </div>
-                  {invoiceOrder.delivery?.status && (
-                    <div>
-                      <span className="text-gray-500 block mb-1">Shipment Status</span>
-                      <span className="font-semibold text-gray-900 capitalize">{invoiceOrder.delivery.status.replace(/_/g, ' ').toLowerCase()}</span>
-                    </div>
-                  )}
-                  {invoiceOrder.delivery?.ewaybillNumber && (
-                    <div>
-                      <span className="text-gray-500 block mb-1">E-Waybill</span>
-                      <span className="font-semibold text-gray-900">{invoiceOrder.delivery.ewaybillNumber}</span>
-                    </div>
-                  )}
-                  {invoiceOrder.delivery?.returnEwaybillNumber && (
-                    <div>
-                      <span className="text-gray-500 block mb-1">Return E-Waybill</span>
-                      <span className="font-semibold text-gray-900">{invoiceOrder.delivery.returnEwaybillNumber}</span>
-                    </div>
-                  )}
                 </div>
-              </div>
+              )}
 
               {/* Footer */}
               <div className="border-t border-gray-200 pt-8 flex justify-between items-center text-xs text-gray-400">
